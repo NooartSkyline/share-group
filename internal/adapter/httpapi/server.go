@@ -1,0 +1,86 @@
+// Package httpapi exposes the use cases over HTTP and serves the web UI.
+package httpapi
+
+import (
+	"io/fs"
+	"log/slog"
+	"net/http"
+	"time"
+
+	"lanshare/internal/adapter/ws"
+	"lanshare/internal/domain"
+	"lanshare/internal/usecase/auth"
+	"lanshare/internal/usecase/chat"
+	"lanshare/internal/usecase/device"
+	"lanshare/internal/usecase/network"
+	"lanshare/internal/usecase/port"
+	"lanshare/internal/usecase/room"
+	"lanshare/internal/usecase/transfer"
+)
+
+const (
+	cookieName    = "lanshare_token"
+	clientHeader  = "X-LanShare-Client"
+	maxJSONBody   = 4 << 10
+	maxTextBody   = 128 << 10 // messages and clipboard: 20k characters of Thai is ~60 KB
+	cookieMaxAge  = 7 * 24 * time.Hour
+	ownerDeviceNm = "MacBook (เครื่องนี้)"
+)
+
+// Deps are the collaborators of the HTTP server.
+type Deps struct {
+	Auth        *auth.Service
+	Rooms       *room.Service
+	Devices     *device.Service
+	Transfer    *transfer.Service
+	Chat        *chat.Service
+	Network     *network.Service
+	QR          port.QRGenerator
+	Hub         *ws.Hub
+	Web         fs.FS
+	DefaultRoom domain.RoomID
+	Log         *slog.Logger
+}
+
+type Server struct {
+	Deps
+}
+
+func NewServer(d Deps) *Server { return &Server{Deps: d} }
+
+// Handler builds the router with all middleware applied.
+func (s *Server) Handler() http.Handler {
+	mux := http.NewServeMux()
+
+	// public
+	mux.HandleFunc("GET /api/rooms/{room}/info", s.roomInfo)
+	mux.HandleFunc("POST /api/rooms/{room}/join", s.join)
+	mux.HandleFunc("POST /api/owner/session", s.ownerSession)
+
+	// any joined device
+	mux.HandleFunc("GET /api/me", s.authed(s.me))
+	mux.HandleFunc("GET /api/devices", s.authed(s.listDevices))
+	mux.HandleFunc("GET /api/files", s.authed(s.listFiles))
+	mux.HandleFunc("POST /api/files", s.authed(s.upload))
+	mux.HandleFunc("GET /api/files/zip", s.authed(s.downloadZip))
+	mux.HandleFunc("GET /api/files/{id}", s.authed(s.download))
+	mux.HandleFunc("GET /api/files/{id}/thumb", s.authed(s.thumbnail))
+	mux.HandleFunc("DELETE /api/files/{id}", s.authed(s.deleteFile))
+	mux.HandleFunc("GET /api/messages", s.authed(s.listMessages))
+	mux.HandleFunc("POST /api/messages", s.authed(s.sendMessage))
+	mux.HandleFunc("GET /api/clipboard", s.authed(s.getClipboard))
+	mux.HandleFunc("PUT /api/clipboard", s.authed(s.setClipboard))
+	mux.HandleFunc("GET /ws", s.authed(s.websocket))
+
+	// owner only (enforced inside the use cases)
+	mux.HandleFunc("GET /api/admin/join-info", s.authed(s.joinInfo))
+	mux.HandleFunc("POST /api/admin/pin/rotate", s.authed(s.rotatePIN))
+	mux.HandleFunc("GET /api/admin/network", s.authed(s.listNetwork))
+	mux.HandleFunc("POST /api/admin/network", s.authed(s.selectNetwork))
+	mux.HandleFunc("GET /api/admin/qr.png", s.authed(s.qrPNG))
+
+	// web UI
+	mux.Handle("GET /", noCache(http.FileServerFS(s.Web)))
+
+	return chain(mux, s.recoverPanic, s.securityHeaders, s.sameOrigin, s.accessLog)
+}

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LAN Share UI Mock</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,"Helvetica Neue",Arial,sans-serif;background:#0f1220;color:#e8eaf3;padding:28px;display:flex;gap:32px;flex-wrap:wrap;align-items:flex-start;justify-content:center}
+  h3.label{width:100%;text-align:center;font-weight:500;color:#8b91ad;font-size:13px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:-12px}
+  .mac{width:860px;background:#171a2b;border-radius:14px;border:1px solid #2a2f4a;box-shadow:0 30px 60px rgba(0,0,0,.5);overflow:hidden}
+  .titlebar{height:40px;background:#1e2238;display:flex;align-items:center;padding:0 14px;gap:8px;border-bottom:1px solid #2a2f4a}
+  .dot{width:12px;height:12px;border-radius:50%}
+  .titlebar .t{margin:0 auto;font-size:13px;color:#9aa0bd;transform:translateX(-24px)}
+  .body{display:flex;min-height:560px}
+  .side{width:240px;background:#141728;border-right:1px solid #2a2f4a;padding:16px 12px}
+  .side h4{font-size:11px;color:#6f7594;text-transform:uppercase;letter-spacing:.08em;margin:6px 8px 10px}
+  .dev{display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;margin-bottom:4px;font-size:13px}
+  .dev.active{background:#252a4a}
+  .dev .ic{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px}
+  .dev small{display:block;color:#7c82a2;font-size:11px;margin-top:2px}
+  .on{width:8px;height:8px;border-radius:50%;background:#3ddc97;margin-left:auto}
+  .off{background:#555b7a}
+  .main{flex:1;padding:22px;display:flex;flex-direction:column;gap:18px}
+  .top{display:flex;gap:16px}
+  .card{background:#1c2038;border:1px solid #2a2f4a;border-radius:14px;padding:16px}
+  .conn{flex:1;display:flex;gap:16px;align-items:center}
+  .qr{background:#fff;border-radius:10px;padding:8px;width:112px;height:112px;flex:none}
+  .conn .url{font-family:ui-monospace,Menlo,monospace;background:#12152a;border:1px solid #2a2f4a;border-radius:8px;padding:8px 10px;font-size:13px;color:#8fb4ff;margin:6px 0}
+  .conn p{font-size:12px;color:#8b91ad;line-height:1.5}
+  .pin{display:flex;gap:6px;margin-top:6px}
+  .pin span{width:30px;height:36px;border-radius:8px;background:#12152a;border:1px solid #343a5e;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:17px}
+  .stat{width:170px;display:flex;flex-direction:column;justify-content:center;gap:10px}
+  .stat b{font-size:22px}
+  .stat small{color:#8b91ad;font-size:12px;display:block}
+  .drop{border:2px dashed #3b4270;border-radius:16px;padding:26px;text-align:center;background:linear-gradient(180deg,#1a1e38,#171a2e)}
+  .drop .big{font-size:34px}
+  .drop p{font-size:14px;margin-top:6px}
+  .drop small{color:#7c82a2;font-size:12px}
+  .btn{display:inline-block;background:#5b7cff;color:#fff;border-radius:9px;padding:8px 16px;font-size:13px;font-weight:600;margin-top:12px}
+  .sendto{display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+  .chip{font-size:12px;padding:5px 11px;border-radius:99px;background:#252a4a;border:1px solid #343a5e}
+  .chip.sel{background:#5b7cff33;border-color:#5b7cff;color:#b9c8ff}
+  .list h4{font-size:13px;margin-bottom:10px;display:flex;justify-content:space-between}
+  .list h4 span{color:#7c82a2;font-weight:400;font-size:12px}
+  .row{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid #262b47;font-size:13px}
+  .row:first-of-type{border-top:none}
+  .fi{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;flex:none}
+  .meta{flex:1;min-width:0}
+  .meta small{color:#7c82a2;font-size:11px}
+  .bar{height:5px;background:#12152a;border-radius:4px;margin-top:6px;overflow:hidden}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,#5b7cff,#8f6bff);border-radius:4px}
+  .tag{font-size:11px;padding:3px 8px;border-radius:99px;flex:none}
+  .up{background:#3ddc9722;color:#3ddc97}
+  .down{background:#ffb84d22;color:#ffb84d}
+  .phone{width:340px;background:#000;border-radius:44px;padding:12px;border:2px solid #2a2f4a;box-shadow:0 30px 60px rgba(0,0,0,.5)}
+  .screen{background:#f5f6fb;color:#1a1d33;border-radius:34px;overflow:hidden;min-height:640px;display:flex;flex-direction:column}
+  .status{display:flex;justify-content:space-between;padding:10px 22px 4px;font-size:12px;font-weight:600}
+  .url-bar{margin:6px 16px;background:#e6e8f3;border-radius:12px;padding:8px 12px;font-size:12px;color:#555b7a;text-align:center}
+  .p-body{padding:12px 16px;display:flex;flex-direction:column;gap:14px;flex:1}
+  .hello{display:flex;align-items:center;gap:10px}
+  .hello .ic{width:40px;height:40px;border-radius:12px;background:#5b7cff;color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px}
+  .hello b{font-size:16px}
+  .hello small{display:block;color:#7c82a2;font-size:12px}
+  .seg{display:flex;background:#e6e8f3;border-radius:12px;padding:3px}
+  .seg div{flex:1;text-align:center;padding:8px;border-radius:10px;font-size:13px;color:#6b7190}
+  .seg .a{background:#fff;color:#1a1d33;font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+  .upl{border:2px dashed #b7bfe6;border-radius:18px;padding:20px;text-align:center;background:#fff}
+  .upl .big{font-size:30px}
+  .upl p{font-size:14px;font-weight:600;margin-top:4px}
+  .upl small{color:#7c82a2;font-size:12px}
+  .upl .btn{margin-top:10px}
+  .pf{display:flex;align-items:center;gap:10px;background:#fff;border-radius:14px;padding:10px;font-size:13px}
+  .pf .meta small{color:#7c82a2}
+  .dl{background:#5b7cff;color:#fff;border-radius:9px;padding:6px 11px;font-size:12px;font-weight:600}
+  .tabbar{display:flex;justify-content:space-around;padding:10px 0 16px;background:#fff;border-top:1px solid #e6e8f3;font-size:11px;color:#8b91ad;text-align:center}
+  .tabbar .a{color:#5b7cff;font-weight:600}
+  .legend{width:100%;max-width:1260px;display:flex;gap:14px;flex-wrap:wrap;justify-content:center;font-size:12px;color:#8b91ad}
+  .legend span{background:#171a2b;border:1px solid #2a2f4a;border-radius:99px;padding:6px 12px}
+</style>
+</head>
+<body>
+
+<h3 class="label">ฝั่ง MacBook (แอปโฮสต์) &nbsp;•&nbsp; ฝั่งมือถือ/PC (เปิดผ่านเบราว์เซอร์)</h3>
+
+<div class="mac">
+  <div class="titlebar">
+    <div class="dot" style="background:#ff5f57"></div><div class="dot" style="background:#febc2e"></div><div class="dot" style="background:#28c840"></div>
+    <div class="t">LAN Share</div>
+  </div>
+  <div class="body">
+    <div class="side">
+      <h4>อุปกรณ์ในวงแลน</h4>
+      <div class="dev active"><div class="ic" style="background:#5b7cff33">💻</div><div>MacBook Pro<small>เครื่องนี้ • 192.168.1.23</small></div><div class="on"></div></div>
+      <div class="dev"><div class="ic" style="background:#3ddc9722">🤖</div><div>Pixel 8<small>Android • 192.168.1.41</small></div><div class="on"></div></div>
+      <div class="dev"><div class="ic" style="background:#ffffff18">📱</div><div>iPhone ของฉัน<small>iOS • 192.168.1.52</small></div><div class="on"></div></div>
+      <div class="dev"><div class="ic" style="background:#4da3ff22">🖥️</div><div>Office-PC<small>Windows • 192.168.1.60</small></div><div class="on"></div></div>
+      <div class="dev"><div class="ic" style="background:#ffffff10">📱</div><div style="color:#7c82a2">iPad<small>ออฟไลน์</small></div><div class="on off"></div></div>
+      <h4 style="margin-top:20px">เมนู</h4>
+      <div class="dev">🗂️ ไฟล์ที่ได้รับ</div>
+      <div class="dev">🕘 ประวัติ</div>
+      <div class="dev">⚙️ ตั้งค่า</div>
+    </div>
+
+    <div class="main">
+      <div class="top">
+        <div class="card conn">
+          <div class="qr">
+            <svg viewBox="0 0 21 21" width="96" height="96" shape-rendering="crispEdges">
+              <rect width="21" height="21" fill="#fff"/>
+              <g fill="#111">
+                <path d="M0 0h7v7H0z M1 1v5h5V1z" fill-rule="evenodd"/><rect x="2" y="2" width="3" height="3"/>
+                <path d="M14 0h7v7h-7z M15 1v5h5V1z" fill-rule="evenodd"/><rect x="16" y="2" width="3" height="3"/>
+                <path d="M0 14h7v7H0z M1 15v5h5v-5z" fill-rule="evenodd"/><rect x="2" y="16" width="3" height="3"/>
+                <rect x="8" y="0" width="2" height="1"/><rect x="10" y="2" width="1" height="2"/><rect x="8" y="4" width="3" height="1"/><rect x="12" y="1" width="1" height="3"/>
+                <rect x="8" y="8" width="2" height="2"/><rect x="11" y="8" width="1" height="3"/><rect x="13" y="9" width="3" height="1"/><rect x="17" y="8" width="2" height="2"/><rect x="0" y="8" width="3" height="1"/><rect x="4" y="9" width="2" height="2"/>
+                <rect x="8" y="12" width="1" height="3"/><rect x="10" y="13" width="3" height="1"/><rect x="14" y="12" width="2" height="2"/><rect x="18" y="12" width="3" height="1"/>
+                <rect x="9" y="16" width="2" height="2"/><rect x="12" y="15" width="1" height="4"/><rect x="14" y="16" width="3" height="1"/><rect x="18" y="15" width="2" height="2"/><rect x="15" y="18" width="2" height="3"/><rect x="9" y="19" width="3" height="2"/><rect x="19" y="19" width="2" height="2"/>
+              </g>
+            </svg>
+          </div>
+          <div>
+            <b style="font-size:15px">สแกนหรือเปิดลิงก์เพื่อเชื่อมต่อ</b>
+            <div class="url">http://192.168.1.23:8080</div>
+            <p>หรือเปิด <span style="color:#8fb4ff">macbook.local:8080</span><br>ทุกอุปกรณ์ต้องอยู่ใน Wi-Fi เดียวกัน</p>
+            <div class="pin"><span>4</span><span>8</span><span>2</span><span>9</span><small style="align-self:center;margin-left:6px;color:#7c82a2;font-size:11px">รหัส PIN</small></div>
+          </div>
+        </div>
+        <div class="card stat">
+          <div><b>3</b><small>อุปกรณ์เชื่อมต่อ</small></div>
+          <div><b>1.2 GB</b><small>ถ่ายโอนวันนี้</small></div>
+          <div><b style="color:#3ddc97;font-size:15px">● เซิร์ฟเวอร์ทำงาน</b></div>
+        </div>
+      </div>
+
+      <div class="drop">
+        <div class="big">⬆️</div>
+        <p><b>ลากไฟล์หรือโฟลเดอร์มาวางที่นี่</b> เพื่อส่งไปยังอุปกรณ์</p>
+        <small>ไม่จำกัดขนาดไฟล์ • ส่งตรงในวงแลน ไม่ผ่านอินเทอร์เน็ต</small>
+        <div class="sendto">
+          <span class="chip">ส่งถึง:</span>
+          <span class="chip sel">✓ ทุกเครื่อง</span>
+          <span class="chip">🤖 Pixel 8</span>
+          <span class="chip">📱 iPhone</span>
+          <span class="chip">🖥️ Office-PC</span>
+        </div>
+        <div class="btn">เลือกไฟล์…</div>
+      </div>
+
+      <div class="card list">
+        <h4>การถ่ายโอนล่าสุด <span>ล้างประวัติ</span></h4>
+        <div class="row">
+          <div class="fi" style="background:#ff6b6b22">🎬</div>
+          <div class="meta">trip-2026.mp4 <small>• 1.4 GB • Mac → Pixel 8</small>
+            <div class="bar"><i style="width:68%"></i></div></div>
+          <div style="font-size:12px;color:#9aa0bd">68% • 42 MB/s</div>
+          <span class="tag up">ส่งออก</span>
+        </div>
+        <div class="row">
+          <div class="fi" style="background:#4da3ff22">🖼️</div>
+          <div class="meta">IMG_2041.HEIC <small>• 3.8 MB • iPhone → Mac</small>
+            <div class="bar"><i style="width:100%;background:#3ddc97"></i></div></div>
+          <div style="font-size:12px;color:#3ddc97">เสร็จแล้ว ✓</div>
+          <span class="tag down">รับเข้า</span>
+        </div>
+        <div class="row">
+          <div class="fi" style="background:#ffb84d22">📄</div>
+          <div class="meta">รายงานประชุม.docx <small>• 220 KB • Office-PC → Mac</small>
+            <div class="bar"><i style="width:100%;background:#3ddc97"></i></div></div>
+          <div style="font-size:12px;color:#3ddc97">เสร็จแล้ว ✓</div>
+          <span class="tag down">รับเข้า</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="phone">
+  <div class="screen">
+    <div class="status"><span>9:41</span><span>5G ▮▮▮</span></div>
+    <div class="url-bar">🔒 192.168.1.23:8080</div>
+    <div class="p-body">
+      <div class="hello">
+        <div class="ic">📡</div>
+        <div><b>LAN Share</b><small>เชื่อมต่อกับ MacBook Pro • Pixel 8</small></div>
+      </div>
+      <div class="seg"><div class="a">ส่งไป Mac</div><div>ไฟล์จาก Mac</div></div>
+
+      <div class="upl">
+        <div class="big">📤</div>
+        <p>แตะเพื่อเลือกไฟล์</p>
+        <small>รูป วิดีโอ เอกสาร หรือทุกชนิดไฟล์</small><br>
+        <div class="btn">เลือกไฟล์</div>
+      </div>
+
+      <div style="font-size:12px;color:#7c82a2;margin-bottom:-6px">กำลังส่ง</div>
+      <div class="pf" style="flex-direction:column;align-items:stretch">
+        <div style="display:flex;gap:10px;align-items:center">
+          <div class="fi" style="background:#ff6b6b22">🎬</div>
+          <div class="meta">VID_0192.mp4<br><small>240 MB • 35%</small></div>
+        </div>
+        <div class="bar" style="background:#e6e8f3"><i style="width:35%"></i></div>
+      </div>
+
+      <div style="font-size:12px;color:#7c82a2;margin-bottom:-6px">ไฟล์ที่ Mac แชร์ไว้</div>
+      <div class="pf"><div class="fi" style="background:#4da3ff22">📦</div><div class="meta">project.zip<br><small>18 MB</small></div><div class="dl">ดาวน์โหลด</div></div>
+      <div class="pf"><div class="fi" style="background:#ffb84d22">🎵</div><div class="meta">playlist.mp3<br><small>7.2 MB</small></div><div class="dl">ดาวน์โหลด</div></div>
+    </div>
+    <div class="tabbar"><div class="a">⇅<br>ถ่ายโอน</div><div>🗂️<br>ไฟล์</div><div>🕘<br>ประวัติ</div></div>
+  </div>
+</div>
+
+<div class="legend">
+  <span>🌐 มือถือ/PC ไม่ต้องติดตั้งแอป แค่สแกน QR</span>
+  <span>↔️ ส่งได้ทั้งสองทิศทาง</span>
+  <span>🔐 PIN ป้องกันคนแปลกหน้าในวง Wi-Fi</span>
+  <span>📊 แสดงความคืบหน้าและความเร็วแบบเรียลไทม์</span>
+</div>
+
+</body>
+</html>

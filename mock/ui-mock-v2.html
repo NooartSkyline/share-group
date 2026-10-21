@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LAN Share UI Mock v2</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#0d1020;--panel:#171a2b;--panel2:#1c2038;--side:#141728;--line:#2a2f4a;
+    --text:#e8eaf3;--mut:#8b91ad;--faint:#6f7594;--accent:#5b7cff;--accent2:#8f6bff;
+    --ok:#3ddc97;--warn:#ffb84d;--bad:#ff6b6b;--input:#12152a;--chip:#252a4a;--shadow:rgba(0,0,0,.5);
+  }
+  #theme:checked ~ .wrap{
+    --bg:#eceef6;--panel:#ffffff;--panel2:#f5f6fc;--side:#eef0f8;--line:#dcdfee;
+    --text:#1a1d33;--mut:#5f6585;--faint:#8b91ad;--input:#eceef7;--chip:#e6e9f8;--shadow:rgba(40,50,100,.18);
+  }
+  #theme{position:absolute;opacity:0;pointer-events:none}
+  body{font-family:-apple-system,"Helvetica Neue","Sukhumvit Set",Arial,sans-serif}
+  .wrap{background:var(--bg);color:var(--text);min-height:100vh;padding:28px 28px 60px;transition:background .2s}
+  .inner{max-width:1360px;margin:0 auto}
+  .head{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap;margin-bottom:26px}
+  .head h1{font-size:22px}
+  .head p{color:var(--mut);font-size:13px;margin-top:6px;line-height:1.6}
+  .themebtn{cursor:pointer;background:var(--panel);border:1px solid var(--line);border-radius:99px;padding:8px 14px;font-size:13px;color:var(--text);user-select:none}
+  .sec{margin-bottom:56px}
+  .sec h2{font-size:17px;display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .sec .cap{color:var(--mut);font-size:13px;margin-bottom:16px;line-height:1.6;max-width:900px}
+  .ph{font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;background:var(--accent);color:#fff;letter-spacing:.04em}
+  .ph.b{background:#2fb98a}.ph.c{background:#e29a2d}.ph.d{background:#c2546d}.ph.e{background:#7d6bd6}.ph.g{background:#3a8fd6}
+  .row{display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start}
+
+  /* ---------- shared bits ---------- */
+  .btn{display:inline-block;background:var(--accent);color:#fff;border-radius:9px;padding:8px 14px;font-size:13px;font-weight:600}
+  .btn.ghost{background:var(--chip);color:var(--text);font-weight:500}
+  .btn.ok{background:var(--ok);color:#06231a}
+  .btn.bad{background:transparent;color:var(--bad);border:1px solid var(--bad)}
+  .btn.sm{padding:5px 10px;font-size:12px;border-radius:8px}
+  .pill{font-size:11px;padding:3px 9px;border-radius:99px;font-weight:600;white-space:nowrap}
+  .p-owner{background:#8f6bff26;color:#a68bff}.p-member{background:#5b7cff26;color:#7f9aff}
+  .p-viewer{background:#8b91ad26;color:var(--mut)}.p-upl{background:#ffb84d26;color:var(--warn)}
+  .p-wait{background:#ffb84d26;color:var(--warn)}.p-ok{background:#3ddc9722;color:var(--ok)}.p-bad{background:#ff6b6b22;color:var(--bad)}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--ok);flex:none}.dot.off{background:#555b7a}.dot.wait{background:var(--warn)}
+  .pin{display:flex;gap:5px}
+  .pin span{width:28px;height:34px;border-radius:8px;background:var(--input);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;font-variant-numeric:tabular-nums}
+  .url{font-family:ui-monospace,Menlo,monospace;background:var(--input);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:12px;color:#8fb4ff}
+  #theme:checked ~ .wrap .url{color:#3d5fe0}
+  .bar{height:5px;background:var(--input);border-radius:4px;overflow:hidden}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:4px}
+  .bar i.ok{background:var(--ok)}
+  .qr{background:#fff;border-radius:10px;padding:6px;flex:none}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+  .sel{background:var(--input);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12px;display:inline-flex;gap:8px;align-items:center}
+  small,.mut{color:var(--mut)}
+
+  /* ---------- 1. menu bar ---------- */
+  .desk{width:720px;min-height:560px;border-radius:14px;overflow:hidden;background:linear-gradient(135deg,#2b4a8f,#6a3a8f 55%,#c2546d);box-shadow:0 24px 50px var(--shadow)}
+  .menubar{height:26px;background:rgba(15,18,32,.55);backdrop-filter:blur(8px);display:flex;align-items:center;padding:0 12px;gap:14px;font-size:12px;color:#fff}
+  .menubar .sp{margin-left:auto}
+  .menubar .tray{background:rgba(255,255,255,.28);border-radius:5px;padding:1px 7px}
+  .pop{width:340px;margin:6px 24px 0 auto;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:0 18px 40px var(--shadow);display:flex;flex-direction:column;gap:12px}
+  .pop .top{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600}
+  .toggle{margin-left:auto;width:38px;height:22px;border-radius:99px;background:var(--ok);position:relative}
+  .toggle:after{content:"";position:absolute;right:3px;top:3px;width:16px;height:16px;border-radius:50%;background:#fff}
+  .pop .qrrow{display:flex;gap:12px;align-items:center}
+  .pop .qrrow .info{display:flex;flex-direction:column;gap:7px;min-width:0}
+  .pop .qrrow .info small{font-size:11px}
+  .pop .stats{display:flex;gap:8px}
+  .pop .stats div{flex:1;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:11px;color:var(--mut)}
+  .pop .stats b{display:block;font-size:17px;color:var(--text);margin-bottom:2px}
+  .menu a{display:flex;justify-content:space-between;padding:8px 8px;border-radius:8px;font-size:13px}
+  .menu a:first-child{background:var(--chip)}
+  .menu a span{color:var(--faint);font-size:12px}
+
+  /* ---------- 2. dashboard ---------- */
+  .win{width:1100px;max-width:100%;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 24px 50px var(--shadow)}
+  .tb{height:40px;background:var(--panel2);display:flex;align-items:center;padding:0 14px;gap:8px;border-bottom:1px solid var(--line)}
+  .tb .d{width:12px;height:12px;border-radius:50%}
+  .tb .t{margin:0 auto;font-size:13px;color:var(--mut);transform:translateX(-24px)}
+  .wb{display:flex;min-height:760px}
+  .side{width:244px;background:var(--side);border-right:1px solid var(--line);padding:14px 10px;flex:none}
+  .side h4{font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.08em;margin:10px 8px 8px;display:flex;justify-content:space-between}
+  .side h4 b{color:var(--accent);font-size:15px;line-height:1}
+  .it{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;margin-bottom:3px;font-size:13px}
+  .it.act{background:var(--chip)}
+  .it .ic{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex:none}
+  .it small{display:block;font-size:11px;margin-top:1px}
+  .it .cnt{margin-left:auto;font-size:11px;background:var(--accent);color:#fff;border-radius:99px;padding:1px 7px}
+  .it .dot{margin-left:auto}
+  .main{flex:1;padding:20px;display:flex;flex-direction:column;gap:14px;min-width:0}
+  .rh{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+  .rh h3{font-size:19px}
+  .rh .grow{flex:1}
+  .quota{width:190px;font-size:11px;color:var(--mut)}
+  .quota .bar{margin-top:5px}
+  .banner{display:flex;gap:12px;align-items:center;background:#ffb84d1c;border:1px solid #ffb84d66;border-radius:12px;padding:10px 14px;font-size:13px}
+  .banner .grow{flex:1}
+  .drop{border:2px dashed var(--line);border-radius:14px;padding:14px 18px;display:flex;align-items:center;gap:16px;background:var(--panel2)}
+  .drop .big{font-size:28px}
+  .drop .txt{flex:1;font-size:13px;line-height:1.5}
+  .drop .txt small{font-size:12px}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .chip{font-size:12px;padding:4px 10px;border-radius:99px;background:var(--chip);border:1px solid var(--line)}
+  .chip.on{background:#5b7cff30;border-color:var(--accent);color:#8fa6ff}
+  #theme:checked ~ .wrap .chip.on{color:#3d5fe0}
+  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line)}
+  .tabs div{padding:8px 14px;font-size:13px;color:var(--mut);border-bottom:2px solid transparent}
+  .tabs .on{color:var(--text);border-color:var(--accent);font-weight:600}
+  .tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .search{flex:1;min-width:180px;background:var(--input);border:1px solid var(--line);border-radius:9px;padding:7px 12px;font-size:13px;color:var(--faint)}
+  .xfer{display:flex;flex-direction:column;gap:2px}
+  .xr{display:flex;align-items:center;gap:12px;padding:9px 0;border-top:1px solid var(--line);font-size:13px}
+  .xr:first-child{border-top:none}
+  .xr .fi{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex:none}
+  .xr .meta{flex:1;min-width:0}
+  .xr .meta small{font-size:11px}
+  .xr .st{font-size:12px;color:var(--mut);text-align:right;min-width:150px}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .fc{background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden;font-size:12px}
+  .fc.chk{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+  .th{height:92px;position:relative;display:flex;align-items:center;justify-content:center;font-size:30px}
+  .th .play{position:absolute;width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center}
+  .th .ck{position:absolute;top:7px;left:7px;width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,.8);background:rgba(0,0,0,.25);color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center}
+  .th .ck.on{background:var(--accent);border-color:var(--accent)}
+  .fc .bd{padding:9px 10px;display:flex;flex-direction:column;gap:5px}
+  .fc .nm{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .fc .sub{color:var(--mut);font-size:11px}
+  .fc .ft{display:flex;gap:6px;align-items:center;justify-content:space-between;font-size:11px;color:var(--faint)}
+  .selbar{display:flex;gap:12px;align-items:center;background:var(--accent);color:#fff;border-radius:12px;padding:9px 14px;font-size:13px}
+  .selbar .grow{flex:1}
+  .selbar .btn{background:#fff;color:#2b3fae}
+
+  /* ---------- 3. room mgmt ---------- */
+  .modal{width:760px;max-width:100%;background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:0 24px 50px var(--shadow);overflow:hidden}
+  .modal .mh{padding:16px 20px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line)}
+  .modal .mh h3{font-size:16px}
+  .modal .mb{padding:18px 20px;display:flex;flex-direction:column;gap:16px}
+  .tbl{width:100%;border-collapse:collapse;font-size:13px}
+  .tbl th{font-size:11px;color:var(--faint);text-align:left;text-transform:uppercase;letter-spacing:.06em;padding:6px 8px}
+  .tbl td{padding:9px 8px;border-top:1px solid var(--line)}
+  .guest{display:flex;gap:16px;align-items:center;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px}
+  .guest .info{flex:1;display:flex;flex-direction:column;gap:8px;font-size:12px}
+  .setg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .setg div{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:12px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .sw{width:34px;height:20px;border-radius:99px;background:var(--ok);position:relative;flex:none}
+  .sw:after{content:"";position:absolute;right:3px;top:3px;width:14px;height:14px;border-radius:50%;background:#fff}
+  .sw.off{background:#555b7a}.sw.off:after{right:auto;left:3px}
+
+  /* ---------- 4. small cards ---------- */
+  .ck-row{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line);font-size:13px}
+  .ck-row:first-of-type{border-top:none}
+  .ck-row .ico{width:22px;text-align:center;flex:none}
+  .ck-row small{display:block;margin-top:2px;font-size:12px;line-height:1.5}
+  .nic{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+  .nic div{display:flex;gap:10px;align-items:center;justify-content:space-between;background:var(--input);border:1px solid var(--line);border-radius:9px;padding:7px 10px;font-size:12px}
+  .nic div.on{border-color:var(--accent)}
+  .dlg{width:400px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:0 24px 50px var(--shadow);display:flex;flex-direction:column;gap:12px;font-size:13px}
+  .dlg h4{font-size:15px}
+  .opt{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:9px 12px}
+  .opt.on{border-color:var(--accent);background:#5b7cff1c}
+  .opt .r{width:14px;height:14px;border-radius:50%;border:2px solid var(--faint);flex:none}
+  .opt.on .r{border-color:var(--accent);background:radial-gradient(var(--accent) 45%,transparent 50%)}
+  .opt small{display:block;font-size:11px}
+
+  /* ---------- 5. phones ---------- */
+  .phone{width:300px;background:#000;border-radius:40px;padding:10px;border:2px solid var(--line);box-shadow:0 24px 50px var(--shadow);flex:none}
+  .screen{background:var(--bg);color:var(--text);border-radius:31px;overflow:hidden;height:640px;display:flex;flex-direction:column}
+  .stt{display:flex;justify-content:space-between;padding:9px 20px 3px;font-size:11px;font-weight:600}
+  .ub{margin:4px 14px;background:var(--input);border-radius:11px;padding:6px 10px;font-size:11px;color:var(--mut);text-align:center}
+  .pb{padding:10px 14px;display:flex;flex-direction:column;gap:11px;flex:1;overflow:hidden}
+  .ph-head{display:flex;gap:9px;align-items:center}
+  .ph-head .ic{width:36px;height:36px;border-radius:11px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;flex:none}
+  .ph-head b{font-size:15px}
+  .ph-head small{display:block;font-size:11px}
+  .seg{display:flex;background:var(--input);border-radius:11px;padding:3px}
+  .seg div{flex:1;text-align:center;padding:7px;border-radius:9px;font-size:12px;color:var(--mut)}
+  .seg .on{background:var(--panel);color:var(--text);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+  .upl{border:2px dashed var(--line);border-radius:16px;padding:14px;text-align:center;background:var(--panel)}
+  .upl .big{font-size:26px}
+  .upl p{font-size:13px;font-weight:600;margin-top:2px}
+  .upl small{font-size:11px}
+  .upl .acts{display:flex;gap:8px;justify-content:center;margin-top:9px}
+  .lab{font-size:11px;color:var(--faint);margin-bottom:-4px}
+  .pf{display:flex;align-items:center;gap:9px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px;font-size:12px}
+  .pf .fi{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex:none}
+  .pf .meta{flex:1;min-width:0}
+  .pf .meta small{font-size:10.5px}
+  .tab{display:flex;justify-content:space-around;padding:8px 0 14px;background:var(--panel);border-top:1px solid var(--line);font-size:10.5px;color:var(--faint);text-align:center}
+  .tab .on{color:var(--accent);font-weight:700}
+  .keys{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:2px}
+  .keys div{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 0;text-align:center;font-size:17px;font-weight:600}
+  .pin.big span{width:36px;height:44px;font-size:20px}
+  .pin.big{justify-content:center}
+  .pin.big span.cur{border-color:var(--accent)}
+  .err{font-size:11.5px;color:var(--bad);text-align:center}
+  .input{background:var(--input);border:1px solid var(--line);border-radius:10px;padding:9px 11px;font-size:12.5px;color:var(--mut)}
+  .bub{max-width:82%;padding:8px 11px;border-radius:14px;font-size:12px;line-height:1.5}
+  .bub.l{background:var(--panel);border:1px solid var(--line);align-self:flex-start;border-bottom-left-radius:4px}
+  .bub.r{background:var(--accent);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+  .bub small{display:block;font-size:10px;margin-bottom:2px;opacity:.75}
+  .bub.r small{color:#fff;opacity:.9}
+  .clip{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;font-size:12px;display:flex;flex-direction:column;gap:8px}
+  .clip .txt{background:var(--input);border-radius:8px;padding:8px;font-family:ui-monospace,Menlo,monospace;font-size:11px;line-height:1.5;color:#8fb4ff}
+  .count{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--warn);text-align:center}
+
+  .legend{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+  .legend span{font-size:12px;color:var(--mut);background:var(--panel);border:1px solid var(--line);border-radius:99px;padding:6px 12px}
+</style>
+</head>
+<body>
+
+<!-- QR placeholder (ภาพตัวอย่าง ไม่ใช่ QR จริง) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="qr" viewBox="0 0 21 21">
+    <rect width="21" height="21" fill="#fff"/>
+    <g fill="#111" shape-rendering="crispEdges">
+      <path d="M0 0h7v7H0z M1 1v5h5V1z" fill-rule="evenodd"/><rect x="2" y="2" width="3" height="3"/>
+      <path d="M14 0h7v7h-7z M15 1v5h5V1z" fill-rule="evenodd"/><rect x="16" y="2" width="3" height="3"/>
+      <path d="M0 14h7v7H0z M1 15v5h5v-5z" fill-rule="evenodd"/><rect x="2" y="16" width="3" height="3"/>
+      <rect x="8" y="0" width="2" height="1"/><rect x="10" y="2" width="1" height="2"/><rect x="8" y="4" width="3" height="1"/><rect x="12" y="1" width="1" height="3"/>
+      <rect x="8" y="8" width="2" height="2"/><rect x="11" y="8" width="1" height="3"/><rect x="13" y="9" width="3" height="1"/><rect x="17" y="8" width="2" height="2"/><rect x="0" y="8" width="3" height="1"/><rect x="4" y="9" width="2" height="2"/>
+      <rect x="8" y="12" width="1" height="3"/><rect x="10" y="13" width="3" height="1"/><rect x="14" y="12" width="2" height="2"/><rect x="18" y="12" width="3" height="1"/>
+      <rect x="9" y="16" width="2" height="2"/><rect x="12" y="15" width="1" height="4"/><rect x="14" y="16" width="3" height="1"/><rect x="18" y="15" width="2" height="2"/><rect x="15" y="18" width="2" height="3"/><rect x="9" y="19" width="3" height="2"/><rect x="19" y="19" width="2" height="2"/>
+    </g>
+  </symbol>
+</svg>
+
+<input type="checkbox" id="theme">
+<div class="wrap"><div class="inner">
+
+<div class="head">
+  <div>
+    <h1>LAN Share: ต้นแบบ UI v2</h1>
+    <p>ออกแบบตามขอบข่ายโครงการ: ห้องแชร์หลายทีม, PIN 6 หลัก, แอป menu bar, อนุมัติอุปกรณ์, โหมดแขก, ตรวจ SHA-256, ตรวจปัญหาเครือข่าย<br>
+    แท็ก <span class="ph">A</span> <span class="ph b">B</span> <span class="ph c">C</span> <span class="ph d">D</span> <span class="ph e">E</span> <span class="ph g">G</span> บอกว่าแต่ละส่วนอยู่ใน Phase ไหนของแผน</p>
+  </div>
+  <label class="themebtn" for="theme">🌗 สลับโหมดมืด / สว่าง</label>
+</div>
+
+<!-- ============ 1. MENU BAR ============ -->
+<div class="sec">
+  <h2>1. Popover จากไอคอน menu bar <span class="ph g">G</span> <span class="ph">A</span></h2>
+  <p class="cap">คลิกไอคอนบน menu bar แล้วเห็นทุกอย่างที่ต้องใช้ทันที: เปิด/ปิดเซิร์ฟเวอร์, ห้องปัจจุบัน, QR + PIN 6 หลัก, การ์ดเครือข่ายที่ใช้, จำนวนอุปกรณ์ และจำนวนที่รออนุมัติ</p>
+  <div class="desk">
+    <div class="menubar"><span></span><b>LAN Share</b><span>File</span><span>Edit</span><span>View</span><span>Window</span>
+      <span class="sp"></span><span class="tray">📡 ● 3</span><span>🔋</span><span>Wi‑Fi</span><span>อ. 20 ต.ค. 9:41</span></div>
+    <div class="pop">
+      <div class="top"><span class="dot"></span> เซิร์ฟเวอร์ทำงาน <small style="font-weight:400">:8080</small><div class="toggle"></div></div>
+      <div class="sel" style="width:100%;justify-content:space-between"><span>🎨 ห้อง: <b>ทีมออกแบบ</b></span><span>▾</span></div>
+      <div class="qrrow">
+        <div class="qr"><svg width="92" height="92"><use href="#qr"/></svg></div>
+        <div class="info">
+          <small>PIN เข้าห้อง (6 หลัก)</small>
+          <div class="pin"><span>4</span><span>8</span><span>2</span><span>9</span><span>1</span><span>7</span></div>
+          <div class="url">192.168.1.23:8080</div>
+          <small>🔗 คัดลอกลิงก์ &nbsp;•&nbsp; 🔄 สร้าง PIN ใหม่</small>
+        </div>
+      </div>
+      <div class="sel" style="width:100%;justify-content:space-between"><span>📶 Wi‑Fi (en0) • 192.168.1.23</span><span>▾</span></div>
+      <div class="stats">
+        <div><b>3</b>ออนไลน์</div>
+        <div><b style="color:var(--warn)">1</b>รออนุมัติ</div>
+        <div><b>1.2 GB</b>วันนี้</div>
+      </div>
+      <div class="menu">
+        <a>📂 เปิด Dashboard <span>⌘D</span></a>
+        <a>🕘 ไฟล์ล่าสุด <span>▸</span></a>
+        <a>🩺 ตรวจปัญหาการเชื่อมต่อ <span></span></a>
+        <a>⚙️ ตั้งค่า <span>⌘,</span></a>
+        <a>⏻ ปิดโปรแกรม <span>⌘Q</span></a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 2. DASHBOARD ============ -->
+<div class="sec">
+  <h2>2. หน้าต่าง Dashboard ของเจ้าของเครื่อง <span class="ph">A</span> <span class="ph b">B</span> <span class="ph c">C</span> <span class="ph d">D</span></h2>
+  <p class="cap">ซ้าย: ห้องและอุปกรณ์ในห้อง พร้อมบทบาท ขวา: ไฟล์ของห้องที่เลือก มีแบนเนอร์อนุมัติอุปกรณ์ใหม่, โซนวางไฟล์ (รองรับ ⌘V วางภาพ), ความคืบหน้าพร้อมหยุด/ต่อ, สถานะตรวจ SHA-256, ตัวอย่างไฟล์, ไฟล์หมดอายุ, เลือกหลายไฟล์เป็น zip</p>
+  <div class="win">
+    <div class="tb"><div class="d" style="background:#ff5f57"></div><div class="d" style="background:#febc2e"></div><div class="d" style="background:#28c840"></div><div class="t">LAN Share • ทีมออกแบบ</div></div>
+    <div class="wb">
+      <div class="side">
+        <h4>ห้อง <b>＋</b></h4>
+        <div class="it act"><div class="ic" style="background:#5b7cff30">🎨</div><div>ทีมออกแบบ<small class="mut">4 อุปกรณ์</small></div><span class="cnt">1</span></div>
+        <div class="it"><div class="ic" style="background:#3ddc9722">💻</div><div>ทีมพัฒนา<small class="mut">2 อุปกรณ์</small></div></div>
+        <div class="it"><div class="ic" style="background:#ffffff14">🌐</div><div>ทั่วไป<small class="mut">0 อุปกรณ์</small></div><span class="dot off"></span></div>
+
+        <h4>อุปกรณ์ในห้องนี้</h4>
+        <div class="it"><div class="ic" style="background:#8f6bff26">💻</div><div>MacBook Pro<small class="mut">เครื่องนี้</small></div><span class="pill p-owner" style="margin-left:auto">Owner</span></div>
+        <div class="it"><div class="ic" style="background:#3ddc9722">🤖</div><div>Pixel 8<small class="mut">Android • 5GHz</small></div><span class="pill p-member" style="margin-left:auto">Member</span></div>
+        <div class="it"><div class="ic" style="background:#ffffff18">📱</div><div>iPhone ของ Nok<small class="mut">iOS • 5GHz</small></div><span class="pill p-member" style="margin-left:auto">Member</span></div>
+        <div class="it"><div class="ic" style="background:#4da3ff22">🖥️</div><div>Office-PC<small class="mut">Windows</small></div><span class="pill p-viewer" style="margin-left:auto">Viewer</span></div>
+        <div class="it"><div class="ic" style="background:#ffb84d22">⏳</div><div>iPad (ใหม่)<small class="mut">รออนุมัติ</small></div><span class="dot wait"></span></div>
+
+        <h4>เมนู</h4>
+        <div class="it"><div class="ic">🗂️</div>ไฟล์</div>
+        <div class="it"><div class="ic">💬</div>ข้อความ / คลิปบอร์ด</div>
+        <div class="it"><div class="ic">🕘</div>ประวัติ</div>
+        <div class="it"><div class="ic">🩺</div>ตรวจปัญหาเครือข่าย</div>
+        <div class="it"><div class="ic">⚙️</div>ตั้งค่า</div>
+      </div>
+
+      <div class="main">
+        <div class="rh">
+          <h3>🎨 ทีมออกแบบ</h3>
+          <div class="pin"><span>4</span><span>8</span><span>2</span><span>9</span><span>1</span><span>7</span></div>
+          <span class="btn ghost sm">🔄 PIN ใหม่</span>
+          <span class="btn ghost sm">🔗 ลิงก์แขก</span>
+          <span class="btn ghost sm">👥 จัดการห้อง</span>
+          <div class="grow"></div>
+          <div class="quota">พื้นที่ห้อง 4.2 / 20 GB<div class="bar"><i style="width:21%"></i></div></div>
+        </div>
+
+        <div class="banner">
+          <span style="font-size:20px">📱</span>
+          <div class="grow"><b>iPad ของ Nok</b> ขอเข้าห้อง "ทีมออกแบบ" <small class="mut">• Safari บน iPadOS • 192.168.1.58</small></div>
+          <span class="btn ok sm">อนุมัติ (Member)</span><span class="btn ghost sm">เป็น Viewer</span><span class="btn bad sm">ปฏิเสธ</span>
+        </div>
+
+        <div class="drop">
+          <div class="big">⬆️</div>
+          <div class="txt"><b>ลากไฟล์หรือโฟลเดอร์มาวาง</b> หรือกด <b>⌘V</b> เพื่อวางภาพ/สกรีนช็อตจากคลิปบอร์ด<br>
+            <small class="mut">ส่งตรงในวงแลน ไม่ผ่านอินเทอร์เน็ต • ไฟล์หมดอายุใน 24 ชม. (ตั้งค่าได้)</small></div>
+          <div style="display:flex;flex-direction:column;gap:7px;align-items:flex-end">
+            <div class="chips"><span class="chip">ส่งถึง:</span><span class="chip on">✓ ทุกเครื่อง</span><span class="chip">🤖 Pixel 8</span><span class="chip">📱 iPhone</span></div>
+            <div class="chips"><small class="mut">ถ้าชื่อซ้ำ:</small><span class="sel">ถามทุกครั้ง ▾</span></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="xfer">
+            <div class="xr">
+              <div class="fi" style="background:#ff6b6b22">🎬</div>
+              <div class="meta">trip-2026.mp4 <small class="mut">• 1.4 GB • Mac → Pixel 8</small><div class="bar" style="margin-top:6px"><i style="width:68%"></i></div></div>
+              <div class="st">68% • 42 MB/s<br><small>เหลือ ~6 วินาที</small></div>
+              <span class="btn ghost sm">⏸</span><span class="btn ghost sm">✕</span>
+            </div>
+            <div class="xr">
+              <div class="fi" style="background:#ffb84d22">📡</div>
+              <div class="meta">brand-assets.zip <small class="mut">• 640 MB • iPhone ของ Nok → Mac</small><div class="bar" style="margin-top:6px"><i style="width:41%;background:var(--warn)"></i></div></div>
+              <div class="st" style="color:var(--warn)">Wi‑Fi หลุด • ต่อจาก 41%<br><small>กำลังเชื่อมต่อใหม่…</small></div>
+              <span class="btn ghost sm">▶</span><span class="btn ghost sm">✕</span>
+            </div>
+            <div class="xr">
+              <div class="fi" style="background:#3ddc9722">🔐</div>
+              <div class="meta">IMG_2041.HEIC → .jpg <small class="mut">• 3.8 MB • iPhone → Mac</small><div class="bar" style="margin-top:6px"><i class="ok" style="width:100%"></i></div></div>
+              <div class="st" style="color:var(--ok)">กำลังตรวจ SHA-256…</div>
+              <span class="pill p-wait">ตรวจสอบ</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="tabs"><div class="on">ไฟล์ (12)</div><div>ข้อความ / คลิปบอร์ด</div><div>ประวัติ</div></div>
+        <div class="tools">
+          <div class="search">🔍 ค้นหาชื่อไฟล์หรืออุปกรณ์…</div>
+          <div class="chips"><span class="chip on">ทั้งหมด</span><span class="chip">🖼️ รูป</span><span class="chip">🎬 วิดีโอ</span><span class="chip">📄 เอกสาร</span><span class="chip">📦 อื่นๆ</span></div>
+          <span class="sel">จัดเรียง: ล่าสุด ▾</span>
+        </div>
+
+        <div class="grid">
+          <div class="fc chk">
+            <div class="th" style="background:linear-gradient(135deg,#3a4a8f,#8f6bff)">🎬<div class="play">▶</div><div class="ck on">✓</div></div>
+            <div class="bd"><div class="nm">trip-2026.mp4</div><div class="sub">1.4 GB • จาก Pixel 8</div>
+              <div class="ft"><span class="pill p-ok">✓ SHA-256</span><span>⏳ 23 ชม.</span></div></div>
+          </div>
+          <div class="fc chk">
+            <div class="th" style="background:linear-gradient(135deg,#c2546d,#ffb84d)">🖼️<div class="ck on">✓</div></div>
+            <div class="bd"><div class="nm">IMG_2041.jpg</div><div class="sub">3.2 MB • จาก iPhone (แปลงจาก HEIC)</div>
+              <div class="ft"><span class="pill p-ok">✓ SHA-256</span><span>⏳ 23 ชม.</span></div></div>
+          </div>
+          <div class="fc">
+            <div class="th" style="background:linear-gradient(135deg,#2fb98a,#3a8fd6)">📸<div class="ck">&nbsp;</div></div>
+            <div class="bd"><div class="nm">สกรีนช็อต 09.38.png</div><div class="sub">820 KB • วางจากคลิปบอร์ด ⌘V</div>
+              <div class="ft"><span class="pill p-ok">✓ SHA-256</span><span>⏳ 21 ชม.</span></div></div>
+          </div>
+          <div class="fc">
+            <div class="th" style="background:linear-gradient(135deg,#555b7a,#2a2f4a)">📄<div class="ck">&nbsp;</div></div>
+            <div class="bd"><div class="nm">รายงานประชุม.docx</div><div class="sub">220 KB • จาก Office-PC</div>
+              <div class="ft"><span class="pill p-bad">✗ SHA ไม่ตรง</span><span class="btn sm" style="padding:2px 8px">ส่งใหม่</span></div></div>
+          </div>
+        </div>
+
+        <div class="selbar"><span>☑️</span><div class="grow"><b>เลือก 2 ไฟล์</b> • 1.4 GB</div><span class="btn sm">⬇ ดาวน์โหลดเป็น .zip</span><span class="btn sm">ส่งไปอุปกรณ์…</span><span class="btn sm" style="color:#c2243d">ลบ</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 3. ROOM MGMT ============ -->
+<div class="sec">
+  <h2>3. จัดการห้อง บทบาท และลิงก์แขก <span class="ph d">D</span></h2>
+  <p class="cap">เจ้าของห้องกำหนดบทบาทต่ออุปกรณ์ (Owner, Member, Uploader, Viewer) สร้างลิงก์แขกที่อัปโหลดได้อย่างเดียวและหมดอายุเอง และตั้งโควตา ไฟล์หมดอายุ การจัดโฟลเดอร์อัตโนมัติ</p>
+  <div class="modal">
+    <div class="mh"><h3>👥 จัดการห้อง: ทีมออกแบบ</h3><div style="margin-left:auto" class="tabs"><div class="on">อุปกรณ์และสิทธิ์</div><div>ลิงก์แขก</div><div>ตั้งค่าห้อง</div></div></div>
+    <div class="mb">
+      <table class="tbl">
+        <tr><th>อุปกรณ์</th><th>สถานะ</th><th>บทบาท</th><th></th></tr>
+        <tr><td>💻 MacBook Pro</td><td><span class="dot" style="display:inline-block"></span> ออนไลน์</td><td><span class="pill p-owner">Owner</span></td><td></td></tr>
+        <tr><td>🤖 Pixel 8</td><td><span class="dot" style="display:inline-block"></span> ออนไลน์</td><td><span class="sel">Member ▾</span></td><td><small>เปลี่ยนชื่อ • นำออก</small></td></tr>
+        <tr><td>📱 iPhone ของ Nok</td><td><span class="dot" style="display:inline-block"></span> ออนไลน์</td><td><span class="sel">Member ▾</span></td><td><small>เปลี่ยนชื่อ • นำออก</small></td></tr>
+        <tr><td>🖥️ Office-PC</td><td><span class="dot" style="display:inline-block"></span> ออนไลน์</td><td><span class="sel">Viewer ▾</span></td><td><small>เปลี่ยนชื่อ • นำออก</small></td></tr>
+        <tr><td>📱 iPad (ใหม่)</td><td><span class="pill p-wait">รออนุมัติ</span></td><td><span class="sel">Member ▾</span></td><td><span class="btn ok sm">อนุมัติ</span></td></tr>
+      </table>
+
+      <div class="guest">
+        <div class="qr"><svg width="104" height="104"><use href="#qr"/></svg></div>
+        <div class="info">
+          <b style="font-size:14px">ลิงก์แขก (อัปโหลดอย่างเดียว)</b>
+          <div class="url">http://192.168.1.23:8080/g/Xk29-pLm4</div>
+          <div class="chips"><small class="mut">หมดอายุใน:</small><span class="chip">15 นาที</span><span class="chip on">1 ชม.</span><span class="chip">24 ชม.</span>
+            <small class="mut">ขนาดสูงสุด/ไฟล์:</small><span class="sel">2 GB ▾</span></div>
+          <div class="chips"><span class="btn sm">คัดลอกลิงก์</span><span class="btn ghost sm">สร้างใหม่</span><span class="btn bad sm">ยกเลิกลิงก์ทันที</span></div>
+        </div>
+      </div>
+
+      <div class="setg">
+        <div>PIN 6 หลัก: <b>4 8 2 9 1 7</b><span class="btn ghost sm">สร้างใหม่</span></div>
+        <div>โควตาห้อง<span class="sel">20 GB ▾</span></div>
+        <div>ไฟล์หมดอายุอัตโนมัติ<span class="sel">24 ชม. ▾</span></div>
+        <div>จัดไฟล์ตามอุปกรณ์/วันที่<span class="sw"></span></div>
+        <div>ต้องอนุมัติอุปกรณ์ใหม่<span class="sw"></span></div>
+        <div>HTTPS (self-signed)<span class="sw"></span></div>
+        <div>บล็อกไฟล์ .exe .dmg .sh<span class="sw off"></span></div>
+        <div>ล็อกเมื่อกรอก PIN ผิด 5 ครั้ง<span class="sel">5 นาที ▾</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 4. DIAGNOSTICS / DIALOGS ============ -->
+<div class="sec">
+  <h2>4. ตรวจปัญหาเครือข่าย ไฟล์ชื่อซ้ำ และสถานะผิดปกติ <span class="ph">A</span> <span class="ph b">B</span> <span class="ph c">C</span></h2>
+  <p class="cap">แก้ปัญหาที่เจอบ่อยที่สุดในหน้าเดียว: เลือกการ์ดเครือข่าย (กัน QR ชี้ IP ผิด), Firewall, AP Isolation, ย่าน Wi-Fi 2.4GHz, พื้นที่ดิสก์ และกัน Mac หลับ</p>
+  <div class="row">
+    <div class="card" style="width:520px">
+      <b style="font-size:15px">🩺 ตรวจปัญหาการเชื่อมต่อ</b>
+      <div style="margin-top:8px">
+        <div class="ck-row"><span class="ico">📶</span><div style="flex:1"><b>การ์ดเครือข่ายที่ใช้</b><small class="mut">เลือกให้ตรงกับ Wi‑Fi ที่อุปกรณ์อื่นต่ออยู่</small>
+          <div class="nic">
+            <div class="on"><span>● Wi‑Fi (en0) • 192.168.1.23</span><span class="pill p-ok">แนะนำ</span></div>
+            <div><span>○ Ethernet (en5) • 10.0.0.12</span><span class="pill p-viewer">คนละวง</span></div>
+            <div><span>○ VPN (utun3) • 100.64.0.2</span><span class="pill p-bad">ไม่แนะนำ</span></div>
+          </div></div></div>
+        <div class="ck-row"><span class="ico">✅</span><div><b>macOS Firewall</b><small class="mut">อนุญาตการเชื่อมต่อขาเข้าให้ LAN Share แล้ว</small></div></div>
+        <div class="ck-row"><span class="ico">⚠️</span><div><b>AP Isolation</b><small class="mut">Office-PC เข้าถึงเซิร์ฟเวอร์ไม่ได้ ทั้งที่ต่อ Wi‑Fi เดียวกัน อาจเกิดจาก router เปิด AP Isolation หรือ Guest network <u>ดูวิธีแก้</u></small></div></div>
+        <div class="ck-row"><span class="ico">⚠️</span><div><b>Pixel 8 ต่อ Wi‑Fi 2.4GHz</b><small class="mut">ความเร็วจะต่ำกว่ามาก แนะนำให้สลับไปใช้ 5GHz</small></div></div>
+        <div class="ck-row"><span class="ico">✅</span><div><b>พื้นที่ดิสก์</b><small class="mut">ว่าง 182 GB เพียงพอสำหรับไฟล์ในห้องทั้งหมด</small></div></div>
+        <div class="ck-row"><span class="ico">✅</span><div><b>กัน Mac หลับ</b><small class="mut">ทำงานอยู่ระหว่างมีการถ่ายโอน (caffeinate)</small></div></div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div class="dlg">
+        <h4>⚠️ มีไฟล์ชื่อนี้อยู่แล้ว</h4>
+        <div><b>trip-2026.mp4</b> <small class="mut">• มีอยู่ 1.4 GB • ไฟล์ใหม่ 1.5 GB จาก Pixel 8</small></div>
+        <div class="opt"><span class="r"></span><div>ข้าม<small class="mut">ไม่รับไฟล์นี้</small></div></div>
+        <div class="opt"><span class="r"></span><div>เขียนทับ<small class="mut">แทนที่ไฟล์เดิม</small></div></div>
+        <div class="opt on"><span class="r"></span><div>เก็บทั้งสองไฟล์<small class="mut">บันทึกเป็น trip-2026 (2).mp4</small></div></div>
+        <div style="display:flex;justify-content:space-between;align-items:center"><small class="mut">☑ ทำแบบนี้กับไฟล์ที่เหลือ</small><span class="btn sm">ตกลง</span></div>
+      </div>
+
+      <div class="dlg" style="border-color:#ff6b6b66">
+        <h4>🔒 ถูกล็อกชั่วคราว</h4>
+        <div class="mut" style="line-height:1.6">อุปกรณ์ 192.168.1.77 กรอก PIN ผิดครบ 5 ครั้ง ระบบล็อกการเข้าห้อง "ทีมออกแบบ" จากอุปกรณ์นี้ จะปลดล็อกอัตโนมัติใน <b style="color:var(--warn)">04:32</b></div>
+        <div style="display:flex;gap:8px"><span class="btn ghost sm">ปลดล็อกทันที</span><span class="btn bad sm">บล็อกถาวร</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 5. MOBILE ============ -->
+<div class="sec">
+  <h2>5. ฝั่งมือถือ / PC ผ่านเบราว์เซอร์ <span class="ph">A</span> <span class="ph b">B</span> <span class="ph c">C</span> <span class="ph d">D</span></h2>
+  <p class="cap">ไม่ต้องติดตั้งแอป สแกน QR แล้วกรอก PIN 6 หลัก ตั้งชื่ออุปกรณ์ รออนุมัติ แล้วใช้งานได้ มีแท็บส่ง/รับ ข้อความ/คลิปบอร์ด เล่นวิดีโอจาก Mac แบบสตรีม และหน้าแขกที่อัปโหลดได้อย่างเดียว</p>
+  <div class="row">
+
+    <!-- Phone 1: join -->
+    <div class="phone"><div class="screen">
+      <div class="stt"><span>9:41</span><span>5G ▮▮▮</span></div>
+      <div class="ub">🔒 192.168.1.23:8080/r/design</div>
+      <div class="pb">
+        <div class="ph-head"><div class="ic">📡</div><div><b>เข้าห้องแชร์</b><small class="mut">LAN Share บน MacBook Pro</small></div></div>
+        <div class="card" style="padding:11px;display:flex;gap:10px;align-items:center"><span style="font-size:22px">🎨</span><div><b style="font-size:13px">ทีมออกแบบ</b><br><small class="mut" style="font-size:11px">ใส่ PIN 6 หลักจากเจ้าของห้อง</small></div></div>
+        <div class="pin big"><span>4</span><span>8</span><span>2</span><span>9</span><span class="cur"></span><span></span></div>
+        <div class="err">PIN ไม่ถูกต้อง เหลืออีก 3 ครั้ง</div>
+        <div class="input">ชื่ออุปกรณ์: Pixel 8 ของฉัน</div>
+        <div class="keys"><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>⌫</div><div>0</div><div style="background:var(--accent);color:#fff;border-color:var(--accent)">เข้า</div></div>
+      </div>
+    </div></div>
+
+    <!-- Phone 2: files -->
+    <div class="phone"><div class="screen">
+      <div class="stt"><span>9:42</span><span>5G ▮▮▮</span></div>
+      <div class="ub">🔒 192.168.1.23:8080/r/design</div>
+      <div class="pb">
+        <div class="ph-head"><div class="ic">🎨</div><div><b>ทีมออกแบบ</b><small class="mut"><span class="dot" style="display:inline-block;width:6px;height:6px"></span> ออนไลน์ 4 เครื่อง • Pixel 8 (Member)</small></div></div>
+        <div class="seg"><div class="on">ส่งไป Mac</div><div>ไฟล์ในห้อง</div></div>
+        <div class="upl"><div class="big">📤</div><p>เลือกไฟล์หรือถ่ายรูป</p><small class="mut">ส่งได้หลายไฟล์พร้อมกัน</small>
+          <div class="acts"><span class="btn sm">เลือกไฟล์</span><span class="btn ghost sm">📷 ถ่ายรูป</span></div></div>
+        <div class="lab">กำลังส่ง</div>
+        <div class="pf" style="flex-direction:column;align-items:stretch;gap:7px">
+          <div style="display:flex;gap:9px;align-items:center"><div class="fi" style="background:#ff6b6b22">🎬</div><div class="meta">VID_0192.mp4<br><small class="mut">240 MB • 35% • 38 MB/s</small></div><span class="btn ghost sm">⏸</span></div>
+          <div class="bar"><i style="width:35%"></i></div>
+        </div>
+        <div class="pf"><div class="fi" style="background:#3ddc9722">📷</div><div class="meta">IMG_8841.jpg<br><small class="mut">4.1 MB</small></div><span class="pill p-ok">✓ ตรวจแล้ว</span></div>
+        <div class="lab">ไฟล์ในห้อง (ดูได้เลย ไม่ต้องโหลดทั้งไฟล์)</div>
+        <div class="pf"><div class="fi" style="background:#8f6bff26">🎬</div><div class="meta">trip-2026.mp4<br><small class="mut">1.4 GB • จาก Mac</small></div><span class="btn sm">▶ เล่น</span><span class="btn ghost sm">⬇</span></div>
+      </div>
+      <div class="tab"><div class="on">⇅<br>ถ่ายโอน</div><div>🗂️<br>ไฟล์</div><div>💬<br>ข้อความ</div><div>🕘<br>ประวัติ</div></div>
+    </div></div>
+
+    <!-- Phone 3: messages / clipboard -->
+    <div class="phone"><div class="screen">
+      <div class="stt"><span>9:44</span><span>5G ▮▮▮</span></div>
+      <div class="ub">🔒 192.168.1.23:8080/r/design</div>
+      <div class="pb">
+        <div class="ph-head"><div class="ic">💬</div><div><b>ข้อความ / คลิปบอร์ด</b><small class="mut">ทีมออกแบบ</small></div></div>
+        <div class="clip">
+          <div style="display:flex;justify-content:space-between"><b>📋 คลิปบอร์ดร่วม</b><small class="mut">จาก MacBook • 1 นาทีที่แล้ว</small></div>
+          <div class="txt">https://figma.com/file/Xk29pLm4/brand-v3</div>
+          <div style="display:flex;gap:7px"><span class="btn sm">คัดลอกลงเครื่องนี้</span><span class="btn ghost sm">วางจากเครื่องนี้</span></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:7px;flex:1;overflow:hidden">
+          <div class="bub l"><small>MacBook Pro</small>ส่งไฟล์ brand-assets.zip ให้แล้วนะ</div>
+          <div class="bub r"><small>Pixel 8 (คุณ)</small>ได้แล้ว กำลังโหลดอยู่</div>
+          <div class="bub l"><small>iPhone ของ Nok</small>อย่าลืมรูปโลโก้เวอร์ชันมืดด้วย</div>
+          <div class="bub r"><small>Pixel 8 (คุณ)</small>ได้เลย เดี๋ยวส่งให้ 👍</div>
+        </div>
+        <div style="display:flex;gap:7px"><div class="input" style="flex:1">พิมพ์ข้อความ…</div><span class="btn">ส่ง</span></div>
+      </div>
+      <div class="tab"><div>⇅<br>ถ่ายโอน</div><div>🗂️<br>ไฟล์</div><div class="on">💬<br>ข้อความ</div><div>🕘<br>ประวัติ</div></div>
+    </div></div>
+
+    <!-- Phone 4: guest -->
+    <div class="phone"><div class="screen">
+      <div class="stt"><span>10:02</span><span>Wi‑Fi ▮▮▮</span></div>
+      <div class="ub">🔒 192.168.1.23:8080/g/Xk29-pLm4</div>
+      <div class="pb">
+        <div class="ph-head"><div class="ic" style="background:var(--warn)">📥</div><div><b>ฝากไฟล์ถึง ทีมออกแบบ</b><small class="mut">ลิงก์แขก • อัปโหลดอย่างเดียว</small></div></div>
+        <div class="card" style="padding:11px;text-align:center"><small class="mut">ลิงก์นี้หมดอายุใน</small><div class="count">52:10</div></div>
+        <div class="input">ชื่อของคุณ (ไม่บังคับ): คุณมิน</div>
+        <div class="upl"><div class="big">📤</div><p>แตะเพื่อเลือกไฟล์</p><small class="mut">ไฟล์ละไม่เกิน 2 GB</small>
+          <div class="acts"><span class="btn sm" style="background:var(--warn);color:#2b1c00">เลือกไฟล์</span></div></div>
+        <div class="lab">ส่งแล้ว</div>
+        <div class="pf"><div class="fi" style="background:#3ddc9722">📄</div><div class="meta">proposal.pdf<br><small class="mut">2.4 MB</small></div><span class="pill p-ok">✓ ส่งสำเร็จ</span></div>
+        <div class="card" style="padding:10px;font-size:11.5px;line-height:1.6" ><span class="mut">🔒 คุณไม่สามารถดูหรือดาวน์โหลดไฟล์ในห้องนี้ได้ ทำได้เพียงส่งไฟล์ให้เจ้าของห้องเท่านั้น</span></div>
+      </div>
+    </div></div>
+
+  </div>
+</div>
+
+<div class="legend">
+  <span>🏠 ติดตั้งเฉพาะ Mac ของเจ้าของ คนอื่นใช้ผ่านเบราว์เซอร์</span>
+  <span>🔢 PIN 6 หลักต่อห้อง + ล็อกเมื่อกรอกผิด</span>
+  <span>👥 บทบาท Owner / Member / Uploader / Viewer</span>
+  <span>🔐 ตรวจ SHA-256 ทุกไฟล์</span>
+  <span>🔁 ต่อจากเดิมเมื่อ Wi‑Fi หลุด</span>
+  <span>🌗 โหมดมืด/สว่าง</span>
+</div>
+
+</div></div>
+</body>
+</html>

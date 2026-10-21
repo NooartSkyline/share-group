@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<title>LAN Share</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="logo">📡</span><span>LAN Share</span></div>
+  <div class="status"><span id="conn-dot" class="dot off"></span><span id="conn-text">กำลังเชื่อมต่อ…</span></div>
+</header>
+
+<main id="loading" class="center"><p class="mut">กำลังโหลด…</p></main>
+
+<!-- ===== join with PIN ===== -->
+<main id="join" class="center" hidden>
+  <form id="join-form" class="card join" autocomplete="off">
+    <h1>เข้าห้องแชร์</h1>
+    <p class="mut">ห้อง: <b id="join-room">-</b></p>
+    <label for="pin">PIN <span id="pin-len">6</span> หลักจากเจ้าของห้อง</label>
+    <input id="pin" class="pin-input" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="••••••" autocomplete="one-time-code" required>
+    <label for="dev-name">ชื่ออุปกรณ์ของคุณ</label>
+    <input id="dev-name" class="text-input" maxlength="40" required>
+    <p id="join-error" class="err" role="alert" hidden></p>
+    <button id="join-btn" class="btn" type="submit">เข้าห้อง</button>
+  </form>
+</main>
+
+<!-- ===== app ===== -->
+<div id="app" class="shell" data-view="files" hidden>
+  <aside class="side">
+    <div class="side-room"><span class="side-room-icon">🏠</span><div><b id="side-room-name"></b><small class="mut" id="side-room-sub"></small></div></div>
+
+    <h4>อุปกรณ์ในห้องนี้</h4>
+    <ul id="device-list" class="devices"></ul>
+
+    <h4 class="nav-title">เมนู</h4>
+    <nav class="side-nav" aria-label="เมนูหลัก">
+      <button class="nav" type="button" data-go="files"><span>🗂️</span> ไฟล์ <span id="nav-files-count" class="count" hidden></span></button>
+      <button class="nav" type="button" data-go="chat"><span>💬</span> ข้อความ / คลิปบอร์ด <span id="nav-chat-badge" class="count badge" hidden></span></button>
+    </nav>
+  </aside>
+
+  <section class="main">
+    <section id="owner" class="card owner" hidden>
+      <div class="owner-qr"><img id="qr" alt="QR code สำหรับเข้าห้อง" width="150" height="150"></div>
+      <div class="owner-info">
+        <h2>เชิญอุปกรณ์อื่นเข้าห้อง <span id="room-name"></span></h2>
+        <p class="mut small">สแกน QR หรือเปิดลิงก์ แล้วกรอก PIN ทุกเครื่องต้องอยู่ใน Wi-Fi เดียวกัน</p>
+        <div class="url-row"><code id="join-url" class="url"></code><button id="copy-url" class="btn ghost sm" type="button">คัดลอก</button></div>
+        <div class="pin-row">
+          <span class="mut small">PIN:</span>
+          <div id="pin-digits" class="pin-digits" aria-live="polite"></div>
+          <button id="rotate-pin" class="btn ghost sm" type="button">🔄 สร้างใหม่</button>
+        </div>
+        <div class="net-row">
+          <label for="nic" class="mut small">เครือข่ายที่ใช้:</label>
+          <select id="nic" class="select"></select>
+        </div>
+      </div>
+    </section>
+
+    <!-- upload pane -->
+    <section id="pane-upload" class="pane">
+      <div id="drop" class="card drop" tabindex="0" role="button" aria-label="เลือกไฟล์เพื่ออัปโหลด">
+        <div class="drop-icon">⬆️</div>
+        <div class="drop-text">
+          <b>ลากไฟล์หรือโฟลเดอร์มาวาง หรือแตะเพื่อเลือกไฟล์</b>
+          <span class="mut small">ส่งตรงในวงแลน ไม่ผ่านอินเทอร์เน็ต <span id="paste-hint">• กด ⌘V / Ctrl+V เพื่อวางภาพจากคลิปบอร์ด</span></span>
+        </div>
+        <input id="file-input" type="file" multiple hidden>
+        <input id="dir-input" type="file" webkitdirectory multiple hidden>
+      </div>
+      <div class="drop-tools">
+        <button id="pick-dir" class="btn ghost sm" type="button">📁 เลือกโฟลเดอร์</button>
+        <label class="conflict-pick mut small" for="conflict-policy">ถ้าชื่อซ้ำ:
+          <select id="conflict-policy" class="select">
+            <option value="ask">ถามทุกครั้ง</option>
+            <option value="rename">เก็บทั้งสองไฟล์</option>
+            <option value="overwrite">เขียนทับ</option>
+            <option value="skip">ข้าม</option>
+          </select>
+        </label>
+      </div>
+
+      <div id="transfers-card" class="card" hidden>
+        <h2>การถ่ายโอน</h2>
+        <ul id="transfers" class="list"></ul>
+      </div>
+    </section>
+
+    <!-- files pane -->
+    <section id="pane-files" class="pane">
+      <div class="pane-head">
+        <h2>ไฟล์ในห้อง <span id="file-count" class="mut small"></span></h2>
+        <button id="select-all" class="btn ghost sm" type="button" hidden>เลือกทั้งหมด</button>
+      </div>
+      <p id="files-empty" class="mut empty" hidden>ยังไม่มีไฟล์ ลองอัปโหลดไฟล์แรกได้เลย</p>
+      <div id="files" class="grid"></div>
+      <div id="selbar" class="selbar" hidden>
+        <span class="grow"><b id="sel-count"></b> <span id="sel-size"></span></span>
+        <button id="sel-zip" class="btn sm" type="button">⬇ ดาวน์โหลดเป็น .zip</button>
+        <button id="sel-clear" class="btn ghost sm" type="button">ล้าง</button>
+      </div>
+    </section>
+
+    <!-- chat pane -->
+    <section id="pane-chat" class="pane">
+      <div class="card clip">
+        <div class="pane-head"><h2>📋 คลิปบอร์ดร่วม</h2><small id="clip-meta" class="mut"></small></div>
+        <pre id="clip-text" class="clip-text"></pre>
+        <div class="clip-actions">
+          <button id="clip-copy" class="btn sm" type="button">คัดลอกลงเครื่องนี้</button>
+          <button id="clip-clear" class="btn ghost sm" type="button">ล้าง</button>
+        </div>
+        <form id="clip-form" class="clip-form">
+          <label for="clip-input" class="mut small">แชร์ข้อความหรือลิงก์ไปยังทุกเครื่อง (วางจากเครื่องนี้ แล้วกดแชร์)</label>
+          <textarea id="clip-input" class="text-input" rows="2" maxlength="20000" placeholder="พิมพ์หรือวางข้อความ/ลิงก์…"></textarea>
+          <button class="btn sm" type="submit">แชร์ไปคลิปบอร์ดร่วม</button>
+        </form>
+      </div>
+
+      <div class="card chat">
+        <h2>💬 ข้อความ</h2>
+        <div id="messages" class="messages" aria-live="polite"></div>
+        <p id="messages-empty" class="mut empty" hidden>ยังไม่มีข้อความ</p>
+        <form id="msg-form" class="msg-form">
+          <textarea id="msg-input" class="text-input" rows="1" maxlength="4000" placeholder="พิมพ์ข้อความ…" aria-label="ข้อความ"></textarea>
+          <button class="btn" type="submit">ส่ง</button>
+        </form>
+      </div>
+    </section>
+  </section>
+</div>
+
+<nav id="tabbar" class="tabbar" aria-label="เมนูหลัก" hidden>
+  <button type="button" data-go="upload"><span>⇅</span>ถ่ายโอน</button>
+  <button type="button" data-go="files"><span>🗂️</span>ไฟล์</button>
+  <button type="button" data-go="chat"><span>💬</span>ข้อความ<i id="tab-chat-badge" class="badge dotbadge" hidden></i></button>
+</nav>
+
+<dialog id="conflict-dlg" class="dlg">
+  <form id="conflict-form" method="dialog">
+    <h3>⚠️ มีไฟล์ชื่อนี้อยู่แล้ว</h3>
+    <p class="cf-file"><b id="cf-name"></b><br><small id="cf-info" class="mut"></small></p>
+    <label class="opt"><input type="radio" name="cf" value="skip"><span>ข้าม<small class="mut">ไม่ส่งไฟล์นี้</small></span></label>
+    <label class="opt" id="cf-overwrite-opt"><input type="radio" name="cf" value="overwrite"><span>เขียนทับ<small class="mut" id="cf-overwrite-hint">แทนที่ไฟล์เดิม</small></span></label>
+    <label class="opt"><input type="radio" name="cf" value="rename" checked><span>เก็บทั้งสองไฟล์<small class="mut">บันทึกเป็นชื่อใหม่ เช่น "ชื่อ (2)"</small></span></label>
+    <label class="all"><input type="checkbox" id="cf-all"> ทำแบบนี้กับไฟล์ที่เหลือ</label>
+    <div class="dlg-actions"><button class="btn" value="ok">ตกลง</button></div>
+  </form>
+</dialog>
+
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+<script src="/app.js"></script>
+</body>
+</html>
