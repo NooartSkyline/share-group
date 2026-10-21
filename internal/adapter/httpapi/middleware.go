@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net"
 	"net/http"
+	"net/netip"
 	"net/url"
 	"strconv"
 	"strings"
@@ -19,6 +20,27 @@ func chain(h http.Handler, mws ...func(http.Handler) http.Handler) http.Handler 
 		h = m(h)
 	}
 	return h
+}
+
+// recordPeer notes the source address of every request, static files and
+// /ws included, so the reachability check can tell whether any other device
+// has reached this server. It is the outermost layer: nothing a later layer
+// rejects is hidden from it. The address comes from the TCP connection only;
+// forwarded headers are never read, since a client could forge them.
+//
+// Without a PeerLog or a Clock (as in tests that do not need diagnostics)
+// it does nothing.
+func (s *Server) recordPeer(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if s.Peers != nil && s.Clock != nil {
+			if ip, err := netip.ParseAddr(clientIP(r)); err == nil {
+				// An IPv4 client on a dual-stack socket appears as ::ffff:a.b.c.d,
+				// and a link-local IPv6 address carries the interface as a zone.
+				s.Peers.Record(ip.Unmap().WithZone(""), s.Clock.Now())
+			}
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func (s *Server) recoverPanic(next http.Handler) http.Handler {
@@ -180,7 +202,46 @@ func decodeJSONLimit(w http.ResponseWriter, r *http.Request, dst any, limit int6
 func (s *Server) fail(w http.ResponseWriter, r *http.Request, err error) {
 	var inv *domain.InvalidPINError
 	var locked *domain.LockedError
+	var mismatch *domain.OffsetMismatchError
+	var incomplete *domain.IncompleteError
+	var space *domain.InsufficientStorageError
+	var sum *domain.ChecksumMismatchError
+	var persist *domain.PersistFailedError
 	switch {
+	case errors.As(err, &persist):
+		// Checked before the sentinels: its cause may be anything, even a
+		// full disk, but the client must resume from the durable offset.
+		// The request body may be half read, so the connection is not reused.
+		w.Header().Set("Connection", "close")
+		writeError(w, http.StatusInternalServerError, "persist_failed", map[string]any{"offset": persist.Offset})
+	case errors.As(err, &mismatch):
+		writeError(w, http.StatusConflict, "offset_mismatch", map[string]any{"offset": mismatch.Offset})
+	case errors.As(err, &incomplete):
+		writeError(w, http.StatusConflict, "incomplete", map[string]any{"offset": incomplete.Offset})
+	case errors.Is(err, domain.ErrUploadBusy):
+		writeError(w, http.StatusConflict, "upload_busy", nil)
+	case errors.Is(err, domain.ErrSizeExceeded):
+		writeError(w, http.StatusRequestEntityTooLarge, "size_exceeded", nil)
+	case errors.Is(err, domain.ErrStallTimeout):
+		// The read side was cut, so the connection cannot carry another request.
+		w.Header().Set("Connection", "close")
+		writeError(w, http.StatusRequestTimeout, "stall_timeout", nil)
+	case errors.Is(err, domain.ErrTooManyUploads):
+		writeError(w, http.StatusTooManyRequests, "too_many_uploads", nil)
+	case errors.As(err, &space):
+		writeError(w, http.StatusInsufficientStorage, "insufficient_storage", map[string]any{
+			"requiredBytes":  space.Required,
+			"availableBytes": space.Available,
+		})
+	case errors.As(err, &sum):
+		writeError(w, http.StatusUnprocessableEntity, "checksum_mismatch", map[string]any{
+			"supplied": sum.Supplied,
+			"computed": sum.Computed,
+		})
+	case errors.Is(err, domain.ErrChecksumBusy):
+		writeError(w, http.StatusServiceUnavailable, "checksum_busy", nil)
+	case errors.Is(err, domain.ErrChecksumFailed):
+		writeError(w, http.StatusInternalServerError, "checksum_failed", nil)
 	case errors.As(err, &locked):
 		secs := int(locked.RetryAfter.Seconds()) + 1
 		w.Header().Set("Retry-After", strconv.Itoa(secs))

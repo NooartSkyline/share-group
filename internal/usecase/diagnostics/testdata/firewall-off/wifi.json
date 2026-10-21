@@ -1,0 +1,18 @@
+{
+  "SPAirPortDataType": [
+    {
+      "spairport_airport_interfaces": [
+        {
+          "_name": "en0",
+          "spairport_current_network_information": {
+            "spairport_network_channel": "149 (5GHz, 20MHz)"
+          },
+          "spairport_status_information": "spairport_status_connected"
+        },
+        {
+          "_name": "awdl0"
+        }
+      ]
+    }
+  ]
+}

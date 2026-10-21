@@ -1,0 +1,1 @@
+Incoming connection to /path/to/lanshare is permitted.

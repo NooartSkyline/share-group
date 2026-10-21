@@ -36,6 +36,8 @@ type fileDTO struct {
 	UploaderID   string    `json:"uploaderId"`
 	UploaderName string    `json:"uploaderName"`
 	CreatedAt    time.Time `json:"createdAt"`
+	SHA256       string    `json:"sha256,omitempty"`
+	Integrity    string    `json:"integrity,omitempty"`
 }
 
 type stateDTO struct {
@@ -79,6 +81,7 @@ func Open(path string) (*Store, error) {
 		s.putFile(domain.File{
 			ID: domain.FileID(f.ID), RoomID: domain.RoomID(f.RoomID), Dir: f.Dir, Name: f.Name, Size: f.Size,
 			UploaderID: domain.DeviceID(f.UploaderID), UploaderName: f.UploaderName, CreatedAt: f.CreatedAt,
+			SHA256: f.SHA256, Integrity: domain.Integrity(f.Integrity),
 		})
 	}
 	return s, nil
@@ -104,6 +107,7 @@ func (s *Store) saveLocked() error {
 			st.Files = append(st.Files, fileDTO{
 				ID: string(f.ID), RoomID: string(f.RoomID), Dir: f.Dir, Name: f.Name, Size: f.Size,
 				UploaderID: string(f.UploaderID), UploaderName: f.UploaderName, CreatedAt: f.CreatedAt,
+				SHA256: f.SHA256, Integrity: string(f.Integrity),
 			})
 		}
 	}
@@ -215,4 +219,24 @@ func (r *FileRepo) Delete(_ context.Context, room domain.RoomID, id domain.FileI
 	}
 	delete(r.s.files[room], id)
 	return r.s.saveLocked()
+}
+
+// SetChecksum records the digest under the same lock as Save, scanning only
+// the given room. If persisting fails the in-memory change is rolled back so
+// memory and state.json never disagree.
+func (r *FileRepo) SetChecksum(_ context.Context, room domain.RoomID, id domain.FileID, sha256hex string) error {
+	r.s.mu.Lock()
+	defer r.s.mu.Unlock()
+	f, ok := r.s.files[room][id]
+	if !ok {
+		return domain.ErrNotFound
+	}
+	prev := f
+	f.SHA256 = sha256hex
+	r.s.files[room][id] = f
+	if err := r.s.saveLocked(); err != nil {
+		r.s.files[room][id] = prev
+		return err
+	}
+	return nil
 }

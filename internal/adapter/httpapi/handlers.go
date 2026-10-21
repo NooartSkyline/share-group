@@ -34,6 +34,8 @@ type fileDTO struct {
 	UploaderName string    `json:"uploaderName"`
 	Mine         bool      `json:"mine"`
 	CreatedAt    time.Time `json:"createdAt"`
+	SHA256       string    `json:"sha256"`    // always present; "" when integrity is unknown
+	Integrity    string    `json:"integrity"` // verified | unverified | unknown
 }
 
 func toDeviceDTO(d domain.Device, me domain.DeviceID) deviceDTO {
@@ -41,10 +43,16 @@ func toDeviceDTO(d domain.Device, me domain.DeviceID) deviceDTO {
 }
 
 func toFileDTO(f domain.File, me domain.DeviceID) fileDTO {
+	integrity := f.IntegrityOrUnknown()
+	sum := f.SHA256
+	if integrity == domain.IntegrityUnknown {
+		sum = "" // a checksum without a known check status is not reported
+	}
 	return fileDTO{
 		ID: string(f.ID), Dir: f.Dir, Name: f.Name, Size: f.Size,
 		Kind: string(domain.KindOf(f.Name)), Thumb: domain.CanThumbnail(f.Name),
 		UploaderName: f.UploaderName, Mine: f.UploaderID == me, CreatedAt: f.CreatedAt,
+		SHA256: sum, Integrity: string(integrity),
 	}
 }
 
@@ -158,7 +166,11 @@ func (s *Server) listFiles(w http.ResponseWriter, r *http.Request, actor domain.
 
 // upload streams the raw request body into the room; the body is never
 // buffered in memory. Query: name (required), dir (folder), conflict
-// ("rename" default, or "overwrite").
+// ("rename" default, or "overwrite"), sha256 (optional, 64 hex digits).
+//
+// A sha256 that is present but malformed or empty is refused with 400 before
+// the body is read. Content-Length (r.ContentLength, -1 when unknown) goes to
+// the use case so the free-space check happens before the first byte.
 func (s *Server) upload(w http.ResponseWriter, r *http.Request, actor domain.Device) {
 	q := r.URL.Query()
 	name := q.Get("name")
@@ -167,14 +179,43 @@ func (s *Server) upload(w http.ResponseWriter, r *http.Request, actor domain.Dev
 		writeError(w, http.StatusBadRequest, "bad_request", nil)
 		return
 	}
-	f, err := s.Transfer.Upload(r.Context(), actor, transfer.UploadInput{
+	var checksum *string
+	if vals, ok := q["sha256"]; ok {
+		if len(vals) != 1 {
+			writeError(w, http.StatusBadRequest, "bad_request", nil)
+			return
+		}
+		if _, err := domain.NormalizeChecksum(vals[0]); err != nil {
+			writeError(w, http.StatusBadRequest, "bad_request", nil)
+			return
+		}
+		checksum = &vals[0]
+	}
+	f, err := s.Transfer.UploadVerified(r.Context(), actor, transfer.UploadInput{
 		Name: name, Dir: q.Get("dir"), Size: r.ContentLength, Conflict: policy, Body: r.Body,
-	})
+	}, checksum)
 	if err != nil {
 		s.fail(w, r, err)
 		return
 	}
 	writeJSON(w, http.StatusCreated, toFileDTO(f, actor.ID))
+}
+
+// fileChecksum answers with the SHA-256 of a stored file, computing it on the
+// first request for a file stored before checksums existed. integrity says
+// how far the digest was checked (verified | unverified | unknown). Unlike the
+// file list, this endpoint returns the digest even when integrity is unknown,
+// because the digest is exactly what the caller asked for.
+func (s *Server) fileChecksum(w http.ResponseWriter, r *http.Request, actor domain.Device) {
+	info, err := s.Transfer.FileChecksum(r.Context(), actor, domain.FileID(r.PathValue("id")))
+	if err != nil {
+		s.fail(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{
+		"sha256":    info.SHA256,
+		"integrity": string(info.Integrity),
+	})
 }
 
 // downloadZip streams several files as one zip. ids is comma separated.
@@ -352,6 +393,11 @@ func (s *Server) listNetwork(w http.ResponseWriter, r *http.Request, actor domai
 }
 
 func (s *Server) selectNetwork(w http.ResponseWriter, r *http.Request, actor domain.Device) {
+	// Role first: a non-Owner gets 403 even with a malformed body (Req 15.3).
+	if !actor.Role.CanManage() {
+		s.fail(w, r, domain.ErrForbidden)
+		return
+	}
 	var body struct {
 		Name string `json:"name"`
 	}

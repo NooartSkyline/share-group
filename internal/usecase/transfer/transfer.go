@@ -27,17 +27,20 @@ type Progress struct {
 	Bytes      int64  `json:"bytes"`
 	Total      int64  `json:"total"` // -1 when unknown
 	Speed      int64  `json:"speed"` // bytes per second since the previous report
-	State      string `json:"state"` // "running" | "done" | "failed" | "stopped"
+	// State is "running", "interrupted" (an upload session lost its
+	// connection and may resume), or a final "done", "failed" or "stopped".
+	State string `json:"state"`
 }
 
 const (
 	DirectionUpload   = "upload"
 	DirectionDownload = "download"
 
-	StateRunning = "running"
-	StateDone    = "done"
-	StateFailed  = "failed"
-	StateStopped = "stopped"
+	StateRunning     = "running"
+	StateInterrupted = "interrupted"
+	StateDone        = "done"
+	StateFailed      = "failed"
+	StateStopped     = "stopped"
 
 	// MaxArchiveFiles bounds one zip download.
 	MaxArchiveFiles = 500
@@ -59,6 +62,9 @@ const (
 	ConflictOverwrite ConflictPolicy = "overwrite"
 )
 
+// Service moves file content in and out of rooms. Besides the one-shot
+// Upload it runs resumable upload sessions (see session.go); those need
+// ConfigureUploads, and without it the service behaves as it did before.
 type Service struct {
 	files    port.FileRepository
 	store    port.FileStore
@@ -69,6 +75,24 @@ type Service struct {
 	clock    port.Clock
 	interval time.Duration
 	jobs     chan struct{}
+
+	// Resumable upload state. Set up by ConfigureUploads before the service
+	// is shared between goroutines, read-only afterwards.
+	upDeps UploadDeps
+	upCfg  UploadConfig
+
+	// regMu guards the registry fields below. It is held only for short map
+	// operations, never across I/O. Lock order: regMu -> sessionRT.mu ->
+	// roomLock -> leaf locks (storage.Guard, jsonstore, tracker.mu).
+	regMu       sync.Mutex
+	sessions    map[domain.SessionID]*sessionRT
+	perDevice   map[domain.DeviceID]int // unfinished sessions by creator
+	perRoom     map[domain.RoomID]int   // unfinished sessions by room
+	roomLocks   map[domain.RoomID]*sync.Mutex
+	completions map[domain.SessionID]completionRecord
+
+	// sumSem lets one lazy checksum of an old file run at a time.
+	sumSem chan struct{}
 }
 
 // NewService builds the service. interval is the minimum time between two
@@ -86,7 +110,13 @@ func NewService(
 	return &Service{
 		files: files, store: store, thumbs: thumbs, render: render,
 		events: events, ids: ids, clock: clock, interval: interval,
-		jobs: make(chan struct{}, maxThumbJobs),
+		jobs:        make(chan struct{}, maxThumbJobs),
+		sessions:    make(map[domain.SessionID]*sessionRT),
+		perDevice:   make(map[domain.DeviceID]int),
+		perRoom:     make(map[domain.RoomID]int),
+		roomLocks:   make(map[domain.RoomID]*sync.Mutex),
+		completions: make(map[domain.SessionID]completionRecord),
+		sumSem:      make(chan struct{}, 1),
 	}
 }
 
@@ -112,72 +142,11 @@ type UploadInput struct {
 	Body     io.Reader
 }
 
-// Upload streams in.Body into the room.
+// Upload streams in.Body into the room, without a sender checksum. It is
+// UploadVerified (upload.go) with a nil checksum, so its signature and its
+// callers are unchanged; the file ends up with Integrity unverified.
 func (s *Service) Upload(ctx context.Context, actor domain.Device, in UploadInput) (domain.File, error) {
-	if !actor.Role.CanUpload() {
-		return domain.File{}, domain.ErrForbidden
-	}
-	name := domain.SanitizeFileName(in.Name)
-	dir := domain.SanitizeDir(in.Dir)
-
-	existing, err := s.files.ListByRoom(ctx, actor.RoomID)
-	if err != nil {
-		return domain.File{}, err
-	}
-	var replace *domain.File
-	if in.Conflict == ConflictOverwrite {
-		for i := range existing {
-			if sameFolder(existing[i], dir) && strings.EqualFold(existing[i].Name, name) {
-				replace = &existing[i]
-				break
-			}
-		}
-		if replace != nil && !actor.Role.CanManage() && replace.UploaderID != actor.ID {
-			return domain.File{}, domain.ErrForbidden
-		}
-	} else {
-		name = domain.UniqueName(name, func(c string) bool {
-			for _, f := range existing {
-				if sameFolder(f, dir) && strings.EqualFold(f.Name, c) {
-					return true
-				}
-			}
-			return false
-		})
-	}
-
-	id := domain.FileID(s.ids.NewID())
-	t := s.newTracker(actor, string(id), name, DirectionUpload, in.Size)
-	written, err := s.store.Put(ctx, actor.RoomID, id, &countingReader{r: in.Body, t: t})
-	if err == nil {
-		err = ctx.Err()
-	}
-	if err != nil {
-		t.finish(StateFailed)
-		return domain.File{}, err
-	}
-
-	f := domain.File{
-		ID:           id,
-		RoomID:       actor.RoomID,
-		Dir:          dir,
-		Name:         name,
-		Size:         written,
-		UploaderID:   actor.ID,
-		UploaderName: actor.Name,
-		CreatedAt:    s.clock.Now(),
-	}
-	if err := s.files.Save(ctx, f); err != nil {
-		_ = s.store.Delete(context.WithoutCancel(ctx), actor.RoomID, id)
-		t.finish(StateFailed)
-		return domain.File{}, err
-	}
-	t.finish(StateDone)
-	if replace != nil {
-		s.remove(context.WithoutCancel(ctx), actor.RoomID, replace.ID)
-	}
-	s.events.Publish(port.Event{Type: port.EventFileAdded, RoomID: actor.RoomID, Data: f.ID})
-	return f, nil
+	return s.UploadVerified(ctx, actor, in, nil)
 }
 
 func sameFolder(f domain.File, dir string) bool { return strings.EqualFold(f.Dir, dir) }
@@ -212,7 +181,8 @@ func (s *Service) Open(ctx context.Context, actor domain.Device, id domain.FileI
 		return Download{}, err
 	}
 	t := s.newTracker(actor, string(id), f.Path(), DirectionDownload, f.Size)
-	return Download{File: f, Content: &countingSeeker{rsc: rc, t: t, size: f.Size}}, nil
+	// The download counts as activity (keeps the Mac awake) until Close.
+	return Download{File: f, Content: &countingSeeker{rsc: rc, t: t, size: f.Size, end: s.activity().Begin()}}, nil
 }
 
 // Delete removes a file from the actor's room.
@@ -315,6 +285,7 @@ func (a *Archive) TotalSize() int64 {
 // WriteTo streams the zip (stored, not compressed: LAN speed matters more
 // than size) to w, keeping folder structure and making duplicate names unique.
 func (a *Archive) WriteTo(ctx context.Context, w io.Writer) error {
+	defer a.s.activity().Begin()() // the zip counts as activity until it is written
 	t := a.s.newTracker(a.actor, a.s.ids.NewID(), fmt.Sprintf("%d files.zip", len(a.Files)), DirectionDownload, a.TotalSize())
 	err := a.write(ctx, w, t)
 	switch {
@@ -365,14 +336,24 @@ func joinPath(dir, name string) string {
 }
 
 // tracker throttles and publishes progress events for one transfer.
+//
+// Invariants: Bytes never decreases (except through rewind, for a rolled-back
+// upload request); exactly one final event (done, failed or
+// stopped) is published and nothing after it. An upload session's tracker
+// lives from its first append to the end of the session, so it can pass
+// through "interrupted" and back to "running" any number of times.
 type tracker struct {
-	s      *Service
-	actor  domain.Device
-	p      Progress
-	mu     sync.Mutex
-	last   time.Time
-	lastN  int64
-	closed bool
+	s     *Service
+	actor domain.Device
+	p     Progress
+	mu    sync.Mutex
+	last  time.Time
+	lastN int64
+	// closed is set by finish. announced is set once a running or
+	// interrupted event has gone out, so cleanup knows whether the room has
+	// an entry to close with a "stopped" event.
+	closed    bool
+	announced bool
 }
 
 func (s *Service) newTracker(actor domain.Device, id, name, dir string, total int64) *tracker {
@@ -390,19 +371,63 @@ func (s *Service) newTracker(actor domain.Device, id, name, dir string, total in
 }
 
 func (t *tracker) add(n int) {
+	if n <= 0 {
+		return
+	}
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	if t.closed {
 		return
 	}
-	t.p.Bytes += int64(n)
 	now := t.s.clock.Now()
+	if t.p.State == StateInterrupted {
+		// Bytes are flowing again. Speed is measured from here, not across
+		// the pause, and the next running event follows the usual throttle.
+		t.p.State = StateRunning
+		t.last, t.lastN = now, t.p.Bytes
+	}
+	t.p.Bytes += int64(n)
 	elapsed := now.Sub(t.last)
 	if elapsed < t.s.interval {
 		return
 	}
 	t.p.Speed = int64(float64(t.p.Bytes-t.lastN) / elapsed.Seconds())
 	t.last, t.lastN = now, t.p.Bytes
+	t.publishLocked()
+}
+
+// rewind lowers the reported bytes to bytes when an upload request was rolled
+// back after its bytes had been counted, so the room is never told about bytes
+// the server does not hold. It is the only way Bytes decreases, it publishes
+// nothing by itself, and it does nothing on a closed tracker or when Bytes is
+// not above the given value.
+func (t *tracker) rewind(bytes int64) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if t.closed || t.p.Bytes <= bytes {
+		return
+	}
+	t.p.Bytes = bytes
+	if t.lastN > bytes {
+		t.lastN = bytes
+	}
+}
+
+// mark moves the transfer to a non-final state and tells the room at once,
+// bypassing the throttle. Only StateInterrupted is supported; it reports
+// Speed 0 and keeps the tracker open. Marking a closed tracker, or one that is
+// already interrupted, does nothing, so a duplicate event is never sent.
+func (t *tracker) mark(state string) {
+	if state != StateInterrupted {
+		return
+	}
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if t.closed || t.p.State == StateInterrupted {
+		return
+	}
+	t.p.State = StateInterrupted
+	t.p.Speed = 0
 	t.publishLocked()
 }
 
@@ -418,7 +443,18 @@ func (t *tracker) finish(state string) {
 	t.publishLocked()
 }
 
+// wasAnnounced reports whether the room has seen a running or interrupted
+// event of this transfer.
+func (t *tracker) wasAnnounced() bool {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return t.announced
+}
+
 func (t *tracker) publishLocked() {
+	if t.p.State == StateRunning || t.p.State == StateInterrupted {
+		t.announced = true
+	}
 	t.s.events.Publish(port.Event{Type: port.EventTransfer, RoomID: t.actor.RoomID, Data: t.p})
 }
 
@@ -439,6 +475,9 @@ type countingSeeker struct {
 	rsc  port.ReadSeekCloser
 	t    *tracker
 	size int64
+	// end closes the download's Active_Transfer; Close calls it once.
+	end     func()
+	endOnce sync.Once
 }
 
 func (c *countingSeeker) Read(p []byte) (int, error) {
@@ -461,5 +500,8 @@ func (c *countingSeeker) Close() error {
 	}
 	c.t.mu.Unlock()
 	c.t.finish(state)
+	if c.end != nil {
+		c.endOnce.Do(c.end)
+	}
 	return c.rsc.Close()
 }

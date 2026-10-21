@@ -29,14 +29,22 @@ const (
 
 // Deps are the collaborators of the HTTP server.
 type Deps struct {
-	Auth        *auth.Service
-	Rooms       *room.Service
-	Devices     *device.Service
-	Transfer    *transfer.Service
-	Chat        *chat.Service
-	Network     *network.Service
-	QR          port.QRGenerator
-	Hub         *ws.Hub
+	Auth     *auth.Service
+	Rooms    *room.Service
+	Devices  *device.Service
+	Transfer *transfer.Service
+	Chat     *chat.Service
+	Network  *network.Service
+	QR       port.QRGenerator
+	Hub      *ws.Hub
+	Power    PowerStatusReader // optional; nil reports "disabled"
+	// Diagnostics runs the Owner's connectivity checks. Optional: when nil,
+	// GET /api/admin/diagnostics answers 503 to the Owner (403 to anyone else).
+	Diagnostics DiagnosticsRunner
+	// Peers and Clock feed the reachability check. Both are optional; the
+	// recordPeer middleware records nothing unless both are set.
+	Peers       port.PeerLog
+	Clock       port.Clock
 	Web         fs.FS
 	DefaultRoom domain.RoomID
 	Log         *slog.Logger
@@ -65,7 +73,13 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/files/zip", s.authed(s.downloadZip))
 	mux.HandleFunc("GET /api/files/{id}", s.authed(s.download))
 	mux.HandleFunc("GET /api/files/{id}/thumb", s.authed(s.thumbnail))
+	mux.HandleFunc("GET /api/files/{id}/sha256", s.authed(s.fileChecksum))
 	mux.HandleFunc("DELETE /api/files/{id}", s.authed(s.deleteFile))
+	mux.HandleFunc("POST /api/uploads", s.authed(s.createUpload))
+	mux.HandleFunc("GET /api/uploads/{id}", s.authed(s.queryUpload))
+	mux.HandleFunc("PATCH /api/uploads/{id}", s.authed(s.appendUpload))
+	mux.HandleFunc("POST /api/uploads/{id}/complete", s.authed(s.completeUpload))
+	mux.HandleFunc("DELETE /api/uploads/{id}", s.authed(s.cancelUpload))
 	mux.HandleFunc("GET /api/messages", s.authed(s.listMessages))
 	mux.HandleFunc("POST /api/messages", s.authed(s.sendMessage))
 	mux.HandleFunc("GET /api/clipboard", s.authed(s.getClipboard))
@@ -78,9 +92,15 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/admin/network", s.authed(s.listNetwork))
 	mux.HandleFunc("POST /api/admin/network", s.authed(s.selectNetwork))
 	mux.HandleFunc("GET /api/admin/qr.png", s.authed(s.qrPNG))
+	mux.HandleFunc("GET /api/admin/power", s.authed(s.powerStatus))
+	mux.HandleFunc("GET /api/admin/diagnostics", s.authed(s.diagnostics))
+	mux.HandleFunc("GET /api/admin/uploads", s.authed(s.listAdminUploads))
+	mux.HandleFunc("DELETE /api/admin/uploads/{id}", s.authed(s.cancelAdminUpload))
 
 	// web UI
+	registerPWA(mux, s.Web)
 	mux.Handle("GET /", noCache(http.FileServerFS(s.Web)))
 
-	return chain(mux, s.recoverPanic, s.securityHeaders, s.sameOrigin, s.accessLog)
+	// chain wraps in order, so the last middleware is the outermost.
+	return chain(mux, s.recoverPanic, s.securityHeaders, s.sameOrigin, s.accessLog, s.recordPeer)
 }

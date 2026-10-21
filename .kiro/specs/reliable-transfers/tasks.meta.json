@@ -1,0 +1,1103 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 สร้างไลบรารี SHA-256 ฝั่ง browser": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556670164
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556695035
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792558340824
+      }
+    ],
+    "1.2 เพิ่มสคริปต์ hash ลงใน `//go:embed`": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556670197
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792558396007
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792559180730
+      }
+    ],
+    "1.3 สร้างเครื่องมือวัดความเร็ว SHA-256 บนมือถือ": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556670235
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792558432015
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792559180699
+      }
+    ],
+    "1.4 สร้างสคริปต์เก็บ fixture ผลลัพธ์คำสั่ง macOS สำหรับ diagnostics": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556670263
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556695008
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792558341080
+      }
+    ],
+    "2.1 สร้าง `ParseSize` และ `FormatSize`": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556670290
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556695064
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792558341743
+      }
+    ],
+    "2.2 เพิ่ม flag ใหม่และ usage ใน `config.Load`": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556670319
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792558432095
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792559180757
+      }
+    ],
+    "2.5 log ค่า config ที่ใช้จริงตอนเริ่มระบบ": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556670348
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792559192547
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792559432010
+      }
+    ],
+    "3.1 เพิ่มชนิดข้อมูลและ error ใหม่ใน `internal/domain`": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556670378
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556695233
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792558342422
+      }
+    ],
+    "3.2 ประกาศ port ใหม่ใน `internal/usecase/port/port.go`": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556670404
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792558432185
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792559181027
+      }
+    ],
+    "3.3 เพิ่ม fake ใน `internal/usecase/fake/fake.go`": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556670431
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792559192681
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792559432118
+      }
+    ],
+    "4.1 เพิ่ม `FileRepository.SetChecksum` พร้อม implementation": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556670458
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792559447553
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792559596569
+      }
+    ],
+    "4.2 เพิ่ม `sha256` และ `integrity` ใน DTO ของไฟล์": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556670499
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792559597369
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792559677430
+      }
+    ],
+    "5.1 สร้าง `internal/adapter/sessionstore`": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556670527
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792559193328
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792559432230
+      }
+    ],
+    "5.3 เพิ่ม `PartialStore` และการแปลง disk-full ใน `filestore`": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556670555
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792559194034
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792559432254
+      }
+    ],
+    "5.5 สร้าง `internal/adapter/diskspace`": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556670581
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792559194461
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792559432293
+      }
+    ],
+    "5.6 เพิ่ม `SecretGenerator` จริงใน `internal/infra/system`": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556670610
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792559433192
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792559596704
+      }
+    ],
+    "6.1 สร้าง `internal/usecase/storage/guard.go`": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556670635
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792559433729
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792559596774
+      }
+    ],
+    "7. Checkpoint A - รากฐานพร้อม": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556670660
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792559677487
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792559734702
+      }
+    ],
+    "8.1 เตรียมโครงสร้างของ `transfer.Service` สำหรับ session": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556670687
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792559734749
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792559943429
+      }
+    ],
+    "8.2 implement `CreateSession` และ `QuerySession`": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556670714
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792559943653
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792560160240
+      }
+    ],
+    "8.3 implement `Append`": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556670740
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792560160319
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792560808898
+      }
+    ],
+    "9.1 implement `CompleteSession` และ `publish.go`": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556670768
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792560817501
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792561074562
+      }
+    ],
+    "9.2 implement `CancelSession`, `CancelByOwner`, `ListSessions`, `PartialBytes`": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556670793
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792560817571
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792561074685
+      }
+    ],
+    "10.1 ปรับ `Upload` เดิมให้ใช้ `publish.go`, Storage_Guard และ SHA-256": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556670819
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792561078505
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792561286551
+      }
+    ],
+    "10.2 implement `FileChecksum` (คำนวณ checksum ของไฟล์ที่เก็บไว้ก่อน Phase C)": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556670845
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792561079356
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792561286649
+      }
+    ],
+    "11.1 implement `Recover`, `RunJanitor` และ `BeginShutdown`": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556670873
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792561290501
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792561554233
+      }
+    ],
+    "12. Checkpoint B - use case ของ resumable upload พร้อม": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556670902
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792561565714
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792561607767
+      }
+    ],
+    "13.1 สร้าง body adapter และแมป error ใหม่": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556670928
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792561608481
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792561701769
+      }
+    ],
+    "13.2 เพิ่ม route `/api/uploads...`": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556670956
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792561702583
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792561891827
+      }
+    ],
+    "13.3 ปรับ `POST /api/files` และเพิ่ม `GET /api/files/{id}/sha256`": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556670985
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792561891891
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792561961252
+      }
+    ],
+    "13.4 เชื่อมทุกอย่างใน `cmd/lanshare/main.go`": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556671011
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792561961959
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792563154717
+      }
+    ],
+    "14. Checkpoint C - ฝั่งเซิร์ฟเวอร์ของ resumable upload ใช้งานได้ครบ": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556671039
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792563154820
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792563282184
+      }
+    ],
+    "15.1 สร้าง `internal/usecase/power/guard.go`": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556671069
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792563290220
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792563499110
+      }
+    ],
+    "15.3 สร้าง adapter `internal/adapter/caffeinate`": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556671094
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792563290338
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792563499175
+      }
+    ],
+    "15.4 เชื่อม `power.Guard` และ endpoint สถานะ": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556671120
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792563509338
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792564372794
+      }
+    ],
+    "16.1 เพิ่ม `PrefixLen` และ `LocalAddrs` ใน `netinfo`": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556671149
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792563290427
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792563499643
+      }
+    ],
+    "16.2 สร้าง adapter `cmdrunner` และ `peerlog`": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556671178
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792563290776
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792563500436
+      }
+    ],
+    "16.3 เขียน parser และตัวจัดประเภทแบบฟังก์ชันล้วน": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556671206
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792563291466
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792563501202
+      }
+    ],
+    "16.4 implement `diagnostics.Service`": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556671232
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792563509451
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792564372976
+      }
+    ],
+    "16.9 เปิด endpoint admin และ middleware `recordPeer`": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556671257
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792564373549
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792564620151
+      }
+    ],
+    "17. Checkpoint D - backend ครบ": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556671285
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792564626097
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792564838806
+      }
+    ],
+    "18.1 สร้าง `web/logic.js` และเชื่อมเข้าหน้าเว็บ": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556671312
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792564838845
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792565419345
+      }
+    ],
+    "19.1 สร้าง uploader engine ใน `web/app.js`": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556671347
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792565423856
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792566603974
+      }
+    ],
+    "19.2 เพิ่มการต่ออัปโหลดอัตโนมัติและตารางตอบสนองต่อ error": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556671384
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792566608561
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792568092432
+      }
+    ],
+    "19.3 เพิ่มรายการ \"อัปโหลดที่ค้างอยู่\", การเลือกไฟล์เดิม และการยกเลิก": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556671410
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792568092489
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792569452586
+      }
+    ],
+    "19.4 แสดงสถานะ \"หยุดชั่วคราว\" จาก event ของอุปกรณ์อื่น": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556671436
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792569452650
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792569785920
+      }
+    ],
+    "19.5 เพิ่มป้ายความถูกต้อง รายละเอียด checksum และการเทียบไฟล์ในเครื่อง": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556671467
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792569786550
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792570218828
+      }
+    ],
+    "19.6 สร้างหน้า \"ตรวจปัญหาการเชื่อมต่อ\" และแผงสถานะสำหรับ Owner": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556671495
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792570218885
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792571167933
+      }
+    ],
+    "20.1 สร้างไอคอน manifest และ Service Worker": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556671523
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792564838868
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792565419444
+      }
+    ],
+    "20.2 เพิ่มไฟล์ PWA ลงใน `//go:embed`": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556671551
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792565424207
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792566604091
+      }
+    ],
+    "20.3 เสิร์ฟ manifest, `sw.js` และไอคอนด้วย header ที่ถูกต้อง": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556671577
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792566609105
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792568092458
+      }
+    ],
+    "20.4 เพิ่มแท็กใน `index.html`, ลงทะเบียน Service Worker เฉพาะ Secure_Context และหน้าเชื่อมต่อไม่ได้": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556671603
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792571168535
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792571648193
+      }
+    ],
+    "20.5 เพิ่มการแจ้งเตือนไฟล์ใหม่": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556671631
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792571648955
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792572604989
+      }
+    ],
+    "21. Checkpoint E - frontend และ PWA": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556671660
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792572605098
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792572846919
+      }
+    ],
+    "22.1 อัปเดต `docs/project-scope.md`": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556671686
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792572847015
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792573027562
+      }
+    ],
+    "22.2 อัปเดต `.kiro/steering/tech.md`": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556671712
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792572847047
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792573027646
+      }
+    ],
+    "22.3 อัปเดต `.kiro/steering/product.md`": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556671740
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792572847689
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792573027765
+      }
+    ],
+    "23. Final checkpoint - Ensure all tests pass": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792556671768
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792573032556
+      },
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792573333247
+      }
+    ],
+    "2. ค่าตั้งของ Phase C (config)": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792559432087
+      }
+    ],
+    "3. Domain, ports, fakes และ dependency สำหรับเทสต์": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792559432205
+      }
+    ],
+    "5. Adapter ใหม่สำหรับ session, partial file, พื้นที่ดิสก์ และ secret": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792559596735
+      }
+    ],
+    "6. `storage.Guard` (ตรวจและจองพื้นที่ดิสก์)": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792559596824
+      }
+    ],
+    "4. เก็บ checksum ใน metadata ของไฟล์": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792559677508
+      }
+    ],
+    "8. `transfer.Service`: สร้าง ถาม และต่อไบต์ใน Upload_Session": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792560808948
+      }
+    ],
+    "9. `transfer.Service`: ปิดงาน เผยแพร่ไฟล์ และยกเลิก": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792561074716
+      }
+    ],
+    "10. `transfer.Service`: `POST /api/files` เดิม และ checksum ของไฟล์เก่า": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792561286682
+      }
+    ],
+    "11. `transfer.Service`: Recover, Sweep และ shutdown": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792561554275
+      }
+    ],
+    "13. HTTP API ของ resumable upload และการเชื่อมใน `main.go`": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792563154775
+      }
+    ],
+    "15. `power.Guard` (กัน Mac หลับ)": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792564372839
+      }
+    ],
+    "16. `diagnostics.Service` (ตรวจปัญหาการเชื่อมต่อสำหรับ Owner)": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792564620188
+      }
+    ],
+    "18. Frontend: ตรรกะล้วนที่ทดสอบได้": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792565419413
+      }
+    ],
+    "19. Frontend: uploader ที่ต่อได้ และหน้า Owner": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792571167978
+      }
+    ],
+    "20. PWA และการแจ้งเตือนไฟล์ใหม่": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792572605040
+      }
+    ],
+    "22. เอกสารและ steering ให้ตรงกับสิ่งที่สร้างจริง": [
+      {
+        "executionId": "95f96234-c548-44a1-96f2-26f0b6676c07",
+        "chatSessionId": "sess_7692a8bf-0cd9-4d22-96a6-76266062ec08",
+        "timestamp": 1792573027806
+      }
+    ]
+  }
+}

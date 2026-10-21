@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>วัดความเร็ว SHA-256 บนมือถือ</title>
+<link rel="stylesheet" href="bench-sha256.css">
+</head>
+<body>
+<main>
+  <h1>วัดความเร็ว SHA-256</h1>
+  <p>วัด <code>hashBlob</code> ใน Web Worker กับไฟล์ที่สร้างในหน่วยความจำทีละ slice (ไม่ถือทั้งไฟล์) ปิดแอปอื่นและเสียบสายชาร์จก่อนวัด การวัด 1 GB อาจใช้เวลาหลายสิบวินาที ให้เปิดหน้านี้ค้างไว้จนเสร็จ</p>
+  <p>
+    <button type="button" id="run-100" class="run">วัด 100 MB</button>
+    <button type="button" id="run-1g" class="run">วัด 1 GB</button>
+    <button type="button" id="run-all" class="run">วัดทั้งสอง</button>
+  </p>
+  <p id="status" role="status" aria-live="polite">พร้อมวัด</p>
+  <label for="results">ผลวัด</label>
+  <textarea id="results" rows="10" cols="60" readonly></textarea>
+  <p><button type="button" id="copy">คัดลอกผล</button></p>
+</main>
+<script src="bench-sha256.js"></script>
+</body>
+</html>

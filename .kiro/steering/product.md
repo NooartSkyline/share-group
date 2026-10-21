@@ -1,26 +1,33 @@
-# Product: LAN Share
+# ผลิตภัณฑ์: LAN Share
 
-LAN Share is a file-sharing server for a local network. It runs on the owner's Mac (single Go binary). Other devices (Android, iOS, Windows, macOS) join through a browser by scanning a QR code or opening a URL and entering a PIN. No app install and no internet are needed.
+LAN Share คือเซิร์ฟเวอร์แชร์ไฟล์ในเครือข่ายท้องถิ่น (LAN) รันบน Mac ของเจ้าของ (Go binary ตัวเดียว) อุปกรณ์อื่น (Android, iOS, Windows, macOS) เข้าร่วมผ่านเบราว์เซอร์ โดยสแกน QR code หรือเปิด URL แล้วกรอก PIN ไม่ต้องติดตั้งแอปและไม่ต้องใช้อินเทอร์เน็ต
 
-## Core concepts
-- **Room**: isolated share space with its own 6-digit PIN, files and device list. One room can never see another room's files.
-- **Device**: a browser session identified by a token issued after a correct PIN.
-- **Roles**: Owner, Member, Uploader (guest, upload only), Viewer (download only).
-- **Real-time**: WebSocket pushes device presence, file events, transfer progress, chat and clipboard.
+## แนวคิดหลัก
+- **Room (ห้อง)**: พื้นที่แชร์ที่แยกขาดจากกัน มี PIN 6 หลัก ไฟล์ และรายชื่ออุปกรณ์ของตัวเอง ห้องหนึ่งมองไม่เห็นไฟล์ของอีกห้องเด็ดขาด
+- **Device (อุปกรณ์)**: เซสชันของเบราว์เซอร์ ระบุตัวตนด้วย token ที่ออกให้หลังกรอก PIN ถูกต้อง
+- **Roles (บทบาท)**: Owner, Member, Uploader (ผู้เยี่ยมชม อัปโหลดได้อย่างเดียว), Viewer (ดาวน์โหลดได้อย่างเดียว)
+- **Real-time**: WebSocket ส่งสถานะอุปกรณ์ เหตุการณ์ไฟล์ ความคืบหน้าการโอน แชท และคลิปบอร์ด
 
-## Features
-- Two-way streaming upload/download with progress and speed
-- Shared clipboard and short chat messages (in memory, last 200 per room)
-- Multi-file zip download (max 500 files), folder upload, thumbnails, paste-image upload, duplicate-name handling
-- PIN lockout after repeated wrong attempts
+## ฟีเจอร์
+- อัปโหลด/ดาวน์โหลดแบบ streaming สองทาง พร้อมแสดงความคืบหน้าและความเร็ว
+- คลิปบอร์ดร่วมและข้อความแชทสั้นๆ (เก็บใน memory ห้องละ 200 ข้อความล่าสุด)
+- ดาวน์โหลดหลายไฟล์เป็น zip (สูงสุด 500 ไฟล์), อัปโหลดโฟลเดอร์, thumbnail, วางรูปเพื่ออัปโหลด, จัดการชื่อไฟล์ซ้ำ
+- PIN lockout เมื่อกรอกผิดซ้ำหลายครั้ง
+- Resumable upload พร้อม auto-resume: อัปโหลดต่อจากจุดที่ค้างได้เองเมื่อเครือข่ายหลุดหรือ Mac รีสตาร์ท
+- ตรวจความถูกต้องด้วย SHA-256 ทั้งสองฝั่ง (เบราว์เซอร์และเซิร์ฟเวอร์) และแสดงสถานะการตรวจของแต่ละไฟล์
+- กันดิสก์เต็ม (disk guard) และกัน Mac หลับระหว่างมีการโอน (keep-awake)
+- หน้า diagnostics สำหรับ Owner ตรวจปัญหาการเชื่อมต่อ (Firewall, Wi-Fi, อุปกรณ์ที่ต่อเข้ามา, session อัปโหลดที่ค้างอยู่)
+- PWA และการแจ้งเตือนเมื่อมีไฟล์ใหม่ (ต้องใช้ Secure_Context ดูกฎของผลิตภัณฑ์)
 
-## Status (see `docs/project-scope.md` section 11)
-- Phase A (MVP) and B (convenience) are done
-- Not started: C (resumable upload, SHA-256), D (multi-room, device approval, HTTPS), E (UX), F (advanced), G (Wails v3 menu bar app)
-- Do not expose to untrusted users until Phase D (HTTPS and device approval) is done. Current transport is plain HTTP.
+## สถานะ (ดู `docs/project-scope.md` หัวข้อ 11)
+- Phase A (MVP), B (ความสะดวก) และ C (ความเสถียร: resumable upload, SHA-256, disk guard, keep-awake, diagnostics, PWA + การแจ้งเตือนไฟล์ใหม่) เสร็จแล้ว
+- ยังไม่เริ่ม: D (หลายห้อง, อนุมัติอุปกรณ์, HTTPS), E (UX), F (ขั้นสูง), G (แอป menu bar ด้วย Wails v3)
+- ห้ามเปิดให้ผู้ใช้ที่ไม่น่าไว้ใจเข้าถึงจนกว่า Phase D (HTTPS และการอนุมัติอุปกรณ์) จะเสร็จ ตอนนี้การส่งข้อมูลเป็น HTTP ธรรมดา
 
-## Product rules
-- Large files (multi-GB) must stream; never load a whole file into RAM.
-- Every operation is scoped by `RoomID` and checks role permissions, even while only one default room exists.
-- The user-facing UI and the startup banner are in Thai (with English planned in Phase E). Keep new user-facing strings consistent with the existing language.
-- `docs/project-scope.md` (Thai) is the source of truth for scope and phases. UI mocks live in `mock/` (`ui-mock-v2.html` is current).
+## กฎของผลิตภัณฑ์
+- ไฟล์ขนาดใหญ่ (หลาย GB) ต้อง stream ห้ามโหลดทั้งไฟล์เข้า RAM
+- ทุกการทำงานต้องอยู่ในขอบเขตของ `RoomID` และตรวจสิทธิ์ตามบทบาท แม้ตอนนี้จะมีแค่ห้องเริ่มต้นห้องเดียวก็ตาม
+- UI ที่ผู้ใช้เห็นและแบนเนอร์ตอนเริ่มระบบเป็นภาษาไทย (วางแผนเพิ่มภาษาอังกฤษใน Phase E) ข้อความใหม่ที่แสดงต่อผู้ใช้ต้องใช้ภาษาให้สอดคล้องกับของเดิม
+- Resume_Key ของ Upload_Session เป็นความลับเทียบเท่า PIN และ token: ห้าม log (รวม header และ query string), ห้ามแสดงในหน้า Owner หรือ diagnostics, ส่งคืนให้ client ครั้งเดียวตอนสร้าง session
+- PWA, Service Worker และการแจ้งเตือนต้องใช้ Secure_Context (HTTPS) จึงใช้งานได้เฉพาะบน `localhost` จนกว่า Phase D (HTTPS) จะเสร็จ บนอุปกรณ์อื่นผ่าน HTTP ธรรมดาฟีเจอร์เหล่านี้จะไม่ทำงาน และต้องไม่ทำให้ส่วนอื่นของแอปพัง
+- `docs/project-scope.md` (ภาษาไทย) เป็นแหล่งอ้างอิงหลักของขอบเขตและเฟส ต้นแบบ UI อยู่ใน `mock/` (`ui-mock-v2.html` คือตัวปัจจุบัน)

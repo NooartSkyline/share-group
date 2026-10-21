@@ -24,6 +24,22 @@ type File struct {
 	UploaderID   DeviceID
 	UploaderName string
 	CreatedAt    time.Time
+	// SHA256 is the lowercase hex digest of the content, or "" when it has not
+	// been computed (files stored before checksums existed).
+	SHA256 string
+	// Integrity is how SHA256 was checked; the zero value means unknown.
+	Integrity Integrity
+}
+
+// IntegrityOrUnknown returns Integrity, treating the zero value and any
+// unrecognized value as IntegrityUnknown so callers never expose a blank or
+// made-up status.
+func (f File) IntegrityOrUnknown() Integrity {
+	switch f.Integrity {
+	case IntegrityVerified, IntegrityUnverified:
+		return f.Integrity
+	}
+	return IntegrityUnknown
 }
 
 // Path is the display path of the file: Dir and Name joined.

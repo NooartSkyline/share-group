@@ -1,0 +1,4 @@
+body { font-family: system-ui, sans-serif; margin: 1rem; line-height: 1.5; }
+main { max-width: 40rem; margin: 0 auto; }
+button { font-size: 1rem; padding: 0.6rem 1rem; margin: 0 0.25rem 0.5rem 0; }
+textarea { box-sizing: border-box; width: 100%; font-family: ui-monospace, monospace; font-size: 0.8rem; }

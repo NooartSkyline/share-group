@@ -14,4 +14,7 @@ type NetInterface struct {
 	Name string
 	IP   string
 	Kind NetKind
+	// PrefixLen is the length of the subnet mask in bits (24 for /24), used to
+	// tell whether a client address is on the same subnet. 0 means unknown.
+	PrefixLen int
 }

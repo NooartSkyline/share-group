@@ -19,12 +19,17 @@ import (
 	"syscall"
 	"time"
 
+	"lanshare/internal/adapter/caffeinate"
+	"lanshare/internal/adapter/cmdrunner"
+	"lanshare/internal/adapter/diskspace"
 	"lanshare/internal/adapter/filestore"
 	"lanshare/internal/adapter/httpapi"
 	"lanshare/internal/adapter/jsonstore"
 	"lanshare/internal/adapter/memory"
 	"lanshare/internal/adapter/netinfo"
+	"lanshare/internal/adapter/peerlog"
 	"lanshare/internal/adapter/qr"
+	"lanshare/internal/adapter/sessionstore"
 	"lanshare/internal/adapter/thumb"
 	"lanshare/internal/adapter/ws"
 	"lanshare/internal/domain"
@@ -33,8 +38,11 @@ import (
 	"lanshare/internal/usecase/auth"
 	"lanshare/internal/usecase/chat"
 	"lanshare/internal/usecase/device"
+	"lanshare/internal/usecase/diagnostics"
 	"lanshare/internal/usecase/network"
+	"lanshare/internal/usecase/power"
 	"lanshare/internal/usecase/room"
+	"lanshare/internal/usecase/storage"
 	"lanshare/internal/usecase/transfer"
 	"lanshare/web"
 )
@@ -68,6 +76,8 @@ func run() error {
 		return err
 	}
 	files := filestore.New(cfg.DataDir)
+	sessions := sessionstore.New(cfg.DataDir)
+	disk := diskspace.New(cfg.DataDir)
 	devices := memory.NewDeviceRepository()
 	tokens := memory.NewTokenService(clock, cfg.SessionTTL)
 	limiter := memory.NewAttemptLimiter(clock, memory.LimiterPolicy{
@@ -86,8 +96,62 @@ func run() error {
 	chatSvc := chat.NewService(memory.NewChatRepository(), hub, ids, clock)
 	networkSvc := network.NewService(netinfo.New(), cfg.Port, cfg.Interface)
 
+	// Keeps the Mac awake while any transfer (upload, append, download, zip)
+	// is running; it is the Activity of every transfer kind below.
+	powerGuard := power.NewGuard(clock, caffeinate.NewLauncher(), os.Getpid(), power.DefaultGrace, cfg.KeepAwake)
+
+	// Resumable uploads.
+	transferSvc.ConfigureUploads(transfer.UploadDeps{
+		Sessions: sessions,
+		Partials: files.Partials(),
+		Guard:    storage.NewGuard(disk, uint64(cfg.MinFree), log), // MinFree is 0..MaxInt64, see config
+		Secrets:  system.SecretGenerator{},
+		Activity: powerGuard,
+	}, transfer.UploadConfig{
+		TTL:          cfg.UploadTTL,
+		StallTimeout: cfg.StallTimeout,
+	})
+
+	// Owner diagnostics. The server's own path is a fixed argument of the
+	// firewall check; without it that check reports "unknown".
+	exePath, err := os.Executable()
+	if err != nil {
+		log.Warn("cannot find own executable path; firewall check will be limited", "error", err)
+		exePath = ""
+	}
+	peers := peerlog.New(clock)
+	nics := netinfo.New() // lists interfaces and local addresses
+	diagSvc := diagnostics.NewService(diagnostics.Deps{
+		Clock:      clock,
+		Network:    networkSvc,
+		Interfaces: nics,
+		Locals:     nics,
+		Peers:      peers,
+		Runner:     cmdrunner.New(),
+		Disk:       disk,
+		MinFree:    uint64(cfg.MinFree),
+		Partials:   transferSvc,
+		Power:      powerGuard,
+		ExePath:    exePath,
+	})
+
+	// The effective Phase C settings, so an Owner can confirm what the flags did.
+	log.Info("config",
+		"min-free", config.FormatSize(cfg.MinFree),
+		"upload-ttl", cfg.UploadTTL.String(),
+		"stall-timeout", cfg.StallTimeout.String(),
+		"keep-awake", cfg.KeepAwake)
+
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+
+	// Rebuild the upload sessions left by the previous run. A failure here
+	// means the ledger on disk cannot be trusted, so the server does not start.
+	if err := transferSvc.Recover(ctx); err != nil {
+		return fmt.Errorf("recover upload sessions: %w", err)
+	}
+	go transferSvc.RunJanitor(ctx)
+	go powerGuard.Run(ctx)
 
 	defaultRoom, err := roomSvc.EnsureDefault(ctx, domain.RoomID(cfg.RoomID), cfg.RoomName)
 	if err != nil {
@@ -100,7 +164,8 @@ func run() error {
 	}
 	api := httpapi.NewServer(httpapi.Deps{
 		Auth: authSvc, Rooms: roomSvc, Devices: deviceSvc, Transfer: transferSvc, Chat: chatSvc,
-		Network: networkSvc, QR: qr.New(), Hub: hub, Web: webFS,
+		Network: networkSvc, QR: qr.New(), Hub: hub, Power: powerGuard,
+		Diagnostics: diagSvc, Peers: peers, Clock: clock, Web: webFS,
 		DefaultRoom: defaultRoom.ID, Log: log,
 	})
 
@@ -124,17 +189,33 @@ func run() error {
 	select {
 	case <-ctx.Done():
 		log.Info("shutting down")
+		// Let uploads in flight record their bytes before the connections go.
+		drainCtx, cancelDrain := context.WithTimeout(context.Background(), 3*time.Second)
+		transferSvc.BeginShutdown(drainCtx)
+		cancelDrain()
+
 		shutCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		if err := srv.Shutdown(shutCtx); err != nil {
 			_ = srv.Close()
 		}
+		stopPower(powerGuard, log)
 		return nil
 	case err := <-errc:
+		stopPower(powerGuard, log)
 		if errors.Is(err, http.ErrServerClosed) {
 			return nil
 		}
 		return err
+	}
+}
+
+// stopPower ends the caffeinate process once no request can start a transfer.
+func stopPower(g *power.Guard, log *slog.Logger) {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	if err := g.Stop(ctx); err != nil {
+		log.Warn("stop power guard", "error", err)
 	}
 }
 
