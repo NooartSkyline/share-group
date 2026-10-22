@@ -534,6 +534,30 @@ func TestConvertPublishedHEICKeepsOriginalOnFailure(t *testing.T) {
 	}
 }
 
+func TestPurgeRoomRemovesFiles(t *testing.T) {
+	e := newEnv()
+	ctx := context.Background()
+	owner := dev("o", "A", domain.RoleOwner)
+	member := dev("m", "A", domain.RoleMember)
+	f, err := e.upIn(member, put("a.txt", "", "hello", ""))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := e.svc.PurgeRoom(ctx, member, "A"); !errors.Is(err, domain.ErrForbidden) {
+		t.Fatalf("member purge: %v", err)
+	}
+	if err := e.svc.PurgeRoom(ctx, owner, "A"); err != nil {
+		t.Fatal(err)
+	}
+	if e.store.Has("A", f.ID) {
+		t.Fatal("file content remained")
+	}
+	list, err := e.svc.List(ctx, owner)
+	if err != nil || len(list) != 0 {
+		t.Fatalf("list after purge = %v %v", list, err)
+	}
+}
+
 func mustRead(t *testing.T, e env, actor domain.Device, id domain.FileID) []byte {
 	t.Helper()
 	dl, err := e.svc.Open(context.Background(), actor, id)

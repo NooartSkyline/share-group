@@ -97,7 +97,9 @@ func run() error {
 	hub.SetPresence(deviceSvc)
 	transferSvc := transfer.NewService(store.FileRepo(), files, files, thumb.New(), hub, ids, clock, 250*time.Millisecond)
 	chatSvc := chat.NewService(memory.NewChatRepository(), hub, ids, clock)
+	runner := cmdrunner.New()
 	networkSvc := network.NewService(netinfo.New(), cfg.Port, cfg.Interface)
+	networkSvc.SetRunner(runner)
 	transferSvc.SetRooms(store.RoomRepo())
 	if cfg.TLS {
 		networkSvc.SetSecure(true)
@@ -142,7 +144,7 @@ func run() error {
 		Interfaces: nics,
 		Locals:     nics,
 		Peers:      peers,
-		Runner:     cmdrunner.New(),
+		Runner:     runner,
 		Disk:       disk,
 		MinFree:    uint64(cfg.MinFree),
 		Partials:   transferSvc,
@@ -194,7 +196,7 @@ func run() error {
 		// No overall Read/WriteTimeout: they would cut off large transfers.
 	}
 
-	ln, err := net.Listen("tcp", srv.Addr)
+	ln, err := listenTCP(ctx, srv.Addr)
 	if err != nil {
 		return fmt.Errorf("listen on %s: %w", srv.Addr, err)
 	}
@@ -276,6 +278,9 @@ func printBanner(ctx context.Context, cfg config.Config, r domain.Room, nw *netw
 		if art, err := qr.Terminal(url); err == nil {
 			fmt.Println(art)
 		}
+	}
+	if st, err := nw.Cable(ctx, domain.Device{Role: domain.RoleOwner, RoomID: r.ID}); err == nil && len(st.Links) > 0 {
+		fmt.Printf("  สาย USB:                %s\n", st.Links[0].URL)
 	}
 	fmt.Printf("  ห้อง: %s   PIN: %s\n", r.Name, r.PIN)
 	fmt.Printf("  โฟลเดอร์ข้อมูล: %s\n\n", cfg.DataDir)

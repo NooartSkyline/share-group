@@ -2,6 +2,7 @@ package jsonstore
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -54,5 +55,36 @@ func TestDevicesPersistWithoutOnline(t *testing.T) {
 	}
 	if strings.Contains(string(raw), `"online"`) {
 		t.Fatalf("state.json should omit Online, got %s", raw)
+	}
+}
+
+func TestDeleteRoomDropsFilesAndDevices(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.json")
+	s, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	rm := domain.Room{ID: "gone", Name: "Gone", PIN: "123456", CreatedAt: time.Now()}
+	if err := s.Save(ctx, rm); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.FileRepo().Save(ctx, domain.File{ID: "f1", RoomID: "gone", Name: "a.txt", Size: 1}); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.DeviceRepo().Save(ctx, domain.Device{ID: "d1", RoomID: "gone", Name: "Phone", Role: domain.RoleMember}); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Delete(ctx, "gone"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Get(ctx, "gone"); !errors.Is(err, domain.ErrNotFound) {
+		t.Fatalf("get deleted room: %v", err)
+	}
+	if _, err := s.FileRepo().Get(ctx, "gone", "f1"); !errors.Is(err, domain.ErrNotFound) {
+		t.Fatalf("file remained: %v", err)
+	}
+	if _, err := s.DeviceRepo().Get(ctx, "d1"); !errors.Is(err, domain.ErrNotFound) {
+		t.Fatalf("device remained: %v", err)
 	}
 }

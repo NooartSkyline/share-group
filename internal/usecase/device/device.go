@@ -107,6 +107,23 @@ func (s *Service) Rename(ctx context.Context, actor domain.Device, id domain.Dev
 	return d, nil
 }
 
+// PurgeRoom removes every device that belongs to room. Only an Owner may.
+func (s *Service) PurgeRoom(ctx context.Context, actor domain.Device, room domain.RoomID) error {
+	if !actor.CanManage() {
+		return domain.ErrForbidden
+	}
+	list, err := s.devices.ListByRoom(ctx, room)
+	if err != nil {
+		return err
+	}
+	for _, d := range list {
+		if err := s.devices.Delete(ctx, d.ID); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (s *Service) lookup(ctx context.Context, actor domain.Device, id domain.DeviceID) (domain.Device, error) {
 	if !actor.CanManage() {
 		return domain.Device{}, domain.ErrForbidden

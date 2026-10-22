@@ -118,6 +118,13 @@ func (r *Rooms) Save(_ context.Context, rm domain.Room) error {
 	return nil
 }
 
+func (r *Rooms) Delete(_ context.Context, id domain.RoomID) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	delete(r.M, id)
+	return nil
+}
+
 // Files is an in-memory FileRepository.
 type Files struct {
 	mu sync.Mutex
@@ -227,6 +234,18 @@ func (s *Store) Delete(_ context.Context, room domain.RoomID, id domain.FileID) 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	delete(s.M, key(room, id))
+	return nil
+}
+
+func (s *Store) RemoveRoom(_ context.Context, room domain.RoomID) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	prefix := string(room) + "/"
+	for k := range s.M {
+		if strings.HasPrefix(k, prefix) {
+			delete(s.M, k)
+		}
+	}
 	return nil
 }
 

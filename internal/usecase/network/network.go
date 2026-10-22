@@ -17,6 +17,7 @@ type Service struct {
 	provider port.NetworkProvider
 	port     int
 	secure   bool
+	runner   port.CommandRunner // optional; USB hardware ports and plugged phones
 
 	mu       sync.RWMutex
 	selected string // interface name; empty means automatic
@@ -26,6 +27,10 @@ type Service struct {
 func NewService(provider port.NetworkProvider, port int, preferred string) *Service {
 	return &Service{provider: provider, port: port, selected: preferred}
 }
+
+// SetRunner lets the service read macOS hardware ports and USB devices so
+// USB tethering / iPhone USB can be labelled and shown in the cable panel.
+func (s *Service) SetRunner(r port.CommandRunner) { s.runner = r }
 
 // Option is an interface the owner can pick.
 type Option struct {
@@ -39,7 +44,7 @@ func (s *Service) List(ctx context.Context, actor domain.Device) ([]Option, erro
 	if !actor.CanManage() {
 		return nil, domain.ErrForbidden
 	}
-	all, err := s.provider.Interfaces(ctx)
+	all, err := s.listed(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +66,7 @@ func (s *Service) Select(ctx context.Context, actor domain.Device, name string) 
 	if !actor.CanManage() {
 		return domain.ErrForbidden
 	}
-	all, err := s.provider.Interfaces(ctx)
+	all, err := s.listed(ctx)
 	if err != nil {
 		return err
 	}
@@ -78,11 +83,24 @@ func (s *Service) Select(ctx context.Context, actor domain.Device, name string) 
 
 // Active returns the interface currently advertised.
 func (s *Service) Active(ctx context.Context) (domain.NetInterface, error) {
-	all, err := s.provider.Interfaces(ctx)
+	all, err := s.listed(ctx)
 	if err != nil {
 		return domain.NetInterface{}, err
 	}
 	return s.pick(all)
+}
+
+func (s *Service) listed(ctx context.Context) ([]domain.NetInterface, error) {
+	all, err := s.provider.Interfaces(ctx)
+	if err != nil {
+		return nil, err
+	}
+	ports := s.hardwarePorts(ctx)
+	out := make([]domain.NetInterface, len(all))
+	for i, n := range all {
+		out[i] = classifyUSB(n, ports[n.Name])
+	}
+	return out, nil
 }
 
 // SetSecure switches advertised URLs to https. Call it before serving.
@@ -101,8 +119,13 @@ func (s *Service) JoinURL(ctx context.Context, room domain.RoomID) (string, erro
 	if err != nil {
 		return "", err
 	}
+	return s.URLOn(n, room), nil
+}
+
+// URLOn is the join URL advertised on a specific interface.
+func (s *Service) URLOn(n domain.NetInterface, room domain.RoomID) string {
 	host := net.JoinHostPort(n.IP, strconv.Itoa(s.port))
-	return fmt.Sprintf("%s://%s/?r=%s", s.scheme(), host, room), nil
+	return fmt.Sprintf("%s://%s/?r=%s", s.scheme(), host, room)
 }
 
 // GuestURL is the address for the upload-only guest link.
@@ -129,11 +152,19 @@ func (s *Service) pick(all []domain.NetInterface) (domain.NetInterface, error) {
 	return pickAuto(all)
 }
 
-// pickAuto prefers a physical interface (en0 first), then anything else.
+// pickAuto prefers a physical interface (en0 first), then anything else
+// except USB. USB is last resort: only the plugged-in phone can reach that
+// address, so the Wi-Fi invite URL must stay on a shared network.
 func pickAuto(all []domain.NetInterface) (domain.NetInterface, error) {
-	var firstPhysical, any *domain.NetInterface
+	var firstPhysical, any, firstUSB *domain.NetInterface
 	for i := range all {
 		n := &all[i]
+		if n.Kind == domain.NetUSB {
+			if firstUSB == nil {
+				firstUSB = n
+			}
+			continue
+		}
 		if any == nil {
 			any = n
 		}
@@ -152,6 +183,8 @@ func pickAuto(all []domain.NetInterface) (domain.NetInterface, error) {
 		return *firstPhysical, nil
 	case any != nil:
 		return *any, nil
+	case firstUSB != nil:
+		return *firstUSB, nil
 	}
 	return domain.NetInterface{}, domain.ErrNoNetwork
 }

@@ -65,6 +65,10 @@ func (s *Service) checkInterface(ctx context.Context, _ runEnv) domain.CheckResu
 	where := fmt.Sprintf("%s (%s)", active.Name, active.IP)
 
 	switch {
+	case active.Kind == domain.NetUSB:
+		return m.warn(
+			fmt.Sprintf("ที่อยู่ที่ใช้เชิญอุปกรณ์คือสาย USB %s", where),
+			"อุปกรณ์บน Wi-Fi จะเปิดลิงก์นี้ไม่ได้ ให้เลือกการ์ด Wi-Fi หรือสายแลนสำหรับ QR หลัก แล้วใช้แผงสายเคเบิลกับมือถือที่เสียบสาย")
 	case active.Kind == domain.NetVPN || active.Kind == domain.NetVirtual:
 		kind := "เสมือน"
 		if active.Kind == domain.NetVPN {

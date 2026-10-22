@@ -147,6 +147,43 @@ func (s *Service) UpdateSettings(ctx context.Context, actor domain.Device, in Se
 	return r, nil
 }
 
+// Delete removes a room. The last remaining room cannot be deleted.
+// The returned room is the one the Owner should switch to afterwards.
+func (s *Service) Delete(ctx context.Context, actor domain.Device, id domain.RoomID) (domain.Room, error) {
+	if !actor.CanManage() {
+		return domain.Room{}, domain.ErrForbidden
+	}
+	if !domain.ValidRoomID(string(id)) {
+		return domain.Room{}, domain.ErrInvalidInput
+	}
+	list, err := s.rooms.List(ctx)
+	if err != nil {
+		return domain.Room{}, err
+	}
+	if len(list) <= 1 {
+		return domain.Room{}, fmt.Errorf("last room: %w", domain.ErrInvalidInput)
+	}
+	if _, err := s.rooms.Get(ctx, id); err != nil {
+		return domain.Room{}, err
+	}
+	if err := s.rooms.Delete(ctx, id); err != nil {
+		return domain.Room{}, err
+	}
+	if actor.RoomID != id {
+		if stay, err := s.rooms.Get(ctx, actor.RoomID); err == nil {
+			return stay, nil
+		}
+	}
+	list, err = s.rooms.List(ctx)
+	if err != nil {
+		return domain.Room{}, err
+	}
+	if len(list) == 0 {
+		return domain.Room{}, domain.ErrNotFound
+	}
+	return list[0], nil
+}
+
 // RotateGuest issues a new upload-only guest link that expires after ttl.
 // maxBytes is the per-file cap for guests; 0 means no extra cap.
 func (s *Service) RotateGuest(ctx context.Context, actor domain.Device, ttl time.Duration, maxBytes int64) (domain.Room, error) {

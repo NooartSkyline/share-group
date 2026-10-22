@@ -15,6 +15,8 @@ type RoomRepository interface {
 	Get(ctx context.Context, id domain.RoomID) (domain.Room, error)
 	List(ctx context.Context) ([]domain.Room, error)
 	Save(ctx context.Context, room domain.Room) error
+	// Delete removes the room. Deleting one that is already gone is not an error.
+	Delete(ctx context.Context, id domain.RoomID) error
 }
 
 type DeviceRepository interface {
@@ -52,6 +54,8 @@ type FileStore interface {
 	Put(ctx context.Context, room domain.RoomID, id domain.FileID, r io.Reader) (int64, error)
 	Open(ctx context.Context, room domain.RoomID, id domain.FileID) (ReadSeekCloser, error)
 	Delete(ctx context.Context, room domain.RoomID, id domain.FileID) error
+	// RemoveRoom deletes leftover content of a room. A missing folder is not an error.
+	RemoveRoom(ctx context.Context, room domain.RoomID) error
 }
 
 // TokenService issues and resolves session tokens.

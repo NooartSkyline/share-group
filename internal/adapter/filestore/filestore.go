@@ -19,6 +19,10 @@ import (
 
 var safeName = regexp.MustCompile(`^[A-Za-z0-9_-]{1,64}$`)
 
+// putBufSize is the copy window for a one-shot Put. Append requests stay at
+// 1 MiB (Req 2.10); this path is a single stream into a temp file.
+const putBufSize = 4 << 20
+
 // Store implements port.FileStore and port.ThumbStore; Partials() exposes
 // port.PartialStore. Partial uploads live under partial/<room>/<id>.part, on the same drive as
 // rooms/ so promoting one to a real file is a rename and never a copy.
@@ -90,7 +94,7 @@ func (s *Store) Put(ctx context.Context, room domain.RoomID, id domain.FileID, r
 		}
 	}()
 
-	n, err := io.CopyBuffer(tmp, r, make([]byte, 1<<20))
+	n, err := io.CopyBuffer(tmp, r, make([]byte, putBufSize))
 	if err != nil {
 		return 0, mapDiskFull(err)
 	}
@@ -191,6 +195,22 @@ func (s *Store) Delete(_ context.Context, room domain.RoomID, id domain.FileID) 
 	}
 	if err := os.Remove(p); err != nil && !errors.Is(err, os.ErrNotExist) {
 		return err
+	}
+	return nil
+}
+
+func (s *Store) RemoveRoom(_ context.Context, room domain.RoomID) error {
+	if !safeName.MatchString(string(room)) {
+		return fmt.Errorf("%w: room id", domain.ErrInvalidInput)
+	}
+	for _, p := range []string{
+		filepath.Join(s.root, "rooms", string(room)),
+		filepath.Join(s.root, "thumbs", string(room)),
+		filepath.Join(s.root, partialDir, string(room)),
+	} {
+		if err := os.RemoveAll(p); err != nil {
+			return err
+		}
 	}
 	return nil
 }

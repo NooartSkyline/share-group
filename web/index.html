@@ -13,8 +13,10 @@
 </head>
 <body>
 <header class="top">
-  <div class="brand"><span class="logo">📡</span><span>LAN Share</span></div>
-  <div class="status"><span id="conn-dot" class="dot off"></span><span id="conn-text">กำลังเชื่อมต่อ…</span></div>
+  <div class="top-inner">
+    <div class="brand"><span class="logo">📡</span><span>LAN Share</span></div>
+    <div class="status"><span id="conn-dot" class="dot off"></span><span id="conn-text">กำลังเชื่อมต่อ…</span></div>
+  </div>
 </header>
 
 <main id="loading" class="center"><p class="mut">กำลังโหลด…</p></main>
@@ -52,7 +54,11 @@
     <div id="room-switch" hidden>
       <label class="mut small" for="room-pick" data-i18n="rooms_label">ห้อง</label>
       <select id="room-pick" class="select"></select>
-      <button id="room-new" class="btn ghost sm" type="button" data-i18n="room_new">＋ ห้องใหม่</button>
+      <div class="room-actions">
+        <button id="room-new" class="btn ghost sm" type="button" data-i18n="room_new">＋ ห้องใหม่</button>
+        <button id="room-rename" class="btn ghost sm" type="button" data-i18n="room_rename">เปลี่ยนชื่อ</button>
+        <button id="room-delete" class="btn danger sm" type="button" data-i18n="room_delete" hidden>ลบห้อง</button>
+      </div>
     </div>
 
     <h4 data-i18n="devices_title">อุปกรณ์ในห้องนี้</h4>
@@ -72,11 +78,29 @@
     </section>
 
     <section id="owner" class="card owner" hidden>
-      <div class="owner-qr"><img id="qr" alt="QR code สำหรับเข้าห้อง" width="150" height="150"></div>
+      <div class="owner-qr" id="invite-qrs">
+        <figure class="invite-path">
+          <img id="qr" alt="QR code สำหรับเข้าห้อง" width="150" height="150">
+          <figcaption id="qr-cap" class="path-cap" data-i18n="path_wifi">Wi-Fi</figcaption>
+        </figure>
+        <figure class="invite-path" id="cable-qr-fig" hidden>
+          <img id="cable-qr" alt="QR สำหรับสายเคเบิล" width="150" height="150">
+          <figcaption id="cable-qr-cap" class="path-cap usb" data-i18n="path_usb">สาย USB</figcaption>
+        </figure>
+      </div>
       <div class="owner-info">
         <h2><span data-i18n="invite_title">เชิญอุปกรณ์อื่นเข้าห้อง</span> <span id="room-name"></span></h2>
-        <p class="mut small" data-i18n="invite_help">สแกน QR หรือเปิดลิงก์ แล้วกรอก PIN ทุกเครื่องต้องอยู่ใน Wi-Fi เดียวกัน</p>
-        <div class="url-row"><code id="join-url" class="url"></code><button id="copy-url" class="btn ghost sm" type="button" data-i18n="copy">คัดลอก</button></div>
+        <p class="mut small" data-i18n="invite_help">สแกน QR หรือเปิดลิงก์ แล้วกรอก PIN ใช้ Wi-Fi วงเดียวกัน หรือสาย USB ที่เสียบอยู่</p>
+        <div class="url-row" id="join-url-row">
+          <span class="path-tag" id="join-path-tag" data-i18n="path_wifi">Wi-Fi</span>
+          <code id="join-url" class="url"></code>
+          <button id="copy-url" class="btn ghost sm" type="button" data-i18n="copy">คัดลอก</button>
+        </div>
+        <div class="url-row" id="cable-url-row" hidden>
+          <span class="path-tag usb" id="cable-path-tag" data-i18n="path_usb">สาย USB</span>
+          <code id="cable-url" class="url"></code>
+          <button id="copy-cable" class="btn ghost sm" type="button" data-i18n="copy">คัดลอก</button>
+        </div>
         <div class="pin-row">
           <span class="mut small">PIN:</span>
           <div id="pin-digits" class="pin-digits" aria-live="polite"></div>
@@ -91,22 +115,26 @@
           <span data-i18n="require_approval">อนุมัติอุปกรณ์ใหม่ก่อนเข้าใช้ห้อง</span>
         </label>
         <div class="room-limits">
-          <label class="mut small" for="room-quota" data-i18n="quota_label">โควตาห้อง</label>
-          <select id="room-quota" class="select">
-            <option value="0" data-i18n="quota_none">ไม่จำกัด</option>
-            <option value="536870912">512 MiB</option>
-            <option value="1073741824">1 GiB</option>
-            <option value="5368709120">5 GiB</option>
-            <option value="21474836480">20 GiB</option>
-          </select>
-          <label class="mut small" for="room-ttl" data-i18n="ttl_label">ไฟล์หมดอายุ</label>
-          <select id="room-ttl" class="select">
-            <option value="0" data-i18n="ttl_none">ไม่หมดอายุ</option>
-            <option value="3600" data-i18n="ttl_1h">1 ชั่วโมง</option>
-            <option value="86400" data-i18n="ttl_1d">1 วัน</option>
-            <option value="604800" data-i18n="ttl_7d">7 วัน</option>
-            <option value="2592000" data-i18n="ttl_30d">30 วัน</option>
-          </select>
+          <label class="limit" for="room-quota">
+            <span class="mut small" data-i18n="quota_label">โควตาห้อง</span>
+            <select id="room-quota" class="select">
+              <option value="0" data-i18n="quota_none">ไม่จำกัด</option>
+              <option value="536870912">512 MiB</option>
+              <option value="1073741824">1 GiB</option>
+              <option value="5368709120">5 GiB</option>
+              <option value="21474836480">20 GiB</option>
+            </select>
+          </label>
+          <label class="limit" for="room-ttl">
+            <span class="mut small" data-i18n="ttl_label">ไฟล์หมดอายุ</span>
+            <select id="room-ttl" class="select">
+              <option value="0" data-i18n="ttl_none">ไม่หมดอายุ</option>
+              <option value="3600" data-i18n="ttl_1h">1 ชั่วโมง</option>
+              <option value="86400" data-i18n="ttl_1d">1 วัน</option>
+              <option value="604800" data-i18n="ttl_7d">7 วัน</option>
+              <option value="2592000" data-i18n="ttl_30d">30 วัน</option>
+            </select>
+          </label>
         </div>
         <div class="guest-box">
           <h3 data-i18n="guest_title">ลิงก์แขก (อัปโหลดอย่างเดียว)</h3>
@@ -117,6 +145,17 @@
           </div>
           <p id="guest-until" class="mut small" hidden></p>
           <button id="make-guest" class="btn ghost sm" type="button" data-i18n="guest_make">สร้างลิงก์แขก 1 ชั่วโมง</button>
+        </div>
+        <div class="cable-box" id="cable-box">
+          <h3 data-i18n="cable_title">🔌 ถ่ายโอนผ่านสายเคเบิล</h3>
+          <p class="mut small" data-i18n="cable_help">เร็วกว่า Wi-Fi เพราะวิ่งบน USB โดยตรง ไม่ต้องติดตั้งแอป เสียบสายแล้วเปิด USB tethering (Android) หรือ Personal Hotspot แบบ USB (iPhone)</p>
+          <p id="cable-status" class="cable-st" data-i18n="cable_idle">ยังไม่พบสาย</p>
+          <ol id="cable-steps" class="cable-steps">
+            <li data-i18n="cable_step_plug">เสียบสาย USB เข้า Mac (บน iPhone กด Trust ถ้าถาม)</li>
+            <li data-i18n="cable_step_android">Android: ตั้งค่า → เครือข่ายและอินเทอร์เน็ต → USB tethering / จุดเชื่อมต่อทาง USB</li>
+            <li data-i18n="cable_step_ios">iPhone / iPad: ตั้งค่า → Personal Hotspot แล้วให้ Mac เชื่อมผ่าน USB</li>
+            <li data-i18n="cable_step_open">จากนั้นเปิดเบราว์เซอร์บนมือถือที่เสียบสาย แล้วพิมพ์ที่อยู่ที่แสดงที่นี่</li>
+          </ol>
         </div>
       </div>
     </section>

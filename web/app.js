@@ -6,7 +6,8 @@
 
 const $ = (id) => document.getElementById(id);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
-const MAX_PARALLEL_UPLOADS = 2;
+const MAX_PARALLEL_UPLOADS_WIDE = 4;
+const MAX_PARALLEL_UPLOADS_NARROW = 2;
 const MAX_DROPPED_FILES = 2000;
 const JUNK_FILES = new Set(['.DS_Store', 'Thumbs.db', 'desktop.ini']);
 
@@ -98,12 +99,16 @@ const I18N = {
     wait_title: 'รอเจ้าของห้องอนุมัติ', wait_body: 'เข้าห้องแล้ว แต่ยังใช้ไฟล์และข้อความไม่ได้ จนกว่าเจ้าของจะกดอนุมัติอุปกรณ์นี้',
     rooms_label: 'ห้อง', room_new: '＋ ห้องใหม่', devices_title: 'อุปกรณ์ในห้องนี้',
     pending_title: 'อุปกรณ์รออนุมัติ', invite_title: 'เชิญอุปกรณ์อื่นเข้าห้อง',
-    invite_help: 'สแกน QR หรือเปิดลิงก์ แล้วกรอก PIN ทุกเครื่องต้องอยู่ใน Wi-Fi เดียวกัน',
+    invite_help: 'สแกน QR หรือเปิดลิงก์ แล้วกรอก PIN ใช้ Wi-Fi วงเดียวกัน หรือสาย USB ที่เสียบอยู่',
+    path_wifi: 'Wi-Fi', path_usb: 'สาย USB', via_usb: 'สาย USB',
     copy: 'คัดลอก', rotate_pin: '🔄 สร้างใหม่', network_used: 'เครือข่ายที่ใช้:',
     require_approval: 'อนุมัติอุปกรณ์ใหม่ก่อนเข้าใช้ห้อง',
     guest_title: 'ลิงก์แขก (อัปโหลดอย่างเดียว)', guest_clear: 'ปิดลิงก์', guest_make: 'สร้างลิงก์แขก 1 ชั่วโมง',
     search_ph: 'ค้นหาชื่อไฟล์หรืออุปกรณ์…', sort_newest: 'ล่าสุด', sort_device: 'ตามอุปกรณ์', sort_date: 'ตามวันที่',
     guest_expired: 'ลิงก์แขกนี้หมดอายุหรือไม่ถูกต้อง', new_room_name: 'ชื่อห้องใหม่',
+    room_rename: 'เปลี่ยนชื่อ', room_delete: 'ลบห้อง',
+    room_rename_prompt: 'ชื่อห้องใหม่', room_delete_confirm: 'ลบห้องนี้ รวมไฟล์ทั้งหมด? ยกเลิกไม่ได้',
+    last_room: 'ต้องเหลืออย่างน้อยหนึ่งห้อง',
     approve: 'อนุมัติ', reject: 'ปฏิเสธ', pending_pill: 'รออนุมัติ',
     copied: 'คัดลอกแล้ว', copy_fail: 'คัดลอกไม่สำเร็จ ให้เลือกข้อความแล้วคัดลอกเอง',
     theme: 'ธีม', theme_system: 'ตามระบบ', theme_dark: 'มืด', theme_light: 'สว่าง',
@@ -113,6 +118,18 @@ const I18N = {
     ttl_none: 'ไม่หมดอายุ', ttl_1h: '1 ชั่วโมง', ttl_1d: '1 วัน', ttl_7d: '7 วัน', ttl_30d: '30 วัน',
     rename: 'เปลี่ยนชื่อ', you: ' (คุณ)', details: 'รายละเอียด', download: '⬇ ดาวน์โหลด', del: 'ลบ',
     rename_prompt: 'ชื่ออุปกรณ์ใหม่', code_fail: 'เปิดไฟล์ข้อความไม่สำเร็จ',
+    cable_title: '🔌 ถ่ายโอนผ่านสายเคเบิล',
+    cable_help: 'เร็วกว่า Wi-Fi เพราะวิ่งบน USB โดยตรง ไม่ต้องติดตั้งแอป เสียบสายแล้วเปิด USB tethering (Android) หรือ Personal Hotspot แบบ USB (iPhone)',
+    cable_idle: 'ยังไม่พบสาย',
+    cable_plugged: 'พบอุปกรณ์แล้ว — เปิด USB tethering หรือ Personal Hotspot',
+    cable_plugged_ios: 'พบ {name} แล้ว — เปิด Personal Hotspot แล้วให้ Mac เชื่อมผ่าน USB',
+    cable_plugged_android: 'พบ {name} แล้ว — เปิด USB tethering ในการตั้งค่า',
+    cable_ready: 'พร้อมแล้ว — ใช้ QR หรือลิงก์สาย USB ด้านบน (PIN เดียวกับ Wi-Fi)',
+    cable_ready_help: 'บนมือถือที่เสียบสาย สแกน QR สาย USB หรือเปิดลิงก์ด้านบน (PIN เดียวกับ Wi-Fi)',
+    cable_step_plug: 'เสียบสาย USB เข้า Mac (บน iPhone กด Trust ถ้าถาม)',
+    cable_step_android: 'Android: ตั้งค่า → เครือข่ายและอินเทอร์เน็ต → USB tethering / จุดเชื่อมต่อทาง USB',
+    cable_step_ios: 'iPhone / iPad: ตั้งค่า → Personal Hotspot แล้วให้ Mac เชื่อมผ่าน USB',
+    cable_step_open: 'จากนั้นเปิดเบราว์เซอร์บนมือถือที่เสียบสาย แล้วพิมพ์ที่อยู่ที่แสดงที่นี่',
   },
   en: {
     join_title: 'Join room', join_room_label: 'Room:', join_pin_label: 'PIN',
@@ -121,12 +138,16 @@ const I18N = {
     wait_title: 'Waiting for approval', wait_body: 'You joined, but files and chat stay locked until the owner approves this device.',
     rooms_label: 'Room', room_new: '+ New room', devices_title: 'Devices in this room',
     pending_title: 'Devices waiting for approval', invite_title: 'Invite others to',
-    invite_help: 'Scan the QR code or open the link, then enter the PIN. Every device must be on the same Wi-Fi.',
+    invite_help: 'Scan the QR code or open the link, then enter the PIN. Use the same Wi-Fi, or a plugged-in USB cable.',
+    path_wifi: 'Wi-Fi', path_usb: 'USB cable', via_usb: 'USB cable',
     copy: 'Copy', rotate_pin: '🔄 New PIN', network_used: 'Network:',
     require_approval: 'Approve new devices before they can use the room',
     guest_title: 'Guest link (upload only)', guest_clear: 'Turn off', guest_make: 'Create 1-hour guest link',
     search_ph: 'Search files or devices…', sort_newest: 'Newest', sort_device: 'By device', sort_date: 'By date',
     guest_expired: 'This guest link is expired or invalid', new_room_name: 'New room name',
+    room_rename: 'Rename', room_delete: 'Delete room',
+    room_rename_prompt: 'New room name', room_delete_confirm: 'Delete this room and all of its files? This cannot be undone.',
+    last_room: 'Keep at least one room',
     approve: 'Approve', reject: 'Reject', pending_pill: 'Pending',
     copied: 'Copied', copy_fail: 'Could not copy. Select the text and copy it yourself.',
     theme: 'Theme', theme_system: 'System', theme_dark: 'Dark', theme_light: 'Light',
@@ -136,6 +157,18 @@ const I18N = {
     ttl_none: 'Never', ttl_1h: '1 hour', ttl_1d: '1 day', ttl_7d: '7 days', ttl_30d: '30 days',
     rename: 'Rename', you: ' (you)', details: 'Details', download: '⬇ Download', del: 'Delete',
     rename_prompt: 'New device name', code_fail: 'Could not open this text file',
+    cable_title: '🔌 Transfer over a cable',
+    cable_help: 'Faster than Wi-Fi because traffic stays on USB. No app to install. Plug in, then turn on USB tethering (Android) or USB Personal Hotspot (iPhone).',
+    cable_idle: 'No cable yet',
+    cable_plugged: 'Device found — turn on USB tethering or Personal Hotspot',
+    cable_plugged_ios: '{name} found — turn on Personal Hotspot and let the Mac connect over USB',
+    cable_plugged_android: '{name} found — turn on USB tethering in Settings',
+    cable_ready: 'Ready — use the USB QR or link above (same PIN as Wi-Fi)',
+    cable_ready_help: 'On the plugged-in phone, scan the USB QR or open the USB link above (same PIN as Wi-Fi)',
+    cable_step_plug: 'Plug a USB cable into the Mac (tap Trust on iPhone if asked)',
+    cable_step_android: 'Android: Settings → Network & internet → USB tethering / USB hotspot',
+    cable_step_ios: 'iPhone / iPad: Settings → Personal Hotspot, then let the Mac connect over USB',
+    cable_step_open: 'Then open a browser on the plugged-in phone and type the address shown here',
   },
 };
 
@@ -707,23 +740,31 @@ async function refreshDevices() {
   try { state.devices = await api('/api/devices'); } catch { return; }
   const isOwner = role() === 'owner';
   $('device-list').replaceChildren(...state.devices.map((d) => {
-    const row = el('li', { class: (d.me ? 'me' : '') + (d.pending ? ' wait' : '') },
+    const head = el('div', { class: 'dev-head' },
       el('span', { class: 'dev-ic' }, PLATFORM_ICON[d.platform] || '🌐'),
-      el('span', { class: 'dev-name grow ellipsis' }, d.name + (d.me ? t('you') : ''), el('small', {}, d.platform)),
+      el('span', { class: 'dev-name ellipsis', title: d.name }, d.name + (d.me ? t('you') : ''), el('small', {}, d.platform + (d.via === 'usb' ? ' · ' + t('via_usb') : ''))),
       el('span', { class: 'dot' + (d.online ? '' : ' off'), title: d.online ? 'ออนไลน์' : 'ออฟไลน์' }),
-      d.pending
-        ? el('span', { class: 'pill pending' }, t('pending_pill'))
-        : el('span', { class: 'pill ' + d.role }, ROLE_LABEL[d.role] || d.role),
     );
-    if (isOwner && !d.pending) {
-      row.append(el('button', { class: 'btn ghost sm dev-admin', type: 'button', onclick: () => renameDevice(d) }, t('rename')));
+    if (d.via === 'usb') {
+      head.append(el('span', { class: 'pill via-usb' }, t('via_usb')));
     }
-    if (isOwner && !d.me && !d.pending) {
-      const sel = el('select', { class: 'select dev-admin', onchange: (e) => setDeviceRole(d.id, e.target.value) });
-      for (const r of ['member', 'viewer', 'uploader']) {
-        sel.append(el('option', { value: r, selected: d.role === r }, ROLE_LABEL[r]));
+    if (d.pending || !isOwner || d.me) {
+      head.append(d.pending
+        ? el('span', { class: 'pill pending' }, t('pending_pill'))
+        : el('span', { class: 'pill ' + d.role }, ROLE_LABEL[d.role] || d.role));
+    }
+    const row = el('li', { class: (d.me ? 'me' : '') + (d.pending ? ' wait' : '') }, head);
+    if (isOwner && !d.pending) {
+      const tools = el('div', { class: 'dev-tools' });
+      tools.append(el('button', { class: 'btn ghost sm', type: 'button', onclick: () => renameDevice(d) }, t('rename')));
+      if (!d.me) {
+        const sel = el('select', { class: 'select', onchange: (e) => setDeviceRole(d.id, e.target.value) });
+        for (const r of ['member', 'viewer', 'uploader']) {
+          sel.append(el('option', { value: r, selected: d.role === r }, ROLE_LABEL[r]));
+        }
+        tools.append(sel);
       }
-      row.append(sel);
+      row.append(tools);
     }
     return row;
   }));
@@ -739,7 +780,7 @@ function renderPendingBanner() {
   const waiting = state.devices.filter((d) => d.pending);
   box.hidden = waiting.length === 0;
   $('pending-devices').replaceChildren(...waiting.map((d) => el('li', {},
-    el('span', { class: 'grow ellipsis' }, d.name + ' · ' + d.platform),
+    el('span', { class: 'grow ellipsis' }, d.name + ' · ' + d.platform + (d.via === 'usb' ? ' · ' + t('via_usb') : '')),
     el('button', { class: 'btn sm', type: 'button', onclick: () => approveDevice(d.id) }, t('approve')),
     el('button', { class: 'btn ghost sm', type: 'button', onclick: () => rejectDevice(d.id) }, t('reject')),
   )));
@@ -1491,8 +1532,14 @@ function makeUploadItem(file, dir, conflict) {
 }
 
 
+function maxParallelUploads() {
+  // Wide layouts are typically the Mac or a laptop on a faster link; phones
+  // stay at 2 so one screenful of photos does not open four 32 MiB PATCHes.
+  return isDesktopLayout() ? MAX_PARALLEL_UPLOADS_WIDE : MAX_PARALLEL_UPLOADS_NARROW;
+}
+
 function pump() {
-  while (active < MAX_PARALLEL_UPLOADS && queue.length) {
+  while (active < maxParallelUploads() && queue.length) {
     const item = queue.shift();
     if (item.state === 'cancelled') continue;
     active++;
@@ -1552,7 +1599,7 @@ function startLegacyUpload(item) {
 //
 // Flow of one item (entry point: startUpload, called by pump):
 //   POST /api/uploads -> remember {id, key, ...} in localStorage -> PATCH chunks one at a time
-//   (Blob.slice, <= 16 MiB, offset from the server) while a worker hashes the file in parallel
+//   (Blob.slice, <= 32 MiB, offset from the server) while a worker hashes the file in parallel
 //   -> POST /api/uploads/{id}/complete {sha256} once every byte is confirmed and the hash is ready.
 //
 // The pure decisions (chunking, result classification, progress) live in logic.js (Logic).
@@ -2751,7 +2798,7 @@ else window.addEventListener('load', registerServiceWorker, { once: true });
 
 // ---------- owner panel ----------
 
-const KIND_LABEL = { physical: 'Wi-Fi/Ethernet', vpn: 'VPN', virtual: 'เสมือน' };
+const KIND_LABEL = { physical: 'Wi-Fi/Ethernet', vpn: 'VPN', virtual: 'เสมือน', usb: 'สาย USB' };
 
 async function setupOwner() {
   if (role() !== 'owner') return; // other roles get no owner DOM and send no admin request
@@ -2760,6 +2807,8 @@ async function setupOwner() {
   $('owner').hidden = false;
   await loadJoinInfo();
   await loadNetworks();
+  await loadCable();
+  setInterval(() => { if (!document.hidden && role() === 'owner') loadCable(); }, OWNER_POLL_MS);
 
   $('rotate-pin').addEventListener('click', async () => {
     if (!confirm('สร้าง PIN ใหม่? อุปกรณ์ที่เข้าห้องแล้วจะยังใช้งานต่อได้')) return;
@@ -2777,6 +2826,9 @@ async function setupOwner() {
   });
   $('copy-url').addEventListener('click', async () => {
     toast((await copyText($('join-url').textContent)) ? t('copied') : t('copy_fail'));
+  });
+  $('copy-cable').addEventListener('click', async () => {
+    toast((await copyText($('cable-url').textContent)) ? t('copied') : t('copy_fail'));
   });
   $('require-approval').addEventListener('change', async (e) => {
     try {
@@ -2865,6 +2917,7 @@ async function setupRooms() {
   try { rooms = await api('/api/admin/rooms'); } catch { return; }
   const pick = $('room-pick');
   pick.replaceChildren(...rooms.map((r) => el('option', { value: r.id, selected: r.current }, r.name)));
+  $('room-delete').hidden = rooms.length < 2;
   if (setupRooms.bound) return;
   setupRooms.bound = true;
   pick.addEventListener('change', async () => {
@@ -2882,6 +2935,34 @@ async function setupRooms() {
       location.reload();
     } catch (e) { toast('สร้างห้องไม่สำเร็จ: ' + e.message); }
   });
+  $('room-rename').addEventListener('click', async () => {
+    const name = prompt(t('room_rename_prompt'), state.room.name);
+    if (!name || name === state.room.name) return;
+    try {
+      await saveRoomSettings({ name });
+      applyRoomName(name);
+      const opt = $('room-pick').selectedOptions[0];
+      if (opt) opt.textContent = name;
+    } catch (e) { toast('เปลี่ยนชื่อห้องไม่สำเร็จ: ' + e.message); }
+  });
+  $('room-delete').addEventListener('click', async () => {
+    if ($('room-pick').options.length < 2) {
+      toast(t('last_room'));
+      return;
+    }
+    if (!confirm(t('room_delete_confirm'))) return;
+    try {
+      await api('/api/admin/rooms/' + encodeURIComponent(state.room.id), { method: 'DELETE' });
+      location.reload();
+    } catch (e) { toast('ลบห้องไม่สำเร็จ: ' + e.message); }
+  });
+}
+
+function applyRoomName(name) {
+  state.room.name = name;
+  $('side-room-name').textContent = name;
+  if ($('room-name')) $('room-name').textContent = '"' + name + '"';
+  document.title = name + ' • LAN Share';
 }
 
 function renderPin(pin) {
@@ -2905,17 +2986,97 @@ async function loadJoinInfo() {
       if (info.roomName) state.room.name = info.roomName;
     }
     renderGuest(info);
+    if (info.cable) renderCableInvite(info.cable);
   } catch (e) { toast('โหลดข้อมูลห้องไม่สำเร็จ: ' + e.message); }
 }
+
+let selectedNetKind = 'physical';
+let lastCableState = '';
 
 async function loadNetworks() {
   try {
     const list = await api('/api/admin/network');
     $('nic').replaceChildren(...list.map((n) => {
-      const label = `${n.name} • ${n.ip} (${KIND_LABEL[n.kind] || n.kind})${n.recommended ? ' — แนะนำ' : ''}`;
+      const shown = n.label || n.name;
+      const label = `${shown} • ${n.ip} (${KIND_LABEL[n.kind] || n.kind})${n.recommended ? ' — แนะนำ' : ''}`;
       return el('option', { value: n.name, selected: n.selected }, label);
     }));
+    const sel = list.find((n) => n.selected);
+    selectedNetKind = sel && sel.kind ? sel.kind : 'physical';
+    updateJoinPathTag();
   } catch { /* the select stays empty */ }
+}
+
+function updateJoinPathTag() {
+  const usb = selectedNetKind === 'usb';
+  const label = usb ? t('path_usb') : t('path_wifi');
+  const tag = $('join-path-tag');
+  const cap = $('qr-cap');
+  if (tag) {
+    tag.textContent = label;
+    tag.classList.toggle('usb', usb);
+  }
+  if (cap) {
+    cap.textContent = label;
+    cap.classList.toggle('usb', usb);
+  }
+}
+
+function cableStatusText(st) {
+  const phone = (st.phones && st.phones[0]) || null;
+  const name = phone && phone.name ? phone.name : '';
+  if (st.state === 'ready') return t('cable_ready');
+  if (st.state === 'plugged' && phone) {
+    const key = phone.device === 'iphone' || phone.device === 'ipad' ? 'cable_plugged_ios' : 'cable_plugged_android';
+    return t(key).replace('{name}', name);
+  }
+  if (st.state === 'plugged') return t('cable_plugged');
+  return t('cable_idle');
+}
+
+function renderCableInvite(st) {
+  const status = $('cable-status');
+  const steps = $('cable-steps');
+  const qr = $('cable-qr');
+  const fig = $('cable-qr-fig');
+  const row = $('cable-url-row');
+  if (!status) return;
+  const text = cableStatusText(st);
+  if (status.textContent !== text) status.textContent = text;
+  status.className = 'cable-st' + (st.state === 'ready' || st.state === 'plugged' ? ' ' + st.state : '');
+  const link = st.links && st.links[0];
+  const joinURL = $('join-url') ? $('join-url').textContent : '';
+  const ready = !!(link && link.url);
+  const showSecond = ready && link.url !== joinURL;
+  if (steps) steps.hidden = ready;
+  if (row) row.hidden = !showSecond;
+  if (fig) fig.hidden = !showSecond;
+  const owner = $('owner');
+  if (owner) owner.classList.toggle('has-cable', showSecond);
+  if (showSecond) {
+    const label = link.label || t('path_usb');
+    if ($('cable-url').textContent !== link.url) {
+      $('cable-url').textContent = link.url;
+      if (qr) qr.src = '/api/admin/cable/qr.png?ts=' + Date.now();
+    }
+    if ($('cable-qr-cap')) $('cable-qr-cap').textContent = label;
+    if ($('cable-path-tag')) $('cable-path-tag').textContent = label;
+  } else if (qr) {
+    qr.removeAttribute('src');
+    if ($('cable-url')) $('cable-url').textContent = '';
+  }
+}
+
+async function loadCable() {
+  if (!$('cable-box')) return;
+  try {
+    const st = await api('/api/admin/cable');
+    renderCableInvite(st);
+    if (st.state !== lastCableState) {
+      lastCableState = st.state;
+      if (st.state === 'ready') loadNetworks();
+    }
+  } catch { /* keep the last cable panel */ }
 }
 
 // ---------- owner: connectivity check and status panel ----------

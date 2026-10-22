@@ -1,0 +1,144 @@
+{
+  "rooms": [
+    {
+      "id": "c8700098",
+      "name": "room 2",
+      "pin": "879499",
+      "createdAt": "2026-10-22T17:09:25.5384+07:00",
+      "guestUntil": "0001-01-01T00:00:00Z"
+    },
+    {
+      "id": "main",
+      "name": "ห้องหลัก",
+      "pin": "241522",
+      "createdAt": "2026-10-21T09:23:57.876285+07:00",
+      "guestUntil": "0001-01-01T00:00:00Z"
+    }
+  ],
+  "files": [
+    {
+      "id": "0000273999dae92cb4c7155eaefddfba",
+      "roomId": "main",
+      "name": "195.JPG",
+      "size": 454572,
+      "uploaderId": "f960ea21a59e42771f2ac57fd2434e8e",
+      "uploaderName": "Android ของฉัน",
+      "createdAt": "2026-10-22T17:08:15.765138+07:00",
+      "sha256": "a5c448c22b331d6e53fe2b97975dbf6867a0ef437baea4fde55eae2d4abecf6e",
+      "integrity": "verified"
+    },
+    {
+      "id": "003a04112ab5f1b923048cb34b4bf2b5",
+      "roomId": "main",
+      "name": "95.JPG",
+      "size": 584952,
+      "uploaderId": "f960ea21a59e42771f2ac57fd2434e8e",
+      "uploaderName": "Android ของฉัน",
+      "createdAt": "2026-10-22T17:07:14.373888+07:00",
+      "sha256": "e15b88924f489b0928c3816d107c8e5ddb8673ac3d2163c7ca188830f660ea35",
+      "integrity": "verified"
+    },
+    {
+      "id": "004ab8205196ec8a8a0655269e452565",
+      "roomId": "main",
+      "name": "62.jpg",
+      "size": 251030,
+      "uploaderId": "f960ea21a59e42771f2ac57fd2434e8e",
+      "uploaderName": "Android ของฉัน",
+      "createdAt": "2026-10-22T17:08:13.217662+07:00",
+      "sha256": "78d6fe690d0c1c09d5a637d726f63b1bffc084e28bfd6cf7043f8a5a2cfd3be2",
+      "integrity": "verified"
+    },
+    {
+      "id": "0142e514a3c6e68b392ca7d9b65a1d6e",
+      "roomId": "main",
+      "name": "39.jpg",
+      "size": 348390,
+      "uploaderId": "f960ea21a59e42771f2ac57fd2434e8e",
+      "uploaderName": "Android ของฉัน",
+      "createdAt": "2026-10-22T17:09:47.511467+07:00",
+      "sha256": "171a15b95da1ba8526a54c6bad6e6542cda4459882bb36862dd1569fa99dfd5e",
+      "integrity": "verified"
+    },
+    {
+      "id": "021247993f69815e93ecc3229e67485c",
+      "roomId": "main",
+      "name": "046-plan.jpg",
+      "size": 689277,
+      "uploaderId": "f960ea21a59e42771f2ac57fd2434e8e",
+      "uploaderName": "Android ของฉัน",
+      "createdAt": "2026-10-22T17:09:26.83351+07:00",
+      "sha256": "2d5dfa242cabd1c1b462b8a85095d13d7b7c63b507d2ab017aedb156604b9bc3",
+      "integrity": "verified"
+    },
+    {
+      "id": "027f4124c82fcd6628b265d248b74f81",
+      "roomId": "main",
+      "name": "128.JPG",
+      "size": 694048,
+      "uploaderId": "f960ea21a59e42771f2ac57fd2434e8e",
+      "uploaderName": "Android ของฉัน",
+      "createdAt": "2026-10-22T17:09:21.083004+07:00",
+      "sha256": "65755579736e563f5ee9be5f92a4f52455f8b3581388465622689adbb457a24d",
+      "integrity": "verified"
+    },
+    {
+      "id": "02dfde6772e87bbccdbeb49e0d58edc9",
+      "roomId": "main",
+      "name": "26.JPG",
+      "size": 214120,
+      "uploaderId": "f960ea21a59e42771f2ac57fd2434e8e",
+      "uploaderName": "Android ของฉัน",
+      "createdAt": "2026-10-22T17:09:50.747611+07:00",
+      "sha256": "5e96e163b6ac4809d41cb36e18b7c21c57a934dc911eb9c1256ca8695d8419e1",
+      "integrity": "verified"
+    },
+    {
+      "id": "03b3083e7d9ba0d5b312e84888bbe77e",
+      "roomId": "main",
+      "name": "106 (2).jpg",
+      "size": 1240262,
+      "uploaderId": "f960ea21a59e42771f2ac57fd2434e8e",
+      "uploaderName": "Android ของฉัน",
+      "createdAt": "2026-10-22T17:09:26.158319+07:00",
+      "sha256": "1b482769513a38e5a72360dc76b99a990114b4cb12341e2596b93e219872f2e3",
+      "integrity": "verified"
+    }
+  ],
+  "devices": [
+    {
+      "id": "5e81f8ef8a1e2da0db504f5ec75edb5e",
+      "roomId": "main",
+      "name": "Skyline ios",
+      "platform": "iOS",
+      "role": "member",
+      "remoteAddr": "10.88.121.180",
+      "joinedAt": "2026-10-22T17:04:52.74178+07:00"
+    },
+    {
+      "id": "f960ea21a59e42771f2ac57fd2434e8e",
+      "roomId": "main",
+      "name": "Android ของฉัน",
+      "platform": "Android",
+      "role": "viewer",
+      "remoteAddr": "10.88.120.245",
+      "joinedAt": "2026-10-22T17:05:25.95779+07:00"
+    },
+    {
+      "id": "owner-c8700098",
+      "roomId": "c8700098",
+      "name": "MacBook (เครื่องนี้)",
+      "platform": "macOS",
+      "role": "owner",
+      "joinedAt": "2026-10-22T17:09:25.557921+07:00"
+    },
+    {
+      "id": "owner-main",
+      "roomId": "main",
+      "name": "MacBook (เครื่องนี้)",
+      "platform": "macOS",
+      "role": "owner",
+      "joinedAt": "2026-10-22T17:02:14.326805+07:00"
+    }
+  ]
+}

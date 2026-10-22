@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"bufio"
 	"errors"
 	"mime"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 
 	"lanshare/internal/domain"
 	"lanshare/internal/usecase/auth"
+	"lanshare/internal/usecase/network"
 	"lanshare/internal/usecase/transfer"
 )
 
@@ -23,6 +25,8 @@ type deviceDTO struct {
 	Online   bool   `json:"online"`
 	Me       bool   `json:"me"`
 	Pending  bool   `json:"pending"`
+	// Via is "usb" when the device reached this Mac over a phone USB tether.
+	Via string `json:"via,omitempty"`
 }
 
 type fileDTO struct {
@@ -40,7 +44,11 @@ type fileDTO struct {
 }
 
 func toDeviceDTO(d domain.Device, me domain.DeviceID) deviceDTO {
-	return deviceDTO{string(d.ID), d.Name, d.Platform, string(d.Role), d.Online, d.ID == me, d.Pending}
+	via := ""
+	if network.ViaUSB(d.RemoteAddr) {
+		via = "usb"
+	}
+	return deviceDTO{string(d.ID), d.Name, d.Platform, string(d.Role), d.Online, d.ID == me, d.Pending, via}
 }
 
 func (s *Server) toFileDTO(f domain.File, me domain.DeviceID) fileDTO {
@@ -262,9 +270,15 @@ func (s *Server) downloadZip(w http.ResponseWriter, r *http.Request, actor domai
 	h.Set("Content-Disposition", mime.FormatMediaType("attachment",
 		map[string]string{"filename": "lanshare-" + time.Now().Format("2006-01-02-1504") + ".zip"}))
 	h.Set("Cache-Control", "private, no-store")
-	if err := plan.WriteTo(r.Context(), w); err != nil {
+	// Buffer the zip so many small stored entries do not flush one kernel
+	// write per file header. A failed flush is treated like a truncated body.
+	bw := bufio.NewWriterSize(w, 4<<20)
+	if err := plan.WriteTo(r.Context(), bw); err != nil {
 		s.Log.Warn("zip download aborted", "err", err)
-		// A truncated zip must not look like a finished download.
+		panic(http.ErrAbortHandler)
+	}
+	if err := bw.Flush(); err != nil {
+		s.Log.Warn("zip download aborted", "err", err)
 		panic(http.ErrAbortHandler)
 	}
 }
@@ -419,6 +433,15 @@ func (s *Server) joinInfo(w http.ResponseWriter, r *http.Request, actor domain.D
 		out["deviceCount"] = len(list)
 		out["pendingCount"] = pending
 	}
+	if st, err := s.Network.Cable(r.Context(), actor); err == nil {
+		links := make([]map[string]string, 0, len(st.Links))
+		for _, l := range st.Links {
+			links = append(links, map[string]string{
+				"name": l.Name, "label": l.Label, "ip": l.IP, "device": l.Device, "url": l.URL,
+			})
+		}
+		out["cable"] = map[string]any{"state": st.State, "links": links}
+	}
 	writeJSON(w, http.StatusOK, out)
 }
 
@@ -441,14 +464,71 @@ func (s *Server) listNetwork(w http.ResponseWriter, r *http.Request, actor domai
 		Name        string `json:"name"`
 		IP          string `json:"ip"`
 		Kind        string `json:"kind"`
+		Label       string `json:"label,omitempty"`
 		Selected    bool   `json:"selected"`
 		Recommended bool   `json:"recommended"`
 	}
 	out := make([]item, 0, len(opts))
 	for _, o := range opts {
-		out = append(out, item{o.Name, o.IP, string(o.Kind), o.Selected, o.Recommended})
+		out = append(out, item{o.Name, o.IP, string(o.Kind), o.Label, o.Selected, o.Recommended})
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+func (s *Server) cableStatus(w http.ResponseWriter, r *http.Request, actor domain.Device) {
+	st, err := s.Network.Cable(r.Context(), actor)
+	if err != nil {
+		s.fail(w, r, err)
+		return
+	}
+	type link struct {
+		Name   string `json:"name"`
+		Label  string `json:"label"`
+		IP     string `json:"ip"`
+		Device string `json:"device"`
+		URL    string `json:"url"`
+	}
+	type phone struct {
+		Device string `json:"device"`
+		Name   string `json:"name"`
+	}
+	links := make([]link, 0, len(st.Links))
+	for _, l := range st.Links {
+		links = append(links, link{l.Name, l.Label, l.IP, l.Device, l.URL})
+	}
+	phones := make([]phone, 0, len(st.Phones))
+	for _, p := range st.Phones {
+		phones = append(phones, phone{p.Device, p.Name})
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"state":  st.State,
+		"links":  links,
+		"phones": phones,
+	})
+}
+
+func (s *Server) cableQR(w http.ResponseWriter, r *http.Request, actor domain.Device) {
+	if !actor.CanManage() {
+		s.fail(w, r, domain.ErrForbidden)
+		return
+	}
+	st, err := s.Network.Cable(r.Context(), actor)
+	if err != nil {
+		s.fail(w, r, err)
+		return
+	}
+	if len(st.Links) == 0 {
+		s.fail(w, r, domain.ErrNotFound)
+		return
+	}
+	png, err := s.QR.PNG(st.Links[0].URL, 240)
+	if err != nil {
+		s.fail(w, r, err)
+		return
+	}
+	w.Header().Set("Content-Type", "image/png")
+	w.Header().Set("Cache-Control", "no-store")
+	_, _ = w.Write(png)
 }
 
 func (s *Server) selectNetwork(w http.ResponseWriter, r *http.Request, actor domain.Device) {

@@ -212,6 +212,19 @@ func (s *Store) Save(_ context.Context, r domain.Room) error {
 	return s.saveLocked()
 }
 
+func (s *Store) Delete(_ context.Context, id domain.RoomID) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.rooms, id)
+	delete(s.files, id)
+	for did, d := range s.devices {
+		if d.RoomID == id {
+			delete(s.devices, did)
+		}
+	}
+	return s.saveLocked()
+}
+
 // ---- FileRepository ----
 // The file repository methods have different names so one Store can satisfy
 // both interfaces; use RoomRepo() and FileRepo() to get the right view.

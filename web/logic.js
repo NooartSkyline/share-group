@@ -18,8 +18,9 @@
   // ---------- ค่าคงที่ ----------
 
   const MIB = 1024 * 1024;
-  // ก้อนที่ส่งต่อ request (ต่ำกว่าเพดาน 32 MiB ของ Req 11.7)
-  const CHUNK_SIZE = 16 * MIB;
+  // ก้อนที่ส่งต่อ request: ใช้เพดาน 32 MiB ของ Req 11.7 เพื่อลดจำนวน
+  // PATCH + fsync ต่อไฟล์ (บน macOS แต่ละครั้งจบ request เรียก F_FULLFSYNC)
+  const CHUNK_SIZE = 32 * MIB;
   const MAX_CHUNK_SIZE = 32 * MIB;
   // ตารางรอก่อน retry หน่วยวินาที ค่าสุดท้ายใช้ซ้ำไปเรื่อยๆ
   const RETRY_WAITS_SEC = Object.freeze([1, 2, 4, 8, 15]);
@@ -128,7 +129,7 @@
   }
 
   // nextChunk คืนก้อนถัดไป {start, end} (ใช้กับ blob.slice(start, end)) ของช่วง [offset, size) หรือ null เมื่อส่งครบแล้ว
-  // ก้อนยาว ≤ chunkSize (ค่าเริ่มต้น 16 MiB, ถูกจำกัดไม่เกิน 32 MiB เสมอ)
+  // ก้อนยาว ≤ chunkSize (ค่าเริ่มต้น 32 MiB, ถูกจำกัดไม่เกิน 32 MiB เสมอ)
   // ผู้เรียกส่งก้อนเดียวต่อ session ต่อครั้ง แล้วเรียกใหม่ด้วย offset ที่เซิร์ฟเวอร์ยืนยัน
   function nextChunk(offset, size, chunkSize) {
     checkRange(offset, size);

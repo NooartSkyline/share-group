@@ -78,6 +78,34 @@ func (s *Server) createRoom(w http.ResponseWriter, r *http.Request, actor domain
 	writeJSON(w, http.StatusCreated, roomPublic(rm))
 }
 
+func (s *Server) deleteRoom(w http.ResponseWriter, r *http.Request, actor domain.Device) {
+	id := domain.RoomID(r.PathValue("id"))
+	next, err := s.Rooms.Delete(r.Context(), actor, id)
+	if err != nil {
+		s.fail(w, r, err)
+		return
+	}
+	if err := s.Transfer.PurgeRoom(r.Context(), actor, id); err != nil {
+		s.fail(w, r, err)
+		return
+	}
+	if err := s.Devices.PurgeRoom(r.Context(), actor, id); err != nil {
+		s.fail(w, r, err)
+		return
+	}
+	if actor.RoomID != id {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	sess, err := s.Auth.OwnerSession(r.Context(), next.ID, ownerDeviceNm)
+	if err != nil {
+		s.fail(w, r, err)
+		return
+	}
+	s.setSessionCookie(w, r, sess.Token)
+	s.writeMe(w, r, sess.Device)
+}
+
 func (s *Server) patchRoom(w http.ResponseWriter, r *http.Request, actor domain.Device) {
 	var body struct {
 		Name            string `json:"name"`

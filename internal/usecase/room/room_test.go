@@ -44,3 +44,29 @@ func TestCreateAndGuestLink(t *testing.T) {
 		t.Errorf("unknown key: %v", err)
 	}
 }
+
+func TestDeleteRoomKeepsAtLeastOne(t *testing.T) {
+	clock := fake.NewClock()
+	repo := fake.NewRooms(domain.Room{ID: "main", Name: "Main", PIN: "482917", CreatedAt: clock.Now()})
+	svc := room.NewService(repo, clock, nil)
+	ctx := context.Background()
+	owner := domain.Device{ID: "o", RoomID: "main", Role: domain.RoleOwner}
+
+	if _, err := svc.Delete(ctx, owner, "main"); !errors.Is(err, domain.ErrInvalidInput) {
+		t.Fatalf("delete last: %v", err)
+	}
+	other, err := svc.Create(ctx, owner, "ทีม B")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.Delete(ctx, domain.Device{ID: "m", RoomID: "main", Role: domain.RoleMember}, other.ID); !errors.Is(err, domain.ErrForbidden) {
+		t.Fatalf("member delete: %v", err)
+	}
+	stay, err := svc.Delete(ctx, owner, other.ID)
+	if err != nil || stay.ID != "main" {
+		t.Fatalf("delete extra = %+v %v", stay, err)
+	}
+	if _, err := repo.Get(ctx, other.ID); !errors.Is(err, domain.ErrNotFound) {
+		t.Fatal("deleted room still present")
+	}
+}

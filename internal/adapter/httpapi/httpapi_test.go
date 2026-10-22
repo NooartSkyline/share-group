@@ -34,14 +34,20 @@ import (
 	"lanshare/internal/usecase/chat"
 	"lanshare/internal/usecase/device"
 	"lanshare/internal/usecase/network"
+	"lanshare/internal/usecase/port"
 	"lanshare/internal/usecase/room"
 	"lanshare/internal/usecase/transfer"
 	"lanshare/web"
 )
 
-type fakeNet struct{}
+type fakeNet struct {
+	list []domain.NetInterface
+}
 
-func (fakeNet) Interfaces(context.Context) ([]domain.NetInterface, error) {
+func (f fakeNet) Interfaces(context.Context) ([]domain.NetInterface, error) {
+	if f.list != nil {
+		return f.list, nil
+	}
 	return []domain.NetInterface{
 		{Name: "utun3", IP: "100.64.0.2", Kind: domain.NetVPN},
 		{Name: "en0", IP: "192.168.1.23", Kind: domain.NetPhysical},
@@ -50,6 +56,10 @@ func (fakeNet) Interfaces(context.Context) ([]domain.NetInterface, error) {
 
 // newServer wires the real stack on a temp dir and returns the test server and the room PIN.
 func newServer(t *testing.T) (*httptest.Server, string) {
+	return newServerNet(t, fakeNet{})
+}
+
+func newServerNet(t *testing.T, nics port.NetworkProvider) (*httptest.Server, string) {
 	t.Helper()
 	dir := t.TempDir()
 	clock := system.Clock{}
@@ -81,7 +91,7 @@ func newServer(t *testing.T) (*httptest.Server, string) {
 		Auth: authSvc, Rooms: rooms, Devices: deviceSvc,
 		Transfer:    xfer,
 		Chat:        chat.NewService(memory.NewChatRepository(), hub, ids, clock),
-		Network:     network.NewService(fakeNet{}, 8080, ""),
+		Network:     network.NewService(nics, 8080, ""),
 		QR:          qr.New(),
 		Hub:         hub,
 		Web:         webFS,
@@ -218,7 +228,7 @@ func TestMemberCannotUseOwnerEndpoints(t *testing.T) {
 	ts, pin := newServer(t)
 	c := newClient(t)
 	join(t, c, ts, pin)
-	for _, p := range []string{"/api/admin/join-info", "/api/admin/network", "/api/admin/qr.png"} {
+	for _, p := range []string{"/api/admin/join-info", "/api/admin/network", "/api/admin/qr.png", "/api/admin/cable", "/api/admin/cable/qr.png"} {
 		if res, _ := do(t, c, "GET", ts.URL+p, nil, nil); res.StatusCode != http.StatusForbidden {
 			t.Errorf("member GET %s = %d, want 403", p, res.StatusCode)
 		}
@@ -733,6 +743,34 @@ func TestOwnerCreatesAndSwitchesRooms(t *testing.T) {
 	if me.Room.ID != rm.ID {
 		t.Fatalf("switched to %+v", me.Room)
 	}
+
+	res, b = do(t, owner, "PATCH", ts.URL+"/api/admin/room",
+		strings.NewReader(`{"name":"ทีมบี","quotaBytes":0,"fileTTLSeconds":0}`),
+		map[string]string{"Content-Type": "application/json"})
+	if res.StatusCode != 200 {
+		t.Fatalf("rename room = %d %s", res.StatusCode, b)
+	}
+	var renamed struct{ Name string }
+	_ = json.Unmarshal(b, &renamed)
+	if renamed.Name != "ทีมบี" {
+		t.Fatalf("renamed = %s", b)
+	}
+
+	res, b = do(t, owner, "DELETE", ts.URL+"/api/admin/rooms/"+rm.ID, nil, nil)
+	if res.StatusCode != 200 {
+		t.Fatalf("delete current room = %d %s", res.StatusCode, b)
+	}
+	var after struct {
+		Room struct{ ID, Name string }
+	}
+	_ = json.Unmarshal(b, &after)
+	if after.Room.ID != "main" {
+		t.Fatalf("after delete switched to %+v", after.Room)
+	}
+	res, _ = do(t, owner, "DELETE", ts.URL+"/api/admin/rooms/main", nil, nil)
+	if res.StatusCode != 400 {
+		t.Fatalf("delete last room = %d, want 400", res.StatusCode)
+	}
 }
 
 func TestShortcutsLoopbackAndViewInline(t *testing.T) {
@@ -827,5 +865,67 @@ func TestOwnerQuotaAndTTLSettings(t *testing.T) {
 	_ = json.Unmarshal(b, &info)
 	if info.QuotaBytes != 1073741824 || info.FileTTLSeconds != 86400 {
 		t.Fatalf("limits = %+v", info)
+	}
+}
+
+func TestCableEndpoint(t *testing.T) {
+	ts, _ := newServer(t)
+	owner := ownerClient(t, ts)
+	res, b := do(t, owner, "GET", ts.URL+"/api/admin/cable", nil, nil)
+	if res.StatusCode != 200 {
+		t.Fatalf("idle cable = %d %s", res.StatusCode, b)
+	}
+	var idle struct {
+		State string `json:"state"`
+		Links []any  `json:"links"`
+	}
+	_ = json.Unmarshal(b, &idle)
+	if idle.State != "idle" || idle.Links == nil {
+		t.Fatalf("idle = %s", b)
+	}
+	if res, _ := do(t, owner, "GET", ts.URL+"/api/admin/cable/qr.png", nil, nil); res.StatusCode != http.StatusNotFound {
+		t.Errorf("idle QR = %d, want 404", res.StatusCode)
+	}
+
+	ts, _ = newServerNet(t, fakeNet{list: []domain.NetInterface{
+		{Name: "en0", IP: "192.168.1.23", Kind: domain.NetPhysical},
+		{Name: "en8", IP: "192.168.42.184", Kind: domain.NetPhysical},
+	}})
+	owner = ownerClient(t, ts)
+	res, b = do(t, owner, "GET", ts.URL+"/api/admin/cable", nil, nil)
+	if res.StatusCode != 200 {
+		t.Fatalf("ready cable = %d %s", res.StatusCode, b)
+	}
+	var ready struct {
+		State string `json:"state"`
+		Links []struct {
+			Device, URL, IP string
+		}
+	}
+	_ = json.Unmarshal(b, &ready)
+	if ready.State != "ready" || len(ready.Links) != 1 || ready.Links[0].Device != "android" {
+		t.Fatalf("ready = %s", b)
+	}
+	if ready.Links[0].URL != "http://192.168.42.184:8080/?r=main" {
+		t.Errorf("url = %s", ready.Links[0].URL)
+	}
+	_, jb := do(t, owner, "GET", ts.URL+"/api/admin/join-info", nil, nil)
+	var info struct {
+		URL   string
+		Cable struct {
+			State string `json:"state"`
+			Links []struct{ URL string }
+		}
+	}
+	_ = json.Unmarshal(jb, &info)
+	if info.URL != "http://192.168.1.23:8080/?r=main" {
+		t.Errorf("join url should stay on Wi-Fi, got %s", info.URL)
+	}
+	if info.Cable.State != "ready" || len(info.Cable.Links) != 1 || info.Cable.Links[0].URL != ready.Links[0].URL {
+		t.Errorf("join-info cable = %s", jb)
+	}
+	res, png := do(t, owner, "GET", ts.URL+"/api/admin/cable/qr.png", nil, nil)
+	if res.StatusCode != 200 || !bytes.HasPrefix(png, []byte("\x89PNG")) {
+		t.Errorf("ready QR = %d len=%d", res.StatusCode, len(png))
 	}
 }

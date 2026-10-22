@@ -49,6 +49,10 @@ const (
 	ThumbSize = 360
 	// maxThumbJobs bounds concurrent (CPU and memory hungry) renders.
 	maxThumbJobs = 2
+	// streamBufSize is the copy window for zip entries and other streaming
+	// downloads. Larger than the 1 MiB append buffer (Req 2.10) because this
+	// path is not required to bound in-memory file content that tightly.
+	streamBufSize = 4 << 20
 )
 
 // ConflictPolicy says what to do when a file with the same folder and name
@@ -220,6 +224,49 @@ func (s *Service) Delete(ctx context.Context, actor domain.Device, id domain.Fil
 	return nil
 }
 
+// PurgeRoom removes every file of room. Only an Owner may; the room need not
+// be the actor's current room, so a room can be emptied before it is deleted.
+func (s *Service) PurgeRoom(ctx context.Context, actor domain.Device, room domain.RoomID) error {
+	if !actor.CanManage() {
+		return domain.ErrForbidden
+	}
+	s.cancelSessionsInRoom(ctx, room)
+	list, err := s.files.ListByRoom(ctx, room)
+	if err != nil {
+		return err
+	}
+	for _, f := range list {
+		_ = s.store.Delete(ctx, room, f.ID)
+		_ = s.thumbs.DeleteThumb(ctx, room, f.ID)
+		if err := s.files.Delete(ctx, room, f.ID); err != nil {
+			return err
+		}
+		s.events.Publish(port.Event{Type: port.EventFileDeleted, RoomID: room, Data: f.ID})
+	}
+	return s.store.RemoveRoom(ctx, room)
+}
+
+func (s *Service) cancelSessionsInRoom(ctx context.Context, room domain.RoomID) {
+	if !s.uploadsConfigured() {
+		return
+	}
+	s.regMu.Lock()
+	var ids []domain.SessionID
+	for id, rt := range s.sessions {
+		if rt != nil && rt.room == room {
+			ids = append(ids, id)
+		}
+	}
+	s.regMu.Unlock()
+	for _, id := range ids {
+		rt, err := s.lookupInRoom(room, id)
+		if err != nil {
+			continue
+		}
+		_ = s.cancel(ctx, rt)
+	}
+}
+
 // SetSystemPreviewer enables previews of formats beyond JPEG, PNG, GIF and
 // WebP. Call it before the service is shared between goroutines.
 func (s *Service) SetSystemPreviewer(p port.SystemPreviewer) { s.sys = p }
@@ -379,6 +426,7 @@ func (a *Archive) WriteTo(ctx context.Context, w io.Writer) error {
 
 func (a *Archive) write(ctx context.Context, w io.Writer, t *tracker) error {
 	zw := zip.NewWriter(w)
+	buf := make([]byte, streamBufSize)
 	used := map[string]bool{}
 	for _, f := range a.Files {
 		if err := ctx.Err(); err != nil {
@@ -396,7 +444,7 @@ func (a *Archive) write(ctx context.Context, w io.Writer, t *tracker) error {
 		}
 		dst, err := zw.CreateHeader(&zip.FileHeader{Name: full, Method: zip.Store, Modified: f.CreatedAt})
 		if err == nil {
-			_, err = io.CopyBuffer(dst, &countingReader{r: src, t: t}, make([]byte, 1<<20))
+			_, err = io.CopyBuffer(dst, &countingReader{r: src, t: t}, buf)
 		}
 		src.Close()
 		if err != nil {
