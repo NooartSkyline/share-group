@@ -23,7 +23,7 @@ type DiagnosticsRunner interface {
 // powerStatus answers GET /api/admin/power for the Owner. Without a reader
 // (power management not wired in) it reports domain.PowerDisabled.
 func (s *Server) powerStatus(w http.ResponseWriter, r *http.Request, actor domain.Device) {
-	if !actor.Role.CanManage() {
+	if !actor.CanManage() {
 		s.fail(w, r, domain.ErrForbidden)
 		return
 	}
@@ -54,7 +54,7 @@ type diagnosticsDTO struct {
 // Owner can never cause a command to run. Whether the request came over TLS
 // is taken from the connection, not from a header.
 func (s *Server) diagnostics(w http.ResponseWriter, r *http.Request, actor domain.Device) {
-	if !actor.Role.CanManage() {
+	if !actor.CanManage() {
 		s.fail(w, r, domain.ErrForbidden)
 		return
 	}
@@ -108,7 +108,7 @@ func (s *Server) listAdminUploads(w http.ResponseWriter, r *http.Request, actor 
 // checked before the shape of the id, so a non-Owner gets 403 whatever it
 // names; an id of the wrong shape gets the same 404 as one that is unknown.
 func (s *Server) cancelAdminUpload(w http.ResponseWriter, r *http.Request, actor domain.Device) {
-	if !actor.Role.CanManage() {
+	if !actor.CanManage() {
 		s.fail(w, r, domain.ErrForbidden)
 		return
 	}

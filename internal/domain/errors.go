@@ -15,6 +15,7 @@ var (
 	ErrLocked       = errors.New("too many attempts")
 	ErrNoNetwork    = errors.New("no usable network interface")
 	ErrUnsupported  = errors.New("unsupported content")
+	ErrPending      = errors.New("waiting for approval")
 )
 
 // Sentinels for resumable uploads, checksums and storage. The adapter maps

@@ -49,7 +49,7 @@ type CompleteResult struct {
 // cancelled, so a lost response can be repeated. The resume key is never
 // logged.
 func (s *Service) CompleteSession(ctx context.Context, actor domain.Device, id domain.SessionID, key string, checksum *string) (CompleteResult, error) {
-	if !actor.Role.CanUpload() {
+	if !actor.CanUpload() {
 		return CompleteResult{}, domain.ErrForbidden
 	}
 	if !s.uploadsConfigured() {

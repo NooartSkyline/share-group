@@ -36,6 +36,7 @@ import (
 	"lanshare/internal/domain"
 	"lanshare/internal/infra/config"
 	"lanshare/internal/infra/system"
+	"lanshare/internal/infra/tlscert"
 	"lanshare/internal/usecase/auth"
 	"lanshare/internal/usecase/chat"
 	"lanshare/internal/usecase/device"
@@ -79,7 +80,7 @@ func run() error {
 	files := filestore.New(cfg.DataDir)
 	sessions := sessionstore.New(cfg.DataDir)
 	disk := diskspace.New(cfg.DataDir)
-	devices := memory.NewDeviceRepository()
+	devices := store.DeviceRepo()
 	tokens := memory.NewTokenService(clock, cfg.SessionTTL)
 	limiter := memory.NewAttemptLimiter(clock, memory.LimiterPolicy{
 		MaxFailures: cfg.MaxFailures,
@@ -96,6 +97,10 @@ func run() error {
 	transferSvc := transfer.NewService(store.FileRepo(), files, files, thumb.New(), hub, ids, clock, 250*time.Millisecond)
 	chatSvc := chat.NewService(memory.NewChatRepository(), hub, ids, clock)
 	networkSvc := network.NewService(netinfo.New(), cfg.Port, cfg.Interface)
+	transferSvc.SetRooms(store.RoomRepo())
+	if cfg.TLS {
+		networkSvc.SetSecure(true)
+	}
 
 	// Previews of HEIC, camera RAW, PDF, Office files and the like come from macOS itself.
 	if cfg.SystemPreview && syspreview.Available() {
@@ -147,7 +152,8 @@ func run() error {
 		"upload-ttl", cfg.UploadTTL.String(),
 		"stall-timeout", cfg.StallTimeout.String(),
 		"keep-awake", cfg.KeepAwake,
-		"system-preview", cfg.SystemPreview)
+		"system-preview", cfg.SystemPreview,
+		"tls", cfg.TLS)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -188,10 +194,34 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("listen on %s: %w", srv.Addr, err)
 	}
+
+	certFile, keyFile := "", ""
+	if cfg.TLS {
+		var ips []net.IP
+		if list, ierr := netinfo.New().Interfaces(ctx); ierr == nil {
+			for _, n := range list {
+				if ip := net.ParseIP(n.IP); ip != nil {
+					ips = append(ips, ip)
+				}
+			}
+		}
+		var err error
+		certFile, keyFile, err = tlscert.Ensure(filepath.Join(cfg.DataDir, "tls"), ips)
+		if err != nil {
+			return fmt.Errorf("tls: %w", err)
+		}
+	}
+
 	printBanner(ctx, cfg, defaultRoom, networkSvc)
 
 	errc := make(chan error, 1)
-	go func() { errc <- srv.Serve(ln) }()
+	go func() {
+		if cfg.TLS {
+			errc <- srv.ServeTLS(ln, certFile, keyFile)
+			return
+		}
+		errc <- srv.Serve(ln)
+	}()
 
 	select {
 	case <-ctx.Done():
@@ -229,7 +259,11 @@ func stopPower(g *power.Guard, log *slog.Logger) {
 func printBanner(ctx context.Context, cfg config.Config, r domain.Room, nw *network.Service) {
 	fmt.Println()
 	fmt.Println("LAN Share กำลังทำงาน")
-	fmt.Printf("  เครื่องนี้ (เจ้าของ): http://localhost:%d\n", cfg.Port)
+	scheme := "http"
+	if cfg.TLS {
+		scheme = "https"
+	}
+	fmt.Printf("  เครื่องนี้ (เจ้าของ): %s://localhost:%d\n", scheme, cfg.Port)
 	url, err := nw.JoinURL(ctx, r.ID)
 	if err != nil {
 		fmt.Println("  ไม่พบเครือข่าย LAN ที่ใช้งานได้ อุปกรณ์อื่นจึงยังเข้าไม่ได้")

@@ -145,7 +145,7 @@ func NewService(d Deps) *Service {
 // The run itself does not depend on ctx: it is bounded by the 12 second
 // ceiling, and a caller that gives up only stops waiting for it.
 func (s *Service) Run(ctx context.Context, actor domain.Device, in RunInput) (Report, error) {
-	if !actor.Role.CanManage() {
+	if !actor.CanManage() {
 		return Report{}, domain.ErrForbidden
 	}
 	if err := ctx.Err(); err != nil {

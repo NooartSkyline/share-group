@@ -45,7 +45,7 @@ type SessionSummary struct {
 // end; a failure to delete is reported afterwards. The resume key is never
 // logged.
 func (s *Service) CancelSession(ctx context.Context, actor domain.Device, id domain.SessionID, key string) error {
-	if !actor.Role.CanUpload() {
+	if !actor.CanUpload() {
 		return domain.ErrForbidden
 	}
 	if !s.uploadsConfigured() {
@@ -55,7 +55,7 @@ func (s *Service) CancelSession(ctx context.Context, actor domain.Device, id dom
 		rt  *sessionRT
 		err error
 	)
-	if actor.Role.CanManage() {
+	if actor.CanManage() {
 		rt, err = s.lookupInRoom(actor.RoomID, id)
 	} else {
 		rt, err = s.lookupSession(actor.RoomID, id, key)
@@ -70,7 +70,7 @@ func (s *Service) CancelSession(ctx context.Context, actor domain.Device, id dom
 // its Resume_Key (Req 14.21). Only the Owner may; a session that does not
 // exist, belongs to another room or is already finished is ErrNotFound.
 func (s *Service) CancelByOwner(ctx context.Context, owner domain.Device, id domain.SessionID) error {
-	if !owner.Role.CanManage() {
+	if !owner.CanManage() {
 		return domain.ErrForbidden
 	}
 	if !s.uploadsConfigured() {
@@ -87,7 +87,7 @@ func (s *Service) CancelByOwner(ctx context.Context, owner domain.Device, id dom
 // other room, newest activity first. Dead and expired sessions are left out.
 // The result carries no Resume_Key and no file name.
 func (s *Service) ListSessions(_ context.Context, owner domain.Device) ([]SessionSummary, error) {
-	if !owner.Role.CanManage() {
+	if !owner.CanManage() {
 		return nil, domain.ErrForbidden
 	}
 	if !s.uploadsConfigured() {

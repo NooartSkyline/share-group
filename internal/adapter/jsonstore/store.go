@@ -21,10 +21,27 @@ import (
 )
 
 type roomDTO struct {
-	ID        string    `json:"id"`
-	Name      string    `json:"name"`
-	PIN       string    `json:"pin"`
-	CreatedAt time.Time `json:"createdAt"`
+	ID              string    `json:"id"`
+	Name            string    `json:"name"`
+	PIN             string    `json:"pin"`
+	CreatedAt       time.Time `json:"createdAt"`
+	QuotaBytes      int64     `json:"quotaBytes,omitempty"`
+	FileTTLNanos    int64     `json:"fileTTLNanos,omitempty"`
+	RequireApproval bool      `json:"requireApproval,omitempty"`
+	GuestKey        string    `json:"guestKey,omitempty"`
+	GuestUntil      time.Time `json:"guestUntil,omitempty"`
+	GuestMax        int64     `json:"guestMax,omitempty"`
+}
+
+type deviceDTO struct {
+	ID         string    `json:"id"`
+	RoomID     string    `json:"roomId"`
+	Name       string    `json:"name"`
+	Platform   string    `json:"platform"`
+	Role       string    `json:"role"`
+	RemoteAddr string    `json:"remoteAddr,omitempty"`
+	JoinedAt   time.Time `json:"joinedAt"`
+	Pending    bool      `json:"pending,omitempty"`
 }
 
 type fileDTO struct {
@@ -41,25 +58,28 @@ type fileDTO struct {
 }
 
 type stateDTO struct {
-	Rooms []roomDTO `json:"rooms"`
-	Files []fileDTO `json:"files"`
+	Rooms   []roomDTO   `json:"rooms"`
+	Files   []fileDTO   `json:"files"`
+	Devices []deviceDTO `json:"devices,omitempty"`
 }
 
-// Store implements port.RoomRepository and port.FileRepository.
+// Store implements port.RoomRepository, port.FileRepository and port.DeviceRepository.
 type Store struct {
 	path string
 
-	mu    sync.RWMutex
-	rooms map[domain.RoomID]domain.Room
-	files map[domain.RoomID]map[domain.FileID]domain.File
+	mu      sync.RWMutex
+	rooms   map[domain.RoomID]domain.Room
+	files   map[domain.RoomID]map[domain.FileID]domain.File
+	devices map[domain.DeviceID]domain.Device
 }
 
 // Open loads the state file at path, creating an empty store if it is missing.
 func Open(path string) (*Store, error) {
 	s := &Store{
-		path:  path,
-		rooms: make(map[domain.RoomID]domain.Room),
-		files: make(map[domain.RoomID]map[domain.FileID]domain.File),
+		path:    path,
+		rooms:   make(map[domain.RoomID]domain.Room),
+		files:   make(map[domain.RoomID]map[domain.FileID]domain.File),
+		devices: make(map[domain.DeviceID]domain.Device),
 	}
 	data, err := os.ReadFile(path)
 	switch {
@@ -75,6 +95,9 @@ func Open(path string) (*Store, error) {
 	for _, r := range st.Rooms {
 		s.rooms[domain.RoomID(r.ID)] = domain.Room{
 			ID: domain.RoomID(r.ID), Name: r.Name, PIN: r.PIN, CreatedAt: r.CreatedAt,
+			QuotaBytes: r.QuotaBytes, FileTTL: time.Duration(r.FileTTLNanos),
+			RequireApproval: r.RequireApproval, GuestKey: r.GuestKey,
+			GuestUntil: r.GuestUntil, GuestMax: r.GuestMax,
 		}
 	}
 	for _, f := range st.Files {
@@ -83,6 +106,13 @@ func Open(path string) (*Store, error) {
 			UploaderID: domain.DeviceID(f.UploaderID), UploaderName: f.UploaderName, CreatedAt: f.CreatedAt,
 			SHA256: f.SHA256, Integrity: domain.Integrity(f.Integrity),
 		})
+	}
+	for _, d := range st.Devices {
+		s.devices[domain.DeviceID(d.ID)] = domain.Device{
+			ID: domain.DeviceID(d.ID), RoomID: domain.RoomID(d.RoomID),
+			Name: d.Name, Platform: d.Platform, Role: domain.Role(d.Role),
+			RemoteAddr: d.RemoteAddr, JoinedAt: d.JoinedAt, Pending: d.Pending,
+		}
 	}
 	return s, nil
 }
@@ -100,7 +130,12 @@ func (s *Store) putFile(f domain.File) {
 func (s *Store) saveLocked() error {
 	var st stateDTO
 	for _, r := range s.rooms {
-		st.Rooms = append(st.Rooms, roomDTO{string(r.ID), r.Name, r.PIN, r.CreatedAt})
+		st.Rooms = append(st.Rooms, roomDTO{
+			ID: string(r.ID), Name: r.Name, PIN: r.PIN, CreatedAt: r.CreatedAt,
+			QuotaBytes: r.QuotaBytes, FileTTLNanos: int64(r.FileTTL),
+			RequireApproval: r.RequireApproval, GuestKey: r.GuestKey,
+			GuestUntil: r.GuestUntil, GuestMax: r.GuestMax,
+		})
 	}
 	for _, m := range s.files {
 		for _, f := range m {
@@ -111,8 +146,15 @@ func (s *Store) saveLocked() error {
 			})
 		}
 	}
+	for _, d := range s.devices {
+		st.Devices = append(st.Devices, deviceDTO{
+			ID: string(d.ID), RoomID: string(d.RoomID), Name: d.Name, Platform: d.Platform,
+			Role: string(d.Role), RemoteAddr: d.RemoteAddr, JoinedAt: d.JoinedAt, Pending: d.Pending,
+		})
+	}
 	sort.Slice(st.Rooms, func(i, j int) bool { return st.Rooms[i].ID < st.Rooms[j].ID })
 	sort.Slice(st.Files, func(i, j int) bool { return st.Files[i].ID < st.Files[j].ID })
+	sort.Slice(st.Devices, func(i, j int) bool { return st.Devices[i].ID < st.Devices[j].ID })
 
 	data, err := json.MarshalIndent(st, "", "  ")
 	if err != nil {
@@ -239,4 +281,53 @@ func (r *FileRepo) SetChecksum(_ context.Context, room domain.RoomID, id domain.
 		return err
 	}
 	return nil
+}
+
+// DeviceRepo returns the port.DeviceRepository view of the store.
+func (s *Store) DeviceRepo() *DeviceRepo { return &DeviceRepo{s: s} }
+
+// DeviceRepo implements port.DeviceRepository on top of a Store.
+// Online presence is never written: a restart always loads devices as offline.
+type DeviceRepo struct{ s *Store }
+
+func (r *DeviceRepo) Save(_ context.Context, d domain.Device) error {
+	r.s.mu.Lock()
+	defer r.s.mu.Unlock()
+	r.s.devices[d.ID] = d
+	return r.s.saveLocked()
+}
+
+func (r *DeviceRepo) Get(_ context.Context, id domain.DeviceID) (domain.Device, error) {
+	r.s.mu.RLock()
+	defer r.s.mu.RUnlock()
+	d, ok := r.s.devices[id]
+	if !ok {
+		return domain.Device{}, domain.ErrNotFound
+	}
+	return d, nil
+}
+
+func (r *DeviceRepo) ListByRoom(_ context.Context, room domain.RoomID) ([]domain.Device, error) {
+	r.s.mu.RLock()
+	defer r.s.mu.RUnlock()
+	var out []domain.Device
+	for _, d := range r.s.devices {
+		if d.RoomID == room {
+			out = append(out, d)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].JoinedAt.Equal(out[j].JoinedAt) {
+			return out[i].ID < out[j].ID
+		}
+		return out[i].JoinedAt.Before(out[j].JoinedAt)
+	})
+	return out, nil
+}
+
+func (r *DeviceRepo) Delete(_ context.Context, id domain.DeviceID) error {
+	r.s.mu.Lock()
+	defer r.s.mu.Unlock()
+	delete(r.s.devices, id)
+	return r.s.saveLocked()
 }

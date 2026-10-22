@@ -16,6 +16,7 @@ import (
 type Service struct {
 	provider port.NetworkProvider
 	port     int
+	secure   bool
 
 	mu       sync.RWMutex
 	selected string // interface name; empty means automatic
@@ -35,7 +36,7 @@ type Option struct {
 
 // List returns all usable interfaces and marks the active and recommended ones.
 func (s *Service) List(ctx context.Context, actor domain.Device) ([]Option, error) {
-	if !actor.Role.CanManage() {
+	if !actor.CanManage() {
 		return nil, domain.ErrForbidden
 	}
 	all, err := s.provider.Interfaces(ctx)
@@ -57,7 +58,7 @@ func (s *Service) List(ctx context.Context, actor domain.Device) ([]Option, erro
 
 // Select makes name the advertised interface.
 func (s *Service) Select(ctx context.Context, actor domain.Device, name string) error {
-	if !actor.Role.CanManage() {
+	if !actor.CanManage() {
 		return domain.ErrForbidden
 	}
 	all, err := s.provider.Interfaces(ctx)
@@ -84,6 +85,16 @@ func (s *Service) Active(ctx context.Context) (domain.NetInterface, error) {
 	return s.pick(all)
 }
 
+// SetSecure switches advertised URLs to https. Call it before serving.
+func (s *Service) SetSecure(on bool) { s.secure = on }
+
+func (s *Service) scheme() string {
+	if s.secure {
+		return "https"
+	}
+	return "http"
+}
+
 // JoinURL is the address other devices should open for the given room.
 func (s *Service) JoinURL(ctx context.Context, room domain.RoomID) (string, error) {
 	n, err := s.Active(ctx)
@@ -91,7 +102,17 @@ func (s *Service) JoinURL(ctx context.Context, room domain.RoomID) (string, erro
 		return "", err
 	}
 	host := net.JoinHostPort(n.IP, strconv.Itoa(s.port))
-	return fmt.Sprintf("http://%s/?r=%s", host, room), nil
+	return fmt.Sprintf("%s://%s/?r=%s", s.scheme(), host, room), nil
+}
+
+// GuestURL is the address for the upload-only guest link.
+func (s *Service) GuestURL(ctx context.Context, key string) (string, error) {
+	n, err := s.Active(ctx)
+	if err != nil {
+		return "", err
+	}
+	host := net.JoinHostPort(n.IP, strconv.Itoa(s.port))
+	return fmt.Sprintf("%s://%s/?g=%s", s.scheme(), host, key), nil
 }
 
 func (s *Service) pick(all []domain.NetInterface) (domain.NetInterface, error) {

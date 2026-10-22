@@ -22,6 +22,7 @@ type deviceDTO struct {
 	Role     string `json:"role"`
 	Online   bool   `json:"online"`
 	Me       bool   `json:"me"`
+	Pending  bool   `json:"pending"`
 }
 
 type fileDTO struct {
@@ -39,7 +40,7 @@ type fileDTO struct {
 }
 
 func toDeviceDTO(d domain.Device, me domain.DeviceID) deviceDTO {
-	return deviceDTO{string(d.ID), d.Name, d.Platform, string(d.Role), d.Online, d.ID == me}
+	return deviceDTO{string(d.ID), d.Name, d.Platform, string(d.Role), d.Online, d.ID == me, d.Pending}
 }
 
 func (s *Server) toFileDTO(f domain.File, me domain.DeviceID) fileDTO {
@@ -56,13 +57,14 @@ func (s *Server) toFileDTO(f domain.File, me domain.DeviceID) fileDTO {
 	}
 }
 
-func (s *Server) setSessionCookie(w http.ResponseWriter, token string) {
+func (s *Server) setSessionCookie(w http.ResponseWriter, r *http.Request, token string) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     cookieName,
 		Value:    token,
 		Path:     "/",
 		MaxAge:   int(cookieMaxAge.Seconds()),
 		HttpOnly: true,
+		Secure:   r.TLS != nil,
 		SameSite: http.SameSiteStrictMode,
 	})
 }
@@ -100,23 +102,39 @@ func (s *Server) join(w http.ResponseWriter, r *http.Request) {
 		s.fail(w, r, err)
 		return
 	}
-	s.setSessionCookie(w, sess.Token)
+	s.setSessionCookie(w, r, sess.Token)
 	s.writeMe(w, r, sess.Device)
 }
 
 // ownerSession signs in the owner without a PIN, but only for requests that
-// really come from this Mac.
+// really come from this Mac. Optional JSON {roomId} switches to another room.
 func (s *Server) ownerSession(w http.ResponseWriter, r *http.Request) {
 	if !isLoopback(r) || !isLocalHost(r) || r.Header.Get(clientHeader) == "" {
 		writeError(w, http.StatusForbidden, "forbidden", nil)
 		return
 	}
-	sess, err := s.Auth.OwnerSession(r.Context(), s.DefaultRoom, ownerDeviceNm)
+	roomID := s.DefaultRoom
+	if strings.Contains(r.Header.Get("Content-Type"), "application/json") {
+		var body struct {
+			RoomID string `json:"roomId"`
+		}
+		if !decodeJSON(w, r, &body) {
+			return
+		}
+		if body.RoomID != "" {
+			if !domain.ValidRoomID(body.RoomID) {
+				s.fail(w, r, domain.ErrInvalidInput)
+				return
+			}
+			roomID = domain.RoomID(body.RoomID)
+		}
+	}
+	sess, err := s.Auth.OwnerSession(r.Context(), roomID, ownerDeviceNm)
 	if err != nil {
 		s.fail(w, r, err)
 		return
 	}
-	s.setSessionCookie(w, sess.Token)
+	s.setSessionCookie(w, r, sess.Token)
 	s.writeMe(w, r, sess.Device)
 }
 
@@ -128,9 +146,14 @@ func (s *Server) writeMe(w http.ResponseWriter, r *http.Request, actor domain.De
 		s.fail(w, r, err)
 		return
 	}
+	room := map[string]any{"id": rm.ID, "name": rm.Name, "requireApproval": rm.RequireApproval}
+	if actor.CanManage() {
+		room["quotaBytes"] = rm.QuotaBytes
+		room["fileTTLSeconds"] = int64(rm.FileTTL / time.Second)
+	}
 	writeJSON(w, http.StatusOK, map[string]any{
 		"device": toDeviceDTO(actor, actor.ID),
-		"room":   map[string]any{"id": rm.ID, "name": rm.Name},
+		"room":   room,
 	})
 }
 
@@ -324,7 +347,12 @@ func (s *Server) download(w http.ResponseWriter, r *http.Request, actor domain.D
 	}
 	h := w.Header()
 	h.Set("Content-Type", ctype)
-	h.Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": dl.File.Name}))
+	// Default is a download. A Range request is a player seeking, so serve inline.
+	disp := "attachment"
+	if r.Header.Get("Range") != "" {
+		disp = "inline"
+	}
+	h.Set("Content-Disposition", mime.FormatMediaType(disp, map[string]string{"filename": dl.File.Name}))
 	h.Set("Cache-Control", "private, no-store")
 	http.ServeContent(w, r, dl.File.Name, dl.File.CreatedAt, dl.Content)
 }
@@ -355,12 +383,26 @@ func (s *Server) joinInfo(w http.ResponseWriter, r *http.Request, actor domain.D
 		return
 	}
 	active, _ := s.Network.Active(r.Context())
-	writeJSON(w, http.StatusOK, map[string]any{
-		"roomName":  rm.Name,
-		"pin":       rm.PIN,
-		"url":       url,
-		"interface": map[string]string{"name": active.Name, "ip": active.IP},
-	})
+	out := map[string]any{
+		"roomName":        rm.Name,
+		"pin":             rm.PIN,
+		"url":             url,
+		"interface":       map[string]string{"name": active.Name, "ip": active.IP},
+		"requireApproval": rm.RequireApproval,
+		"quotaBytes":      rm.QuotaBytes,
+		"fileTTLSeconds":  int64(rm.FileTTL / time.Second),
+		"guestMax":        rm.GuestMax,
+	}
+	now := time.Now()
+	if s.Clock != nil {
+		now = s.Clock.Now()
+	}
+	if rm.GuestActive(now) {
+		gurl, _ := s.Network.GuestURL(r.Context(), rm.GuestKey)
+		out["guestUrl"] = gurl
+		out["guestUntil"] = rm.GuestUntil
+	}
+	writeJSON(w, http.StatusOK, out)
 }
 
 func (s *Server) rotatePIN(w http.ResponseWriter, r *http.Request, actor domain.Device) {
@@ -394,7 +436,7 @@ func (s *Server) listNetwork(w http.ResponseWriter, r *http.Request, actor domai
 
 func (s *Server) selectNetwork(w http.ResponseWriter, r *http.Request, actor domain.Device) {
 	// Role first: a non-Owner gets 403 even with a malformed body (Req 15.3).
-	if !actor.Role.CanManage() {
+	if !actor.CanManage() {
 		s.fail(w, r, domain.ErrForbidden)
 		return
 	}
@@ -412,7 +454,7 @@ func (s *Server) selectNetwork(w http.ResponseWriter, r *http.Request, actor dom
 }
 
 func (s *Server) qrPNG(w http.ResponseWriter, r *http.Request, actor domain.Device) {
-	if !actor.Role.CanManage() {
+	if !actor.CanManage() {
 		s.fail(w, r, domain.ErrForbidden)
 		return
 	}

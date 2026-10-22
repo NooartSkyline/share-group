@@ -252,6 +252,7 @@ func (s *Service) sweep(ctx context.Context) {
 		s.expire(ctx, rt)
 	}
 	s.dropExpiredCompletions()
+	s.sweepExpiredFiles(ctx)
 }
 
 // expire removes rt if it has outlived its TTL and nothing is using it.

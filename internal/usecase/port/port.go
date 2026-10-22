@@ -21,6 +21,8 @@ type DeviceRepository interface {
 	Save(ctx context.Context, d domain.Device) error
 	Get(ctx context.Context, id domain.DeviceID) (domain.Device, error)
 	ListByRoom(ctx context.Context, room domain.RoomID) ([]domain.Device, error)
+	// Delete removes a device. Deleting one that is already gone is not an error.
+	Delete(ctx context.Context, id domain.DeviceID) error
 }
 
 // FileRepository stores file metadata. Every lookup is scoped by room so one

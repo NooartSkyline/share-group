@@ -49,7 +49,7 @@ func NewService(repo port.MessageRepository, events port.EventPublisher, ids por
 
 // Send posts a message to the actor's room.
 func (s *Service) Send(ctx context.Context, actor domain.Device, text string) (MessageView, error) {
-	if !actor.Role.CanChat() {
+	if !actor.CanChat() {
 		return MessageView{}, domain.ErrForbidden
 	}
 	text, err := domain.CleanText(text, domain.MaxMessageRunes, false)
@@ -70,7 +70,7 @@ func (s *Service) Send(ctx context.Context, actor domain.Device, text string) (M
 
 // Recent returns the latest messages of the actor's room, oldest first.
 func (s *Service) Recent(ctx context.Context, actor domain.Device) ([]MessageView, error) {
-	if !actor.Role.CanDownload() {
+	if !actor.CanDownload() {
 		return nil, domain.ErrForbidden
 	}
 	list, err := s.repo.RecentMessages(ctx, actor.RoomID, recentLimit)
@@ -86,7 +86,7 @@ func (s *Service) Recent(ctx context.Context, actor domain.Device) ([]MessageVie
 
 // Clipboard returns the room's shared clipboard (empty text if unused).
 func (s *Service) Clipboard(ctx context.Context, actor domain.Device) (ClipView, error) {
-	if !actor.Role.CanDownload() {
+	if !actor.CanDownload() {
 		return ClipView{}, domain.ErrForbidden
 	}
 	c, err := s.repo.GetClip(ctx, actor.RoomID)
@@ -98,7 +98,7 @@ func (s *Service) Clipboard(ctx context.Context, actor domain.Device) (ClipView,
 
 // SetClipboard replaces the room's shared clipboard. Empty text clears it.
 func (s *Service) SetClipboard(ctx context.Context, actor domain.Device, text string) (ClipView, error) {
-	if !actor.Role.CanChat() {
+	if !actor.CanChat() {
 		return ClipView{}, domain.ErrForbidden
 	}
 	text, err := domain.CleanText(text, domain.MaxClipboardRunes, true)

@@ -103,7 +103,7 @@ func (s *Service) Append(
 	contentLength int64,
 	body AppendBody,
 ) (AppendResult, error) {
-	if !actor.Role.CanUpload() {
+	if !actor.CanUpload() {
 		return AppendResult{}, domain.ErrForbidden
 	}
 	if !s.uploadsConfigured() {

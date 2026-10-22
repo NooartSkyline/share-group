@@ -43,8 +43,11 @@ const diskCheckEvery = 64 << 20
 //
 // Without ConfigureUploads there is no disk guard, and the rest still applies.
 func (s *Service) UploadVerified(ctx context.Context, actor domain.Device, in UploadInput, checksum *string) (domain.File, error) {
-	if !actor.Role.CanUpload() {
+	if !actor.CanUpload() {
 		return domain.File{}, domain.ErrForbidden
+	}
+	if err := s.checkRoomLimits(ctx, actor, in.Size); err != nil {
+		return domain.File{}, err
 	}
 	var supplied string
 	if checksum != nil {

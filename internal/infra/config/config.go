@@ -40,6 +40,8 @@ type Config struct {
 	// SystemPreview lets macOS tools (sips, Quick Look) draw previews of HEIC, camera RAW,
 	// PDF, Office files and the like. They parse files from other devices, so the Owner can turn it off.
 	SystemPreview bool
+	// TLS serves HTTPS with a self-signed certificate in the data directory.
+	TLS bool
 }
 
 // flagDoc is one line of the usage text. The usage is written by hand because
@@ -105,6 +107,10 @@ func Load(args []string, out io.Writer) (Config, error) {
 	sysPreviewDesc := "draw previews of HEIC, camera RAW, PDF, Office and text files with macOS sips and Quick Look; true or false"
 	fs.Var((*strictBoolValue)(&cfg.SystemPreview), "system-preview", sysPreviewDesc)
 	docs = append(docs, flagDoc{"system-preview", "bool", "true", sysPreviewDesc})
+
+	tlsDesc := "serve HTTPS with a self-signed certificate stored in the data directory; true or false"
+	fs.Var((*strictBoolValue)(&cfg.TLS), "tls", tlsDesc)
+	docs = append(docs, flagDoc{"tls", "bool", "false", tlsDesc})
 
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) || isUsageError(err) {

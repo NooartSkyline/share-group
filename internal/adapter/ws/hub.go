@@ -27,9 +27,12 @@ type message struct {
 }
 
 type client struct {
-	device domain.DeviceID
-	room   domain.RoomID
-	send   chan []byte
+	device  domain.DeviceID
+	room    domain.RoomID
+	pending bool
+	canDL   bool
+	canChat bool
+	send    chan []byte
 }
 
 // Hub implements port.EventPublisher.
@@ -66,12 +69,31 @@ func (h *Hub) Publish(e port.Event) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	for c := range h.clients[e.RoomID] {
+		if !eventVisible(c, e.Type) {
+			continue
+		}
 		select {
 		case c.send <- payload:
 		default:
 			h.log.Warn("slow websocket client dropped", "device", c.device)
 			h.removeLocked(c)
 		}
+	}
+}
+
+// eventVisible keeps pending devices to presence events only, and hides
+// file/transfer/chat traffic from roles that cannot see that data.
+func eventVisible(c *client, typ string) bool {
+	if c.pending {
+		return typ == port.EventDevices
+	}
+	switch typ {
+	case port.EventFileAdded, port.EventFileDeleted, port.EventTransfer:
+		return c.canDL
+	case port.EventMessage, port.EventClipboard:
+		return c.canChat
+	default:
+		return true
 	}
 }
 
@@ -94,7 +116,11 @@ func (h *Hub) Serve(w http.ResponseWriter, r *http.Request, device domain.Device
 	defer conn.CloseNow()
 
 	ctx := conn.CloseRead(r.Context())
-	c := &client{device: device.ID, room: device.RoomID, send: make(chan []byte, 64)}
+	c := &client{
+		device: device.ID, room: device.RoomID, pending: device.Pending,
+		canDL: device.CanDownload(), canChat: device.CanChat(),
+		send: make(chan []byte, 64),
+	}
 
 	h.mu.Lock()
 	if h.clients[c.room] == nil {

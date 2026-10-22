@@ -20,7 +20,22 @@ type Device struct {
 	RemoteAddr string
 	JoinedAt   time.Time
 	Online     bool
+	// Pending is true while the Owner has not approved this device yet.
+	// A pending device may keep a session but cannot upload, download or chat.
+	Pending bool
 }
+
+// CanUpload reports whether this device may add files right now.
+func (d Device) CanUpload() bool { return !d.Pending && d.Role.CanUpload() }
+
+// CanDownload reports whether this device may list and fetch files right now.
+func (d Device) CanDownload() bool { return !d.Pending && d.Role.CanDownload() }
+
+// CanChat reports whether this device may use chat and the shared clipboard.
+func (d Device) CanChat() bool { return !d.Pending && d.Role.CanChat() }
+
+// CanManage reports whether this device may administer its room.
+func (d Device) CanManage() bool { return !d.Pending && d.Role.CanManage() }
 
 const (
 	maxDeviceNameRunes = 40

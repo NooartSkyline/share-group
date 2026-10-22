@@ -75,9 +75,11 @@ func newServer(t *testing.T) (*httptest.Server, string) {
 	}
 	webFS, _ := iofs.Sub(web.Files, ".")
 	fs := filestore.New(dir)
+	xfer := transfer.NewService(store.FileRepo(), fs, fs, thumb.New(), hub, ids, clock, 10*time.Millisecond)
+	xfer.SetRooms(store.RoomRepo())
 	srv := httpapi.NewServer(httpapi.Deps{
 		Auth: authSvc, Rooms: rooms, Devices: deviceSvc,
-		Transfer:    transfer.NewService(store.FileRepo(), fs, fs, thumb.New(), hub, ids, clock, 10*time.Millisecond),
+		Transfer:    xfer,
 		Chat:        chat.NewService(memory.NewChatRepository(), hub, ids, clock),
 		Network:     network.NewService(fakeNet{}, 8080, ""),
 		QR:          qr.New(),
@@ -85,6 +87,7 @@ func newServer(t *testing.T) (*httptest.Server, string) {
 		Web:         webFS,
 		DefaultRoom: def.ID,
 		Log:         log,
+		Clock:       clock,
 	})
 	ts := httptest.NewServer(srv.Handler())
 	t.Cleanup(ts.Close)
@@ -116,7 +119,12 @@ func do(t *testing.T, c *http.Client, method, url string, body io.Reader, hdr ma
 }
 
 func join(t *testing.T, c *http.Client, ts *httptest.Server, pin string) (*http.Response, map[string]any) {
-	body := `{"pin":"` + pin + `","deviceName":"Pixel 8","platform":"Android"}`
+	return joinNamed(t, c, ts, pin, "Pixel 8", "Android")
+}
+
+func joinNamed(t *testing.T, c *http.Client, ts *httptest.Server, pin, name, platform string) (*http.Response, map[string]any) {
+	t.Helper()
+	body := `{"pin":"` + pin + `","deviceName":"` + name + `","platform":"` + platform + `"}`
 	res, b := do(t, c, "POST", ts.URL+"/api/rooms/main/join", strings.NewReader(body), map[string]string{"Content-Type": "application/json"})
 	var m map[string]any
 	_ = json.Unmarshal(b, &m)
@@ -330,7 +338,7 @@ func TestWebSocketPresenceAndEvents(t *testing.T) {
 
 	// an upload by another device is announced
 	c2 := newClient(t)
-	join(t, c2, ts, pin)
+	joinNamed(t, c2, ts, pin, "iPhone 15", "iOS")
 	do(t, c2, "POST", ts.URL+"/api/files?name=a.txt", strings.NewReader("hello"), nil)
 	seen := map[string]bool{}
 	for i := 0; i < 6 && !(seen["file.added"] && seen["transfer"]); i++ {
@@ -479,7 +487,7 @@ func TestNameConflictOverHTTP(t *testing.T) {
 
 	// another member must not overwrite it
 	c2 := newClient(t)
-	join(t, c2, ts, pin)
+	joinNamed(t, c2, ts, pin, "iPhone 15", "iOS")
 	if res, _ := uploadFile(t, c2, ts, "name=r.txt&conflict=overwrite", "evil"); res.StatusCode != 403 {
 		t.Errorf("foreign overwrite = %d, want 403", res.StatusCode)
 	}
@@ -576,7 +584,7 @@ func TestMessageAndClipboardEventsReachOtherDevices(t *testing.T) {
 	ts, pin := newServer(t)
 	c1, c2 := newClient(t), newClient(t)
 	join(t, c1, ts, pin)
-	join(t, c2, ts, pin)
+	joinNamed(t, c2, ts, pin, "iPhone 15", "iOS")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -605,5 +613,124 @@ func TestMessageAndClipboardEventsReachOtherDevices(t *testing.T) {
 	}
 	if seen["message"] != "ping" || seen["clipboard"] != "clip" {
 		t.Fatalf("events = %v", seen)
+	}
+}
+
+func ownerClient(t *testing.T, ts *httptest.Server) *http.Client {
+	t.Helper()
+	c := newClient(t)
+	res, b := do(t, c, "POST", ts.URL+"/api/owner/session", nil, nil)
+	if res.StatusCode != 200 {
+		t.Fatalf("owner session = %d %s", res.StatusCode, b)
+	}
+	return c
+}
+
+func TestPendingDeviceIsForbiddenUntilApproved(t *testing.T) {
+	ts, pin := newServer(t)
+	owner := ownerClient(t, ts)
+
+	res, b := do(t, owner, "PATCH", ts.URL+"/api/admin/room",
+		strings.NewReader(`{"name":"ห้องหลัก","requireApproval":true}`),
+		map[string]string{"Content-Type": "application/json"})
+	if res.StatusCode != 200 {
+		t.Fatalf("enable approval = %d %s", res.StatusCode, b)
+	}
+
+	guest := newClient(t)
+	res, m := join(t, guest, ts, pin)
+	if res.StatusCode != 200 {
+		t.Fatalf("join = %d %v", res.StatusCode, m)
+	}
+	dev, _ := m["device"].(map[string]any)
+	id, _ := dev["id"].(string)
+	pending, _ := dev["pending"].(bool)
+	if !pending || id == "" {
+		t.Fatalf("joined device = %v", m["device"])
+	}
+	res, _ = do(t, guest, "GET", ts.URL+"/api/files", nil, nil)
+	if res.StatusCode != http.StatusForbidden {
+		t.Fatalf("pending list files = %d, want 403", res.StatusCode)
+	}
+
+	res, b = do(t, owner, "POST", ts.URL+"/api/admin/devices/"+id+"/approve", nil, nil)
+	if res.StatusCode != 200 {
+		t.Fatalf("approve = %d %s", res.StatusCode, b)
+	}
+	res, _ = do(t, guest, "GET", ts.URL+"/api/files", nil, nil)
+	if res.StatusCode != 200 {
+		t.Fatalf("after approve list files = %d", res.StatusCode)
+	}
+}
+
+func TestGuestLinkUploadOnly(t *testing.T) {
+	ts, _ := newServer(t)
+	owner := ownerClient(t, ts)
+	res, b := do(t, owner, "POST", ts.URL+"/api/admin/guest",
+		strings.NewReader(`{"ttlSeconds":3600}`),
+		map[string]string{"Content-Type": "application/json"})
+	if res.StatusCode != 200 {
+		t.Fatalf("rotate guest = %d %s", res.StatusCode, b)
+	}
+	var out struct {
+		GuestURL string `json:"guestUrl"`
+	}
+	_ = json.Unmarshal(b, &out)
+	idx := strings.LastIndex(out.GuestURL, "g=")
+	if idx < 0 {
+		t.Fatalf("guestUrl = %q", out.GuestURL)
+	}
+	key := out.GuestURL[idx+2:]
+	if i := strings.IndexByte(key, '&'); i >= 0 {
+		key = key[:i]
+	}
+
+	c := newClient(t)
+	res, info := do(t, c, "GET", ts.URL+"/api/guest/"+key+"/info", nil, nil)
+	if res.StatusCode != 200 {
+		t.Fatalf("guest info = %d %s", res.StatusCode, info)
+	}
+	res, body := do(t, c, "POST", ts.URL+"/api/guest/"+key+"/join",
+		strings.NewReader(`{"deviceName":"iPhone","platform":"iOS"}`),
+		map[string]string{"Content-Type": "application/json"})
+	if res.StatusCode != 200 {
+		t.Fatalf("guest join = %d %s", res.StatusCode, body)
+	}
+	res, _ = do(t, c, "GET", ts.URL+"/api/files", nil, nil)
+	if res.StatusCode != http.StatusForbidden {
+		t.Fatalf("guest list files = %d, want 403", res.StatusCode)
+	}
+	res, up := do(t, c, "POST", ts.URL+"/api/files?name=from-guest.txt", strings.NewReader("hi"), nil)
+	if res.StatusCode != http.StatusCreated {
+		t.Fatalf("guest upload = %d %s", res.StatusCode, up)
+	}
+}
+
+func TestOwnerCreatesAndSwitchesRooms(t *testing.T) {
+	ts, _ := newServer(t)
+	owner := ownerClient(t, ts)
+	res, b := do(t, owner, "POST", ts.URL+"/api/admin/rooms",
+		strings.NewReader(`{"name":"ทีม B"}`),
+		map[string]string{"Content-Type": "application/json"})
+	if res.StatusCode != http.StatusCreated {
+		t.Fatalf("create room = %d %s", res.StatusCode, b)
+	}
+	var rm struct{ ID, Name string }
+	_ = json.Unmarshal(b, &rm)
+	if rm.Name != "ทีม B" || rm.ID == "" || rm.ID == "main" {
+		t.Fatalf("room = %+v", rm)
+	}
+	res, b = do(t, owner, "POST", ts.URL+"/api/owner/session",
+		strings.NewReader(`{"roomId":"`+rm.ID+`"}`),
+		map[string]string{"Content-Type": "application/json"})
+	if res.StatusCode != 200 {
+		t.Fatalf("switch room = %d %s", res.StatusCode, b)
+	}
+	var me struct {
+		Room struct{ ID, Name string }
+	}
+	_ = json.Unmarshal(b, &me)
+	if me.Room.ID != rm.ID {
+		t.Fatalf("switched to %+v", me.Room)
 	}
 }

@@ -139,6 +139,10 @@ func (s *Server) authed(next authedHandler) http.HandlerFunc {
 			writeError(w, http.StatusUnauthorized, "unauthorized", nil)
 			return
 		}
+		if actor.Pending && r.URL.Path != "/api/me" && r.URL.Path != "/ws" {
+			writeError(w, http.StatusForbidden, "pending", nil)
+			return
+		}
 		next(w, r, actor)
 	}
 }
@@ -250,6 +254,8 @@ func (s *Server) fail(w http.ResponseWriter, r *http.Request, err error) {
 		writeError(w, http.StatusUnauthorized, "invalid_pin", map[string]any{"remaining": inv.Remaining})
 	case errors.Is(err, domain.ErrUnauthorized):
 		writeError(w, http.StatusUnauthorized, "unauthorized", nil)
+	case errors.Is(err, domain.ErrPending):
+		writeError(w, http.StatusForbidden, "pending", nil)
 	case errors.Is(err, domain.ErrForbidden):
 		writeError(w, http.StatusForbidden, "forbidden", nil)
 	case errors.Is(err, domain.ErrNotFound):

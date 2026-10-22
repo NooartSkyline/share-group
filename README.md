@@ -2,11 +2,11 @@
 
 เซิร์ฟเวอร์แชร์ไฟล์ในวง LAN รันบน Mac แล้วให้อุปกรณ์อื่นเข้าผ่านเบราว์เซอร์ ไม่ต้องติดตั้งแอป
 
-ตอนนี้ยังเป็น HTTP ธรรมดา ใช้ในวงที่ไว้ใจกันได้เท่านั้น
+ค่าเริ่มต้นเป็น HTTP ธรรมดา ใช้ในวงที่ไว้ใจกันได้ ถ้าจะเปิดให้คนอื่นเข้า ให้ใช้ `-tls` และเปิดอนุมัติอุปกรณ์ในหน้า Owner
 
 ## หน้าตา
 
-ภาพจากต้นแบบ [`mock/ui-mock-v2.html`](mock/ui-mock-v2.html) บางหน้าจอเป็นของเฟสที่ยังไม่ทำ (menu bar, จัดการหลายห้อง)
+ภาพจากต้นแบบ [`mock/ui-mock-v2.html`](mock/ui-mock-v2.html) หน้า menu bar ยังเป็นต้นแบบของเฟสที่ยังไม่ทำ
 
 แดชบอร์ดบน Mac
 
@@ -69,6 +69,7 @@ go run ./cmd/lanshare -h
 | `-keep-awake` | `true` | กัน Mac หลับระหว่างมีการโอน ปิดด้วย `-keep-awake=false` |
 | `-max-pin-failures` | `5` | จำนวนครั้งที่กรอก PIN ผิดก่อนถูกล็อก |
 | `-lockout` | `5m0s` | ระยะเวลาล็อกหลังกรอก PIN ผิดเกินกำหนด |
+| `-tls` | `false` | เปิด HTTPS ด้วยใบรับรอง self-signed ในโฟลเดอร์ข้อมูล |
 
 ตัวอย่าง:
 
@@ -84,6 +85,25 @@ go build -o lanshare ./cmd/lanshare
 ```
 
 หน้าเว็บถูกฝังในไบนารีแล้ว จึงรันจากโฟลเดอร์อื่นได้
+
+## ส่งไฟล์จากเทอร์มินัล
+
+เซิร์ฟเวอร์ต้องเปิดอยู่บนเครื่องนี้ แล้ว:
+
+```bash
+go run ./cmd/share send photo.jpg
+go run ./cmd/share send -port 9000 ./report.pdf
+```
+
+คำสั่งนี้เข้าเป็น Owner ผ่าน `localhost` แล้วอัปโหลดไฟล์เข้าห้องปัจจุบัน สคริปต์ [`scripts/share-send.sh`](scripts/share-send.sh) ใช้เป็นต้นทางของ Finder Quick Action ได้ (Automator → Quick Action → Run Shell Script ส่งไฟล์เป็น arguments)
+
+## HTTPS
+
+```bash
+go run ./cmd/lanshare -tls
+```
+
+ใบรับรองอยู่ที่ `~/LANShare/tls` เบราว์เซอร์จะเตือน self-signed ให้กดดำเนินการต่อ บน iOS อาจต้องติดตั้งโปรไฟล์ใบรับรองเอง
 
 ## ทดสอบ
 

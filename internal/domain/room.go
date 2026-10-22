@@ -5,6 +5,7 @@ package domain
 import (
 	"crypto/rand"
 	"crypto/subtle"
+	"encoding/hex"
 	"io"
 	"math/big"
 	"time"
@@ -22,6 +23,80 @@ type Room struct {
 	Name      string
 	PIN       string
 	CreatedAt time.Time
+	// QuotaBytes is the maximum total size of files in the room; 0 means no cap.
+	QuotaBytes int64
+	// FileTTL is how long a published file is kept; 0 means it is never expired.
+	FileTTL time.Duration
+	// RequireApproval, when true, holds new devices in Pending until the Owner approves them.
+	RequireApproval bool
+	// GuestKey is the secret path segment of the upload-only guest link; empty means no link.
+	GuestKey string
+	// GuestUntil is when the guest link stops working; zero means no link.
+	GuestUntil time.Time
+	// GuestMax is the largest file a guest may send; 0 means no extra cap.
+	GuestMax int64
+}
+
+const (
+	maxRoomNameRunes = 40
+	roomIDBytes      = 4 // 8 hex characters
+	guestKeyBytes    = 8 // 16 hex characters
+)
+
+// ValidRoomID reports whether s is a safe room identifier for URLs and folders.
+func ValidRoomID(s string) bool {
+	if len(s) < 1 || len(s) > 32 {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if c >= 'a' && c <= 'z' || c >= '0' && c <= '9' {
+			continue
+		}
+		if c == '-' && i > 0 {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
+// NewRoomID returns 8 lowercase hex characters from rnd.
+func NewRoomID(rnd io.Reader) (RoomID, error) {
+	if rnd == nil {
+		rnd = rand.Reader
+	}
+	var b [roomIDBytes]byte
+	if _, err := io.ReadFull(rnd, b[:]); err != nil {
+		return "", err
+	}
+	return RoomID(hex.EncodeToString(b[:])), nil
+}
+
+// NewGuestKey returns 16 lowercase hex characters from rnd.
+func NewGuestKey(rnd io.Reader) (string, error) {
+	if rnd == nil {
+		rnd = rand.Reader
+	}
+	var b [guestKeyBytes]byte
+	if _, err := io.ReadFull(rnd, b[:]); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b[:]), nil
+}
+
+// NormalizeRoomName trims and bounds a room name. Empty input becomes "ห้อง".
+func NormalizeRoomName(name string) string {
+	name = cleanText(name, maxRoomNameRunes)
+	if name == "" {
+		return "ห้อง"
+	}
+	return name
+}
+
+// GuestActive reports whether the guest link can still be used at now.
+func (r Room) GuestActive(now time.Time) bool {
+	return r.GuestKey != "" && !r.GuestUntil.IsZero() && now.Before(r.GuestUntil)
 }
 
 // CheckPIN reports whether candidate matches the room PIN, in constant time.

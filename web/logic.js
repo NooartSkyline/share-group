@@ -425,6 +425,54 @@
     return lines.join('\n') + '\n';
   }
 
+  // ---------- ค้นหาและจัดกลุ่มไฟล์ ----------
+
+  function filePathOf(f) {
+    return ((f && f.dir) ? f.dir + '/' : '') + (f && f.name ? f.name : '');
+  }
+
+  function fileTime(f) {
+    const t = Date.parse(f && f.createdAt);
+    return Number.isNaN(t) ? 0 : t;
+  }
+
+  function fileDayKey(f) {
+    const d = new Date(f && f.createdAt);
+    if (Number.isNaN(d.getTime())) return '';
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + day;
+  }
+
+  // filterAndSortFiles กรองด้วยคำค้น (ชื่อไฟล์ โฟลเดอร์ ชื่ออุปกรณ์) แล้วเรียง
+  // sort: newest | device | date — ไม่แตะอาร์เรย์ต้นทาง
+  function filterAndSortFiles(files, query, sort) {
+    const src = Array.isArray(files) ? files : [];
+    const q = String(query || '').trim().toLowerCase();
+    let list = src.slice();
+    if (q) {
+      list = list.filter((f) => {
+        const hay = (filePathOf(f) + ' ' + (f && f.uploaderName ? f.uploaderName : '')).toLowerCase();
+        return hay.indexOf(q) !== -1;
+      });
+    }
+    if (sort === 'device') {
+      list.sort((a, b) => String(a.uploaderName || '').localeCompare(String(b.uploaderName || '')) || fileTime(b) - fileTime(a));
+    } else if (sort === 'date') {
+      list.sort((a, b) => fileDayKey(b).localeCompare(fileDayKey(a)) || fileTime(b) - fileTime(a));
+    } else {
+      list.sort((a, b) => fileTime(b) - fileTime(a));
+    }
+    return list;
+  }
+
+  function fileGroupKey(f, sort) {
+    if (sort === 'device') return (f && f.uploaderName) ? f.uploaderName : '';
+    if (sort === 'date') return fileDayKey(f);
+    return '';
+  }
+
   return {
     // ค่าคงที่
     CHUNK_SIZE,
@@ -455,6 +503,9 @@
     compareTransfers,
     matchPendingUpload,
     integrityBadge,
+    // ค้นหาและจัดกลุ่มไฟล์
+    filterAndSortFiles,
+    fileGroupKey,
     // แจ้งเตือน
     roleCanDownload,
     isNotifiable,

@@ -22,23 +22,40 @@
 <!-- ===== join with PIN ===== -->
 <main id="join" class="center" hidden>
   <form id="join-form" class="card join" autocomplete="off">
-    <h1>เข้าห้องแชร์</h1>
-    <p class="mut">ห้อง: <b id="join-room">-</b></p>
-    <label for="pin">PIN <span id="pin-len">6</span> หลักจากเจ้าของห้อง</label>
-    <input id="pin" class="pin-input" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="••••••" autocomplete="one-time-code" required>
-    <label for="dev-name">ชื่ออุปกรณ์ของคุณ</label>
+    <h1 data-i18n="join_title">เข้าห้องแชร์</h1>
+    <p class="mut"><span data-i18n="join_room_label">ห้อง:</span> <b id="join-room">-</b></p>
+    <div id="pin-wrap">
+      <label for="pin"><span data-i18n="join_pin_label">PIN</span> <span id="pin-len">6</span> <span data-i18n="join_pin_from">หลักจากเจ้าของห้อง</span></label>
+      <input id="pin" class="pin-input" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="••••••" autocomplete="one-time-code" required>
+    </div>
+    <p id="guest-hint" class="mut small" hidden data-i18n="guest_hint">ลิงก์แขก: ส่งไฟล์ได้อย่างเดียว ไม่ต้องใส่ PIN</p>
+    <label for="dev-name" data-i18n="join_name">ชื่ออุปกรณ์ของคุณ</label>
     <input id="dev-name" class="text-input" maxlength="40" required>
     <p id="join-error" class="err" role="alert" hidden></p>
-    <button id="join-btn" class="btn" type="submit">เข้าห้อง</button>
+    <button id="join-btn" class="btn" type="submit" data-i18n="join_btn">เข้าห้อง</button>
   </form>
+</main>
+
+<main id="wait-approve" class="center" hidden>
+  <div class="card join">
+    <h1 data-i18n="wait_title">รอเจ้าของห้องอนุมัติ</h1>
+    <p class="mut" id="wait-room">-</p>
+    <p class="mut small" data-i18n="wait_body">เข้าห้องแล้ว แต่ยังใช้ไฟล์และข้อความไม่ได้ จนกว่าเจ้าของจะกดอนุมัติอุปกรณ์นี้</p>
+    <p class="mut small" id="wait-name"></p>
+  </div>
 </main>
 
 <!-- ===== app ===== -->
 <div id="app" class="shell" data-view="files" hidden>
   <aside class="side">
     <div class="side-room"><span class="side-room-icon">🏠</span><div><b id="side-room-name"></b><small class="mut" id="side-room-sub"></small></div></div>
+    <div id="room-switch" hidden>
+      <label class="mut small" for="room-pick" data-i18n="rooms_label">ห้อง</label>
+      <select id="room-pick" class="select"></select>
+      <button id="room-new" class="btn ghost sm" type="button" data-i18n="room_new">＋ ห้องใหม่</button>
+    </div>
 
-    <h4>อุปกรณ์ในห้องนี้</h4>
+    <h4 data-i18n="devices_title">อุปกรณ์ในห้องนี้</h4>
     <ul id="device-list" class="devices"></ul>
 
     <h4 class="nav-title">เมนู</h4>
@@ -49,20 +66,39 @@
   </aside>
 
   <section class="main">
+    <section id="pending-banner" class="card pending-banner" hidden>
+      <h2 data-i18n="pending_title">อุปกรณ์รออนุมัติ</h2>
+      <ul id="pending-devices" class="pending-devs"></ul>
+    </section>
+
     <section id="owner" class="card owner" hidden>
       <div class="owner-qr"><img id="qr" alt="QR code สำหรับเข้าห้อง" width="150" height="150"></div>
       <div class="owner-info">
-        <h2>เชิญอุปกรณ์อื่นเข้าห้อง <span id="room-name"></span></h2>
-        <p class="mut small">สแกน QR หรือเปิดลิงก์ แล้วกรอก PIN ทุกเครื่องต้องอยู่ใน Wi-Fi เดียวกัน</p>
-        <div class="url-row"><code id="join-url" class="url"></code><button id="copy-url" class="btn ghost sm" type="button">คัดลอก</button></div>
+        <h2><span data-i18n="invite_title">เชิญอุปกรณ์อื่นเข้าห้อง</span> <span id="room-name"></span></h2>
+        <p class="mut small" data-i18n="invite_help">สแกน QR หรือเปิดลิงก์ แล้วกรอก PIN ทุกเครื่องต้องอยู่ใน Wi-Fi เดียวกัน</p>
+        <div class="url-row"><code id="join-url" class="url"></code><button id="copy-url" class="btn ghost sm" type="button" data-i18n="copy">คัดลอก</button></div>
         <div class="pin-row">
           <span class="mut small">PIN:</span>
           <div id="pin-digits" class="pin-digits" aria-live="polite"></div>
-          <button id="rotate-pin" class="btn ghost sm" type="button">🔄 สร้างใหม่</button>
+          <button id="rotate-pin" class="btn ghost sm" type="button" data-i18n="rotate_pin">🔄 สร้างใหม่</button>
         </div>
         <div class="net-row">
-          <label for="nic" class="mut small">เครือข่ายที่ใช้:</label>
+          <label for="nic" class="mut small" data-i18n="network_used">เครือข่ายที่ใช้:</label>
           <select id="nic" class="select"></select>
+        </div>
+        <label class="opt-line" for="require-approval">
+          <input id="require-approval" type="checkbox">
+          <span data-i18n="require_approval">อนุมัติอุปกรณ์ใหม่ก่อนเข้าใช้ห้อง</span>
+        </label>
+        <div class="guest-box">
+          <h3 data-i18n="guest_title">ลิงก์แขก (อัปโหลดอย่างเดียว)</h3>
+          <div class="url-row" id="guest-url-row" hidden>
+            <code id="guest-url" class="url"></code>
+            <button id="copy-guest" class="btn ghost sm" type="button" data-i18n="copy">คัดลอก</button>
+            <button id="clear-guest" class="btn ghost sm" type="button" data-i18n="guest_clear">ปิดลิงก์</button>
+          </div>
+          <p id="guest-until" class="mut small" hidden></p>
+          <button id="make-guest" class="btn ghost sm" type="button" data-i18n="guest_make">สร้างลิงก์แขก 1 ชั่วโมง</button>
         </div>
       </div>
     </section>
@@ -101,6 +137,14 @@
       <div class="pane-head">
         <h2>ไฟล์ในห้อง <span id="file-count" class="mut small"></span></h2>
         <button id="select-all" class="btn ghost sm" type="button" hidden>เลือกทั้งหมด</button>
+      </div>
+      <div class="tools file-tools">
+        <input id="file-search" class="text-input" type="search" placeholder="ค้นหาชื่อไฟล์หรืออุปกรณ์…" data-i18n-placeholder="search_ph" autocomplete="off">
+        <select id="file-sort" class="select" title="เรียงไฟล์">
+          <option value="newest" data-i18n="sort_newest">ล่าสุด</option>
+          <option value="device" data-i18n="sort_device">ตามอุปกรณ์</option>
+          <option value="date" data-i18n="sort_date">ตามวันที่</option>
+        </select>
       </div>
       <p id="files-empty" class="mut empty" hidden>ยังไม่มีไฟล์ ลองอัปโหลดไฟล์แรกได้เลย</p>
       <div id="files" class="grid"></div>

@@ -153,6 +153,11 @@ func TestRolesAreEnforced(t *testing.T) {
 	if e.store.Has("A", f.ID) {
 		t.Error("delete left the content behind")
 	}
+
+	pending := domain.Device{ID: "p", RoomID: "A", Name: "p", Role: domain.RoleMember, Pending: true}
+	if _, err := e.upIn(pending, put("nope.bin", "", "1", "")); !errors.Is(err, domain.ErrForbidden) {
+		t.Errorf("pending upload: %v", err)
+	}
 }
 
 type failingReader struct{ n int }
@@ -164,6 +169,20 @@ func (r *failingReader) Read(p []byte) (int, error) {
 		return k, nil
 	}
 	return 0, errors.New("connection reset")
+}
+
+func TestRoomQuotaBlocksUpload(t *testing.T) {
+	e := newEnv()
+	e.svc.SetRooms(fake.NewRooms(domain.Room{ID: "A", QuotaBytes: 4}))
+	alice := dev("alice", "A", domain.RoleMember)
+	if _, err := e.upIn(alice, put("a.bin", "", "12345", "")); err == nil {
+		t.Fatal("upload over quota succeeded")
+	} else {
+		var space *domain.InsufficientStorageError
+		if !errors.As(err, &space) {
+			t.Fatalf("want InsufficientStorageError, got %v", err)
+		}
+	}
 }
 
 func TestFailedUploadLeavesNoFile(t *testing.T) {

@@ -41,7 +41,7 @@ type ChecksumInfo struct {
 // Lookups are scoped to the actor's room, so other rooms' files are
 // ErrNotFound.
 func (s *Service) FileChecksum(ctx context.Context, actor domain.Device, id domain.FileID) (ChecksumInfo, error) {
-	if !actor.Role.CanDownload() {
+	if !actor.CanDownload() {
 		return ChecksumInfo{}, domain.ErrForbidden
 	}
 	f, err := s.files.Get(ctx, actor.RoomID, id)

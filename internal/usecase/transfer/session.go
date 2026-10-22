@@ -442,11 +442,14 @@ type SessionInfo struct {
 // The session id and the resume key are two independent secrets. Only the
 // hash of the key is persisted; the key is returned here and nowhere else.
 func (s *Service) CreateSession(ctx context.Context, actor domain.Device, in CreateInput) (CreatedSession, error) {
-	if !actor.Role.CanUpload() {
+	if !actor.CanUpload() {
 		return CreatedSession{}, domain.ErrForbidden
 	}
 	if !s.uploadsConfigured() {
 		return CreatedSession{}, domain.ErrNotFound
+	}
+	if err := s.checkRoomLimits(ctx, actor, in.Declared); err != nil {
+		return CreatedSession{}, err
 	}
 
 	trimmed := strings.TrimSpace(in.Name)
@@ -562,7 +565,7 @@ func (s *Service) checkOverwriteAllowed(ctx context.Context, actor domain.Device
 	}
 	for _, f := range existing {
 		if sameFolder(f, dir) && strings.EqualFold(f.Name, name) {
-			if !actor.Role.CanManage() && f.UploaderID != actor.ID {
+			if !actor.CanManage() && f.UploaderID != actor.ID {
 				return domain.ErrForbidden
 			}
 			return nil
@@ -575,7 +578,7 @@ func (s *Service) checkOverwriteAllowed(ctx context.Context, actor domain.Device
 // resume key. Like every session operation it checks the role first and then
 // answers domain.ErrNotFound, and nothing else, for a session it cannot show.
 func (s *Service) QuerySession(_ context.Context, actor domain.Device, id domain.SessionID, key string) (SessionInfo, error) {
-	if !actor.Role.CanUpload() {
+	if !actor.CanUpload() {
 		return SessionInfo{}, domain.ErrForbidden
 	}
 	if !s.uploadsConfigured() {

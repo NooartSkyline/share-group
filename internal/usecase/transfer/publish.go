@@ -35,7 +35,7 @@ func resolveTarget(existing []domain.File, actor domain.Device, dir, name string
 			if !sameFolder(f, dir) || !strings.EqualFold(f.Name, name) {
 				continue
 			}
-			if !actor.Role.CanManage() && f.UploaderID != actor.ID {
+			if !actor.CanManage() && f.UploaderID != actor.ID {
 				return publishTarget{}, domain.ErrForbidden
 			}
 			return publishTarget{Name: name, Replace: &f}, nil

@@ -58,7 +58,7 @@ func resumeKey(r *http.Request) string {
 // id of the wrong shape gets the same 404 as a session that does not exist.
 // On failure the response has been written.
 func (s *Server) sessionRef(w http.ResponseWriter, r *http.Request, actor domain.Device) (domain.SessionID, string, bool) {
-	if !actor.Role.CanUpload() {
+	if !actor.CanUpload() {
 		s.fail(w, r, domain.ErrForbidden)
 		return "", "", false
 	}

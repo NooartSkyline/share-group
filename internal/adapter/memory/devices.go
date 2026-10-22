@@ -54,3 +54,10 @@ func (r *DeviceRepository) ListByRoom(_ context.Context, room domain.RoomID) ([]
 	})
 	return out, nil
 }
+
+func (r *DeviceRepository) Delete(_ context.Context, id domain.DeviceID) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	delete(r.devices, id)
+	return nil
+}

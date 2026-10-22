@@ -63,6 +63,8 @@ func (s *Server) Handler() http.Handler {
 	// public
 	mux.HandleFunc("GET /api/rooms/{room}/info", s.roomInfo)
 	mux.HandleFunc("POST /api/rooms/{room}/join", s.join)
+	mux.HandleFunc("GET /api/guest/{key}/info", s.guestInfo)
+	mux.HandleFunc("POST /api/guest/{key}/join", s.guestJoin)
 	mux.HandleFunc("POST /api/owner/session", s.ownerSession)
 
 	// any joined device
@@ -85,10 +87,19 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/clipboard", s.authed(s.getClipboard))
 	mux.HandleFunc("PUT /api/clipboard", s.authed(s.setClipboard))
 	mux.HandleFunc("GET /ws", s.authed(s.websocket))
+	mux.HandleFunc("POST /share-target", s.authed(s.shareTarget))
 
 	// owner only (enforced inside the use cases)
 	mux.HandleFunc("GET /api/admin/join-info", s.authed(s.joinInfo))
 	mux.HandleFunc("POST /api/admin/pin/rotate", s.authed(s.rotatePIN))
+	mux.HandleFunc("GET /api/admin/rooms", s.authed(s.listRooms))
+	mux.HandleFunc("POST /api/admin/rooms", s.authed(s.createRoom))
+	mux.HandleFunc("PATCH /api/admin/room", s.authed(s.patchRoom))
+	mux.HandleFunc("POST /api/admin/guest", s.authed(s.rotateGuest))
+	mux.HandleFunc("DELETE /api/admin/guest", s.authed(s.clearGuest))
+	mux.HandleFunc("POST /api/admin/devices/{id}/approve", s.authed(s.approveDevice))
+	mux.HandleFunc("PATCH /api/admin/devices/{id}", s.authed(s.patchDevice))
+	mux.HandleFunc("DELETE /api/admin/devices/{id}", s.authed(s.rejectDevice))
 	mux.HandleFunc("GET /api/admin/network", s.authed(s.listNetwork))
 	mux.HandleFunc("POST /api/admin/network", s.authed(s.selectNetwork))
 	mux.HandleFunc("GET /api/admin/qr.png", s.authed(s.qrPNG))

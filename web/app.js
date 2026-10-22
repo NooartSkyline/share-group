@@ -90,6 +90,74 @@ const KIND_ICON = { image: '🖼️', video: '🎬', audio: '🎵', document: '�
 const PLATFORM_ICON = { iOS: '📱', Android: '🤖', Windows: '🖥️', macOS: '💻', Linux: '🐧', Web: '🌐' };
 const ROLE_LABEL = { owner: 'Owner', member: 'Member', viewer: 'Viewer', uploader: 'Uploader' };
 
+const I18N = {
+  th: {
+    join_title: 'เข้าห้องแชร์', join_room_label: 'ห้อง:', join_pin_label: 'PIN',
+    join_pin_from: 'หลักจากเจ้าของห้อง', join_name: 'ชื่ออุปกรณ์ของคุณ', join_btn: 'เข้าห้อง',
+    guest_hint: 'ลิงก์แขก: ส่งไฟล์ได้อย่างเดียว ไม่ต้องใส่ PIN', guest_btn: 'เข้าด้วยลิงก์แขก',
+    wait_title: 'รอเจ้าของห้องอนุมัติ', wait_body: 'เข้าห้องแล้ว แต่ยังใช้ไฟล์และข้อความไม่ได้ จนกว่าเจ้าของจะกดอนุมัติอุปกรณ์นี้',
+    rooms_label: 'ห้อง', room_new: '＋ ห้องใหม่', devices_title: 'อุปกรณ์ในห้องนี้',
+    pending_title: 'อุปกรณ์รออนุมัติ', invite_title: 'เชิญอุปกรณ์อื่นเข้าห้อง',
+    invite_help: 'สแกน QR หรือเปิดลิงก์ แล้วกรอก PIN ทุกเครื่องต้องอยู่ใน Wi-Fi เดียวกัน',
+    copy: 'คัดลอก', rotate_pin: '🔄 สร้างใหม่', network_used: 'เครือข่ายที่ใช้:',
+    require_approval: 'อนุมัติอุปกรณ์ใหม่ก่อนเข้าใช้ห้อง',
+    guest_title: 'ลิงก์แขก (อัปโหลดอย่างเดียว)', guest_clear: 'ปิดลิงก์', guest_make: 'สร้างลิงก์แขก 1 ชั่วโมง',
+    search_ph: 'ค้นหาชื่อไฟล์หรืออุปกรณ์…', sort_newest: 'ล่าสุด', sort_device: 'ตามอุปกรณ์', sort_date: 'ตามวันที่',
+    guest_expired: 'ลิงก์แขกนี้หมดอายุหรือไม่ถูกต้อง', new_room_name: 'ชื่อห้องใหม่',
+    approve: 'อนุมัติ', reject: 'ปฏิเสธ', pending_pill: 'รออนุมัติ',
+    copied: 'คัดลอกแล้ว', copy_fail: 'คัดลอกไม่สำเร็จ ให้เลือกข้อความแล้วคัดลอกเอง',
+    theme: 'ธีม', theme_system: 'ตามระบบ', theme_dark: 'มืด', theme_light: 'สว่าง',
+    language: 'ภาษา', resize: 'ย่อรูปใหญ่ก่อนส่ง (ยาวสุด 1920 พิกเซล)',
+    conn_on: 'เชื่อมต่อแล้ว', conn_off: 'ขาดการเชื่อมต่อ กำลังลองใหม่…',
+  },
+  en: {
+    join_title: 'Join room', join_room_label: 'Room:', join_pin_label: 'PIN',
+    join_pin_from: 'digits from the room owner', join_name: 'Your device name', join_btn: 'Join',
+    guest_hint: 'Guest link: upload only, no PIN', guest_btn: 'Join as guest',
+    wait_title: 'Waiting for approval', wait_body: 'You joined, but files and chat stay locked until the owner approves this device.',
+    rooms_label: 'Room', room_new: '+ New room', devices_title: 'Devices in this room',
+    pending_title: 'Devices waiting for approval', invite_title: 'Invite others to',
+    invite_help: 'Scan the QR code or open the link, then enter the PIN. Every device must be on the same Wi-Fi.',
+    copy: 'Copy', rotate_pin: '🔄 New PIN', network_used: 'Network:',
+    require_approval: 'Approve new devices before they can use the room',
+    guest_title: 'Guest link (upload only)', guest_clear: 'Turn off', guest_make: 'Create 1-hour guest link',
+    search_ph: 'Search files or devices…', sort_newest: 'Newest', sort_device: 'By device', sort_date: 'By date',
+    guest_expired: 'This guest link is expired or invalid', new_room_name: 'New room name',
+    approve: 'Approve', reject: 'Reject', pending_pill: 'Pending',
+    copied: 'Copied', copy_fail: 'Could not copy. Select the text and copy it yourself.',
+    theme: 'Theme', theme_system: 'System', theme_dark: 'Dark', theme_light: 'Light',
+    language: 'Language', resize: 'Shrink large photos before upload (max edge 1920 px)',
+    conn_on: 'Connected', conn_off: 'Disconnected, retrying…',
+  },
+};
+
+function currentLang() {
+  const v = localStorage.getItem('lanshare.lang');
+  if (v === 'en' || v === 'th') return v;
+  return (navigator.language || '').toLowerCase().startsWith('en') ? 'en' : 'th';
+}
+
+function t(key) {
+  const lang = currentLang();
+  return (I18N[lang] && I18N[lang][key]) || I18N.th[key] || key;
+}
+
+function applyI18n() {
+  document.documentElement.lang = currentLang() === 'en' ? 'en' : 'th';
+  for (const n of $$('[data-i18n]')) n.textContent = t(n.dataset.i18n);
+  for (const n of $$('[data-i18n-placeholder]')) n.placeholder = t(n.dataset.i18nPlaceholder);
+}
+
+function applyTheme() {
+  const v = localStorage.getItem('lanshare.theme') || 'system';
+  if (v === 'light' || v === 'dark') document.documentElement.dataset.theme = v;
+  else delete document.documentElement.dataset.theme;
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (!meta) return;
+  const dark = v === 'dark' || (v !== 'light' && !window.matchMedia('(prefers-color-scheme: light)').matches);
+  meta.content = dark ? '#0d1020' : '#eceef6';
+}
+
 function guessPlatform() {
   const ua = navigator.userAgent;
   if (/iPhone|iPad|iPod/.test(ua)) return 'iOS';
@@ -114,7 +182,7 @@ function toast(msg) {
 }
 
 function show(id) {
-  for (const v of ['loading', 'join', 'app']) $(v).hidden = v !== id;
+  for (const v of ['loading', 'join', 'wait-approve', 'app']) $(v).hidden = v !== id;
   $('tabbar').hidden = id !== 'app';
 }
 
@@ -181,6 +249,8 @@ async function bootRequest(path, opts = {}) {
 }
 
 async function boot() {
+  applyTheme();
+  applyI18n();
   let me = null;
   try {
     me = await bootRequest('/api/me');
@@ -231,24 +301,57 @@ function showOffline() {
 let lockTimer;
 
 async function showJoin() {
-  const roomId = new URLSearchParams(location.search).get('r') || 'main';
+  const q = new URLSearchParams(location.search);
+  const guestKey = (q.get('g') || '').toLowerCase();
+  if (guestKey) return showGuestJoin(guestKey);
+  const roomId = q.get('r') || 'main';
   let info;
   try {
     info = await api('/api/rooms/' + encodeURIComponent(roomId) + '/info');
   } catch (e) {
     return fatal(e.status === 404 ? new Error('ไม่พบห้องนี้') : e);
   }
+  showJoin.guestKey = '';
+  $('pin-wrap').hidden = false;
+  $('guest-hint').hidden = true;
+  $('pin').required = true;
   $('join-room').textContent = info.name;
   $('pin-len').textContent = info.pinLength;
   $('pin').maxLength = info.pinLength;
   $('dev-name').value = localStorage.getItem('lanshare.deviceName') || guessPlatform() + ' ของฉัน';
   $('join-btn').disabled = false;
+  $('join-btn').textContent = t('join_btn');
   show('join');
   $('pin').focus();
 
   // showJoin can run again when an upload needs the user to enter the room anew (see
   // promptRejoin); bind the handlers once and let them read the latest room info.
   showJoin.info = info;
+  bindJoinForm();
+}
+
+async function showGuestJoin(key) {
+  let info;
+  try {
+    info = await api('/api/guest/' + encodeURIComponent(key) + '/info');
+  } catch (e) {
+    return fatal(e.status === 404 ? new Error(t('guest_expired')) : e);
+  }
+  showJoin.guestKey = key;
+  showJoin.info = info;
+  $('pin-wrap').hidden = true;
+  $('pin').required = false;
+  $('guest-hint').hidden = false;
+  $('join-room').textContent = info.name;
+  $('dev-name').value = localStorage.getItem('lanshare.deviceName') || guessPlatform() + ' ของฉัน';
+  $('join-btn').disabled = false;
+  $('join-btn').textContent = t('guest_btn');
+  show('join');
+  $('dev-name').focus();
+  bindJoinForm();
+}
+
+function bindJoinForm() {
   if (showJoin.bound) return;
   showJoin.bound = true;
 
@@ -262,8 +365,14 @@ async function showJoin() {
     $('join-btn').disabled = true;
     const name = $('dev-name').value.trim();
     try {
-      const me = await api('/api/rooms/' + encodeURIComponent(showJoin.info.id) + '/join',
-        jsonBody('POST', { pin: $('pin').value, deviceName: name, platform: guessPlatform() }));
+      let me;
+      if (showJoin.guestKey) {
+        me = await api('/api/guest/' + encodeURIComponent(showJoin.guestKey) + '/join',
+          jsonBody('POST', { deviceName: name, platform: guessPlatform() }));
+      } else {
+        me = await api('/api/rooms/' + encodeURIComponent(showJoin.info.id) + '/join',
+          jsonBody('POST', { pin: $('pin').value, deviceName: name, platform: guessPlatform() }));
+      }
       localStorage.setItem('lanshare.deviceName', name);
       await enter(me);
     } catch (e) {
@@ -307,13 +416,20 @@ function startLockCountdown(seconds) {
 // ---------- main app ----------
 
 const role = () => state.me.role;
-const canUpload = () => ['owner', 'member', 'uploader'].includes(role());
-const canDownload = () => ['owner', 'member', 'viewer'].includes(role());
-const canChat = () => ['owner', 'member'].includes(role());
+const canUpload = () => !state.me.pending && ['owner', 'member', 'uploader'].includes(role());
+const canDownload = () => !state.me.pending && ['owner', 'member', 'viewer'].includes(role());
+const canChat = () => !state.me.pending && ['owner', 'member'].includes(role());
 
 async function enter(me) {
   state.me = me.device;
   state.room = me.room;
+  if (me.device.pending) {
+    $('wait-room').textContent = t('join_room_label') + ' ' + me.room.name;
+    $('wait-name').textContent = me.device.name;
+    show('wait-approve');
+    connectWS();
+    return;
+  }
   show('app');
   $('side-room-name').textContent = me.room.name;
   $('side-room-sub').textContent = ROLE_LABEL[me.device.role] || '';
@@ -326,7 +442,10 @@ async function enter(me) {
   setupFilesPane();
   setupChat();
   setView(isDesktopLayout() ? 'files' : 'upload');
-  if (role() === 'owner') await setupOwner();
+  if (role() === 'owner') {
+    await setupOwner();
+    await setupRooms();
+  }
   setupSettings();
   connectWS();
   resumeAfterRejoin(); // uploads paused by a 401 carry on without asking for the files again
@@ -335,7 +454,7 @@ async function enter(me) {
 
 function setConn(on) {
   $('conn-dot').classList.toggle('off', !on);
-  $('conn-text').textContent = on ? 'เชื่อมต่อแล้ว' : 'ขาดการเชื่อมต่อ กำลังลองใหม่…';
+  $('conn-text').textContent = on ? t('conn_on') : t('conn_off');
 }
 
 function connectWS() {
@@ -376,6 +495,10 @@ const refreshDevicesSoon = debounce(refreshDevices, 100);
 const refreshFilesSoon = debounce(refreshFiles, 100);
 
 function handleEvent(msg) {
+  if (state.me && state.me.pending) {
+    if (msg.type === 'devices') maybeLeavePending();
+    return;
+  }
   switch (msg.type) {
     case 'devices': refreshDevicesSoon(); break;
     case 'file.added': onFileAdded(msg.data); break;
@@ -383,6 +506,15 @@ function handleEvent(msg) {
     case 'transfer': onRemoteTransfer(msg.data); break;
     case 'message': onMessage(msg.data); break;
     case 'clipboard': onClipboard(msg.data); break;
+  }
+}
+
+async function maybeLeavePending() {
+  try {
+    const me = await api('/api/me');
+    if (!me.device.pending) location.reload();
+  } catch (e) {
+    if (e.status === 401) location.reload();
   }
 }
 
@@ -565,12 +697,62 @@ function renderUnread() {
 
 async function refreshDevices() {
   try { state.devices = await api('/api/devices'); } catch { return; }
-  $('device-list').replaceChildren(...state.devices.map((d) => el('li', { class: d.me ? 'me' : '' },
-    el('span', { class: 'dev-ic' }, PLATFORM_ICON[d.platform] || '🌐'),
-    el('span', { class: 'dev-name grow ellipsis' }, d.name + (d.me ? ' (คุณ)' : ''), el('small', {}, d.platform)),
-    el('span', { class: 'dot' + (d.online ? '' : ' off'), title: d.online ? 'ออนไลน์' : 'ออฟไลน์' }),
-    el('span', { class: 'pill ' + d.role }, ROLE_LABEL[d.role] || d.role),
+  const isOwner = role() === 'owner';
+  $('device-list').replaceChildren(...state.devices.map((d) => {
+    const row = el('li', { class: (d.me ? 'me' : '') + (d.pending ? ' wait' : '') },
+      el('span', { class: 'dev-ic' }, PLATFORM_ICON[d.platform] || '🌐'),
+      el('span', { class: 'dev-name grow ellipsis' }, d.name + (d.me ? ' (คุณ)' : ''), el('small', {}, d.platform)),
+      el('span', { class: 'dot' + (d.online ? '' : ' off'), title: d.online ? 'ออนไลน์' : 'ออฟไลน์' }),
+      d.pending
+        ? el('span', { class: 'pill pending' }, t('pending_pill'))
+        : el('span', { class: 'pill ' + d.role }, ROLE_LABEL[d.role] || d.role),
+    );
+    if (isOwner && !d.me && !d.pending) {
+      const sel = el('select', { class: 'select dev-admin', onchange: (e) => setDeviceRole(d.id, e.target.value) });
+      for (const r of ['member', 'viewer', 'uploader']) {
+        sel.append(el('option', { value: r, selected: d.role === r }, ROLE_LABEL[r]));
+      }
+      row.append(sel);
+    }
+    return row;
+  }));
+  renderPendingBanner();
+}
+
+function renderPendingBanner() {
+  const box = $('pending-banner');
+  if (!box || role() !== 'owner') {
+    if (box) box.hidden = true;
+    return;
+  }
+  const waiting = state.devices.filter((d) => d.pending);
+  box.hidden = waiting.length === 0;
+  $('pending-devices').replaceChildren(...waiting.map((d) => el('li', {},
+    el('span', { class: 'grow ellipsis' }, d.name + ' · ' + d.platform),
+    el('button', { class: 'btn sm', type: 'button', onclick: () => approveDevice(d.id) }, t('approve')),
+    el('button', { class: 'btn ghost sm', type: 'button', onclick: () => rejectDevice(d.id) }, t('reject')),
   )));
+}
+
+async function approveDevice(id) {
+  try {
+    await api('/api/admin/devices/' + encodeURIComponent(id) + '/approve', { method: 'POST' });
+    refreshDevices();
+  } catch (e) { toast('อนุมัติไม่สำเร็จ: ' + e.message); }
+}
+
+async function rejectDevice(id) {
+  try {
+    await api('/api/admin/devices/' + encodeURIComponent(id), { method: 'DELETE' });
+    refreshDevices();
+  } catch (e) { toast('ปฏิเสธไม่สำเร็จ: ' + e.message); }
+}
+
+async function setDeviceRole(id, roleName) {
+  try {
+    await api('/api/admin/devices/' + encodeURIComponent(id), jsonBody('PATCH', { role: roleName }));
+    refreshDevices();
+  } catch (e) { toast('เปลี่ยนบทบาทไม่สำเร็จ: ' + e.message); }
 }
 
 // ---------- files ----------
@@ -663,6 +845,9 @@ function previewNode(f) {
 
 function renderFiles() {
   const grid = $('files');
+  const sort = $('file-sort') ? $('file-sort').value : 'newest';
+  const q = $('file-search') ? $('file-search').value : '';
+  const list = Logic.filterAndSortFiles(state.files, q, sort);
   $('files-empty').hidden = state.files.length > 0;
   $('file-count').textContent = state.files.length ? `(${state.files.length})` : '';
   $('select-all').hidden = state.files.length === 0;
@@ -670,7 +855,15 @@ function renderFiles() {
   $('nav-files-count').textContent = state.files.length;
   const isOwner = role() === 'owner';
 
-  grid.replaceChildren(...state.files.map((f) => {
+  const nodes = [];
+  let lastGroup = null;
+  for (const f of list) {
+    const g = Logic.fileGroupKey(f, sort);
+    if (g && g !== lastGroup) {
+      lastGroup = g;
+      const label = sort === 'date' ? formatTime(f.createdAt).replace(/\s+\d{1,2}:\d{2}$/, '') : g;
+      nodes.push(el('div', { class: 'fg' }, label));
+    }
     const checked = state.selected.has(f.id);
     const th = thumbFor(f);
     th.append(el('span', { class: 'ck', 'aria-hidden': 'true' }, checked ? '✓' : ''));
@@ -682,7 +875,7 @@ function renderFiles() {
     if (isOwner) {
       acts.append(el('button', { class: 'btn danger sm', type: 'button', onclick: () => deleteFile(f) }, 'ลบ'));
     }
-    return el('div', { class: 'fc' + (checked ? ' chk' : '') },
+    nodes.push(el('div', { class: 'fc' + (checked ? ' chk' : '') },
       th,
       el('div', { class: 'bd' },
         f.dir ? el('div', { class: 'dir ellipsis' }, '📁 ' + f.dir + '/') : null,
@@ -692,8 +885,9 @@ function renderFiles() {
         integrityBadgeNode(f.integrity),
         acts,
       ),
-    );
-  }));
+    ));
+  }
+  grid.replaceChildren(...nodes);
   renderSelection();
 }
 
@@ -718,6 +912,8 @@ function renderSelection() {
 function setupFilesPane() {
   if (setupFilesPane.done) return;
   setupFilesPane.done = true;
+  $('file-search').addEventListener('input', debounce(renderFiles, 80));
+  $('file-sort').addEventListener('change', renderFiles);
   $('select-all').addEventListener('click', () => {
     if (state.selected.size === state.files.length) state.selected.clear();
     else state.files.forEach((f) => state.selected.add(f.id));
@@ -1158,7 +1354,43 @@ async function addFiles(items) {
     }
     accepted.push({ file, dir: cleanDir, conflict });
   }
+  for (const item of accepted) {
+    item.file = await maybeResize(item.file);
+  }
   if (accepted.length) enqueue(accepted);
+}
+
+function resizeEnabled() {
+  return localStorage.getItem('lanshare.resize') === '1';
+}
+
+async function maybeResize(file) {
+  if (!resizeEnabled() || !file || !file.type || !file.type.startsWith('image/') || file.type === 'image/gif') {
+    return file;
+  }
+  try {
+    const bmp = await createImageBitmap(file);
+    const max = 1920;
+    const scale = Math.min(1, max / Math.max(bmp.width, bmp.height));
+    if (scale >= 1) {
+      bmp.close();
+      return file;
+    }
+    const w = Math.round(bmp.width * scale);
+    const h = Math.round(bmp.height * scale);
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(bmp, 0, 0, w, h);
+    bmp.close();
+    const blob = await new Promise((res) => canvas.toBlob(res, 'image/jpeg', 0.85));
+    if (!blob) return file;
+    const name = file.name.replace(/\.[^.]+$/, '') + '.jpg';
+    return new File([blob], name, { type: 'image/jpeg', lastModified: file.lastModified });
+  } catch {
+    return file;
+  }
 }
 
 function askConflict(file, dir, existing, canOverwrite) {
@@ -2431,6 +2663,35 @@ function setupSettings() {
   $$('.side-nav')[0].append(navBtn);
   $('tabbar').append(tabBtn);
 
+  const theme = el('select', { class: 'select', id: 'theme-pick' });
+  for (const [v, k] of [['system', 'theme_system'], ['dark', 'theme_dark'], ['light', 'theme_light']]) {
+    theme.append(el('option', { value: v, selected: (localStorage.getItem('lanshare.theme') || 'system') === v }, t(k)));
+  }
+  theme.addEventListener('change', () => {
+    localStorage.setItem('lanshare.theme', theme.value);
+    applyTheme();
+  });
+  settingsRow(el('div', { class: 'settings-row' }, el('label', { htmlFor: 'theme-pick' }, t('theme')), theme));
+
+  const langPick = el('select', { class: 'select', id: 'lang-pick' });
+  langPick.append(
+    el('option', { value: 'th', selected: currentLang() === 'th' }, 'ไทย'),
+    el('option', { value: 'en', selected: currentLang() === 'en' }, 'English'),
+  );
+  langPick.addEventListener('change', () => {
+    localStorage.setItem('lanshare.lang', langPick.value);
+    applyI18n();
+    location.reload();
+  });
+  settingsRow(el('div', { class: 'settings-row' }, el('label', { htmlFor: 'lang-pick' }, t('language')), langPick));
+
+  if (canUpload()) {
+    const rz = el('input', { type: 'checkbox', id: 'resize-pick' });
+    rz.checked = resizeEnabled();
+    rz.addEventListener('change', () => localStorage.setItem('lanshare.resize', rz.checked ? '1' : '0'));
+    settingsRow(el('label', { class: 'opt-line', htmlFor: 'resize-pick' }, rz, t('resize')));
+  }
+
   // Service Workers, installing the app and system notifications need HTTPS or localhost. On the
   // LAN address (plain HTTP) say so, and offer nothing to install.
   if (!window.isSecureContext) {
@@ -2478,9 +2739,79 @@ async function setupOwner() {
     } catch (err) { toast('เปลี่ยนเครือข่ายไม่สำเร็จ: ' + err.message); }
   });
   $('copy-url').addEventListener('click', async () => {
-    toast((await copyText($('join-url').textContent)) ? 'คัดลอกลิงก์แล้ว' : 'คัดลอกไม่สำเร็จ ให้เลือกข้อความแล้วคัดลอกเอง');
+    toast((await copyText($('join-url').textContent)) ? t('copied') : t('copy_fail'));
+  });
+  $('require-approval').addEventListener('change', async (e) => {
+    try {
+      await api('/api/admin/room', jsonBody('PATCH', {
+        name: state.room.name,
+        quotaBytes: state.room.quotaBytes || 0,
+        fileTTLSeconds: state.room.fileTTLSeconds || 0,
+        requireApproval: e.target.checked,
+      }));
+      state.room.requireApproval = e.target.checked;
+    } catch (err) {
+      e.target.checked = !e.target.checked;
+      toast('บันทึกการตั้งค่าไม่สำเร็จ: ' + err.message);
+    }
+  });
+  $('make-guest').addEventListener('click', async () => {
+    try {
+      const r = await api('/api/admin/guest', jsonBody('POST', { ttlSeconds: 3600 }));
+      renderGuest(r);
+      toast(t('copied'));
+      if (r.guestUrl) copyText(r.guestUrl);
+    } catch (e) { toast('สร้างลิงก์แขกไม่สำเร็จ: ' + e.message); }
+  });
+  $('copy-guest').addEventListener('click', async () => {
+    toast((await copyText($('guest-url').textContent)) ? t('copied') : t('copy_fail'));
+  });
+  $('clear-guest').addEventListener('click', async () => {
+    try {
+      await api('/api/admin/guest', { method: 'DELETE' });
+      renderGuest({});
+    } catch (e) { toast('ปิดลิงก์ไม่สำเร็จ: ' + e.message); }
   });
   setupOwnerTools();
+}
+
+function renderGuest(info) {
+  const url = info.guestUrl || '';
+  $('guest-url-row').hidden = !url;
+  $('guest-url').textContent = url;
+  $('make-guest').hidden = !!url;
+  if (info.guestUntil) {
+    $('guest-until').hidden = false;
+    $('guest-until').textContent = formatTime(info.guestUntil);
+  } else {
+    $('guest-until').hidden = true;
+  }
+}
+
+async function setupRooms() {
+  if (role() !== 'owner') return;
+  $('room-switch').hidden = false;
+  let rooms;
+  try { rooms = await api('/api/admin/rooms'); } catch { return; }
+  const pick = $('room-pick');
+  pick.replaceChildren(...rooms.map((r) => el('option', { value: r.id, selected: r.current }, r.name)));
+  if (setupRooms.bound) return;
+  setupRooms.bound = true;
+  pick.addEventListener('change', async () => {
+    try {
+      await api('/api/owner/session', jsonBody('POST', { roomId: pick.value }));
+      location.reload();
+    } catch (e) { toast('เปลี่ยนห้องไม่สำเร็จ: ' + e.message); }
+  });
+  $('room-new').addEventListener('click', async () => {
+    const name = prompt(t('new_room_name'));
+    if (!name) return;
+    try {
+      const rm = await api('/api/admin/rooms', jsonBody('POST', { name }));
+      await api('/api/owner/session', jsonBody('POST', { roomId: rm.id }));
+      location.reload();
+    } catch (e) { toast('สร้างห้องไม่สำเร็จ: ' + e.message); }
+  });
 }
 
 function renderPin(pin) {
@@ -2494,6 +2825,8 @@ async function loadJoinInfo() {
     $('join-url').textContent = info.url || 'ไม่พบเครือข่ายที่ใช้งานได้';
     renderPin(info.pin);
     $('qr').src = '/api/admin/qr.png?ts=' + Date.now();
+    $('require-approval').checked = !!info.requireApproval;
+    renderGuest(info);
   } catch (e) { toast('โหลดข้อมูลห้องไม่สำเร็จ: ' + e.message); }
 }
 

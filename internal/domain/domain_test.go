@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestSanitizeFileName(t *testing.T) {
@@ -161,5 +162,46 @@ func TestCleanText(t *testing.T) {
 	}
 	if !(RoleOwner.CanChat() && RoleMember.CanChat()) || RoleViewer.CanChat() || RoleUploader.CanChat() {
 		t.Error("CanChat roles are wrong")
+	}
+}
+
+func TestValidRoomID(t *testing.T) {
+	ok := []string{"main", "a", "team-b", "abc123", strings.Repeat("a", 32)}
+	for _, s := range ok {
+		if !ValidRoomID(s) {
+			t.Errorf("%q should be valid", s)
+		}
+	}
+	bad := []string{"", "Main", "team_b", "-x", "a/b", strings.Repeat("a", 33), "ทีม"}
+	for _, s := range bad {
+		if ValidRoomID(s) {
+			t.Errorf("%q should be invalid", s)
+		}
+	}
+}
+
+func TestPendingDeviceCannotAct(t *testing.T) {
+	d := Device{Role: RoleMember, Pending: true}
+	if d.CanUpload() || d.CanDownload() || d.CanChat() || d.CanManage() {
+		t.Fatal("pending member still has permissions")
+	}
+	d.Pending = false
+	if !d.CanUpload() || !d.CanDownload() || !d.CanChat() {
+		t.Fatal("approved member lost permissions")
+	}
+}
+
+func TestGuestActive(t *testing.T) {
+	now := time.Date(2026, 10, 22, 12, 0, 0, 0, time.UTC)
+	r := Room{GuestKey: "aabbccddeeff0011", GuestUntil: now.Add(time.Hour)}
+	if !r.GuestActive(now) {
+		t.Fatal("active guest link reported inactive")
+	}
+	if r.GuestActive(now.Add(2 * time.Hour)) {
+		t.Fatal("expired guest link reported active")
+	}
+	r.GuestKey = ""
+	if r.GuestActive(now) {
+		t.Fatal("empty key reported active")
 	}
 }

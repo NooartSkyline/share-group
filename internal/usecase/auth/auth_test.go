@@ -158,3 +158,57 @@ func TestTokenExpires(t *testing.T) {
 		t.Fatalf("expired token accepted: %v", err)
 	}
 }
+
+func TestJoinRemembersDeviceAndHonorsApproval(t *testing.T) {
+	clock := fake.NewClock()
+	pub := &fake.Publisher{}
+	rooms := fake.NewRooms(domain.Room{ID: "main", Name: "Main", PIN: "482917", RequireApproval: true})
+	devices := memory.NewDeviceRepository()
+	svc := auth.NewService(rooms, devices, memory.NewTokenService(clock, time.Hour),
+		memory.NewAttemptLimiter(clock, memory.LimiterPolicy{MaxFailures: 5, Window: 10 * time.Minute, Lockout: 5 * time.Minute}),
+		&fake.IDs{}, clock, pub)
+
+	first, err := svc.Join(context.Background(), auth.JoinInput{
+		RoomID: "main", PIN: "482917", DeviceName: "Pixel", Platform: "Android",
+		RemoteAddr: "10.0.0.5", LimiterKey: "10.0.0.5|main",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !first.Device.Pending {
+		t.Fatal("new device should wait for approval")
+	}
+	second, err := svc.Join(context.Background(), auth.JoinInput{
+		RoomID: "main", PIN: "482917", DeviceName: "Pixel", Platform: "Android",
+		RemoteAddr: "10.0.0.8", LimiterKey: "10.0.0.8|main",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if second.Device.ID != first.Device.ID || !second.Device.Pending {
+		t.Fatalf("remembered device = %+v", second.Device)
+	}
+}
+
+func TestJoinGuest(t *testing.T) {
+	clock := fake.NewClock()
+	pub := &fake.Publisher{}
+	rooms := fake.NewRooms(domain.Room{
+		ID: "main", Name: "Main", PIN: "482917",
+		GuestKey: "aabbccddeeff0011", GuestUntil: clock.Now().Add(time.Hour),
+	})
+	svc := auth.NewService(rooms, memory.NewDeviceRepository(), memory.NewTokenService(clock, time.Hour),
+		memory.NewAttemptLimiter(clock, memory.LimiterPolicy{MaxFailures: 5, Window: 10 * time.Minute, Lockout: 5 * time.Minute}),
+		&fake.IDs{}, clock, pub)
+
+	s, err := svc.JoinGuest(context.Background(), "aabbccddeeff0011", "iPhone", "iOS", "10.0.0.9")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s.Device.Role != domain.RoleUploader || s.Device.Pending {
+		t.Fatalf("guest = %+v", s.Device)
+	}
+	if _, err := svc.JoinGuest(context.Background(), "deadbeefdeadbeef", "x", "Web", "10.0.0.9"); !errors.Is(err, domain.ErrNotFound) {
+		t.Errorf("unknown key: %v", err)
+	}
+}

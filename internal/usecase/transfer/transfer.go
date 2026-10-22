@@ -77,6 +77,10 @@ type Service struct {
 	interval time.Duration
 	jobs     chan struct{}
 
+	// rooms supplies per-room quota and file TTL. Optional: tests that do not
+	// set it skip those checks.
+	rooms port.RoomRepository
+
 	// sys draws previews of formats the Go decoders cannot read; nil = none.
 	// Set by SetSystemPreviewer before the service is shared.
 	sys port.SystemPreviewer
@@ -132,7 +136,7 @@ func NewService(
 
 // List returns the files of the actor's room, newest first.
 func (s *Service) List(ctx context.Context, actor domain.Device) ([]domain.File, error) {
-	if !actor.Role.CanDownload() {
+	if !actor.CanDownload() {
 		return nil, domain.ErrForbidden
 	}
 	list, err := s.files.ListByRoom(ctx, actor.RoomID)
@@ -179,7 +183,7 @@ type Download struct {
 // Open returns the file content for streaming. Lookups are scoped to the
 // actor's room, so other rooms' files are reported as not found.
 func (s *Service) Open(ctx context.Context, actor domain.Device, id domain.FileID) (Download, error) {
-	if !actor.Role.CanDownload() {
+	if !actor.CanDownload() {
 		return Download{}, domain.ErrForbidden
 	}
 	f, err := s.files.Get(ctx, actor.RoomID, id)
@@ -197,7 +201,7 @@ func (s *Service) Open(ctx context.Context, actor domain.Device, id domain.FileI
 
 // Delete removes a file from the actor's room.
 func (s *Service) Delete(ctx context.Context, actor domain.Device, id domain.FileID) error {
-	if !actor.Role.CanManage() {
+	if !actor.CanManage() {
 		return domain.ErrForbidden
 	}
 	if _, err := s.files.Get(ctx, actor.RoomID, id); err != nil {
@@ -218,6 +222,10 @@ func (s *Service) Delete(ctx context.Context, actor domain.Device, id domain.Fil
 // WebP. Call it before the service is shared between goroutines.
 func (s *Service) SetSystemPreviewer(p port.SystemPreviewer) { s.sys = p }
 
+// SetRooms enables per-room quota and automatic file expiry. Call it before
+// the service is shared between goroutines.
+func (s *Service) SetRooms(rooms port.RoomRepository) { s.rooms = rooms }
+
 // CanPreview reports whether Thumbnail can be expected to draw a picture for
 // name: always for the formats the Go decoders know, and for the others only
 // when a system previewer is set.
@@ -236,7 +244,7 @@ func (s *Service) CanPreview(name string) bool {
 // previewer, and the result is normalized to a small JPEG by the same renderer.
 // A file that cannot be previewed is domain.ErrUnsupported.
 func (s *Service) Thumbnail(ctx context.Context, actor domain.Device, id domain.FileID) ([]byte, error) {
-	if !actor.Role.CanDownload() {
+	if !actor.CanDownload() {
 		return nil, domain.ErrForbidden
 	}
 	f, err := s.files.Get(ctx, actor.RoomID, id)
@@ -321,7 +329,7 @@ type Archive struct {
 
 // PlanArchive checks that every id exists in the actor's room.
 func (s *Service) PlanArchive(ctx context.Context, actor domain.Device, ids []domain.FileID) (*Archive, error) {
-	if !actor.Role.CanDownload() {
+	if !actor.CanDownload() {
 		return nil, domain.ErrForbidden
 	}
 	if len(ids) == 0 || len(ids) > MaxArchiveFiles {
