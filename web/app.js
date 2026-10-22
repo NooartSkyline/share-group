@@ -666,7 +666,6 @@ function renderFiles() {
   $('files-empty').hidden = state.files.length > 0;
   $('file-count').textContent = state.files.length ? `(${state.files.length})` : '';
   $('select-all').hidden = state.files.length === 0;
-  $('delete-all').hidden = state.files.length === 0 || role() !== 'owner'; // only the Owner may empty the room
   $('nav-files-count').hidden = state.files.length === 0;
   $('nav-files-count').textContent = state.files.length;
   const isOwner = role() === 'owner';
@@ -706,6 +705,7 @@ function toggleSelect(id) {
 function renderSelection() {
   const n = state.selected.size;
   $('selbar').hidden = n === 0;
+  $('sel-delete').hidden = role() !== 'owner'; // only the Owner may delete files
   if (n) {
     const total = state.files.filter((f) => state.selected.has(f.id)).reduce((s, f) => s + f.size, 0);
     $('sel-count').textContent = `เลือก ${n} ไฟล์`;
@@ -723,7 +723,7 @@ function setupFilesPane() {
     else state.files.forEach((f) => state.selected.add(f.id));
     renderFiles();
   });
-  $('delete-all').addEventListener('click', deleteAllFiles);
+  $('sel-delete').addEventListener('click', deleteSelected);
   $('sel-clear').addEventListener('click', () => { state.selected.clear(); renderFiles(); });
   $('sel-zip').addEventListener('click', () => {
     if (!state.selected.size) return;
@@ -736,21 +736,27 @@ function setupFilesPane() {
   });
 }
 
-async function deleteAllFiles() {
-  const n = state.files.length;
-  if (role() !== 'owner' || n === 0) return;
-  if (!confirm(`ลบไฟล์ทั้งหมด ${n} ไฟล์ในห้องนี้ ?\nลบแล้วกู้คืนไม่ได้`)) return;
-  const btn = $('delete-all');
+// deleteSelected deletes the selected files one by one with the single-file endpoint, so a file
+// that cannot be deleted does not stop the others. Only the Owner sees the button.
+async function deleteSelected() {
+  const ids = state.files.filter((f) => state.selected.has(f.id)).map((f) => f.id);
+  if (role() !== 'owner' || ids.length === 0) return;
+  if (!confirm(`ลบ ${ids.length} ไฟล์ที่เลือก ?\nลบแล้วกู้คืนไม่ได้`)) return;
+  const btn = $('sel-delete');
   btn.disabled = true;
-  try {
-    const r = await api('/api/files', { method: 'DELETE' });
-    toast(`ลบแล้ว ${r.deleted} ไฟล์`);
-  } catch (e) {
-    toast('ลบไม่สำเร็จ: ' + e.message);
-  } finally {
-    btn.disabled = false;
-    refreshFiles();
+  let failed = 0;
+  for (const id of ids) {
+    try {
+      await api('/api/files/' + encodeURIComponent(id), { method: 'DELETE' });
+      state.selected.delete(id);
+    } catch (e) {
+      if (e.status !== 404) failed++; // 404: already gone
+      else state.selected.delete(id);
+    }
   }
+  btn.disabled = false;
+  toast(failed ? `ลบแล้ว ${ids.length - failed} ไฟล์ ลบไม่สำเร็จ ${failed} ไฟล์` : `ลบแล้ว ${ids.length} ไฟล์`);
+  refreshFiles();
 }
 
 async function deleteFile(f) {

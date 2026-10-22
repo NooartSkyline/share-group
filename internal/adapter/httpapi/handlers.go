@@ -329,16 +329,6 @@ func (s *Server) download(w http.ResponseWriter, r *http.Request, actor domain.D
 	http.ServeContent(w, r, dl.File.Name, dl.File.CreatedAt, dl.Content)
 }
 
-// deleteAllFiles answers DELETE /api/files: the Owner empties their own room.
-func (s *Server) deleteAllFiles(w http.ResponseWriter, r *http.Request, actor domain.Device) {
-	n, err := s.Transfer.DeleteAll(r.Context(), actor)
-	if err != nil {
-		s.fail(w, r, err)
-		return
-	}
-	writeJSON(w, http.StatusOK, map[string]int{"deleted": n})
-}
-
 func (s *Server) deleteFile(w http.ResponseWriter, r *http.Request, actor domain.Device) {
 	if err := s.Transfer.Delete(r.Context(), actor, domain.FileID(r.PathValue("id"))); err != nil {
 		s.fail(w, r, err)

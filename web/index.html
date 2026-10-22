@@ -100,13 +100,14 @@
     <section id="pane-files" class="pane">
       <div class="pane-head">
         <h2>ไฟล์ในห้อง <span id="file-count" class="mut small"></span></h2>
-        <span class="pane-tools"><button id="delete-all" class="btn danger sm" type="button" hidden>🗑 ลบทั้งหมด</button><button id="select-all" class="btn ghost sm" type="button" hidden>เลือกทั้งหมด</button></span>
+        <button id="select-all" class="btn ghost sm" type="button" hidden>เลือกทั้งหมด</button>
       </div>
       <p id="files-empty" class="mut empty" hidden>ยังไม่มีไฟล์ ลองอัปโหลดไฟล์แรกได้เลย</p>
       <div id="files" class="grid"></div>
       <div id="selbar" class="selbar" hidden>
         <span class="grow"><b id="sel-count"></b> <span id="sel-size"></span></span>
         <button id="sel-zip" class="btn sm" type="button">⬇ ดาวน์โหลดเป็น .zip</button>
+        <button id="sel-delete" class="btn danger sm" type="button" hidden>🗑 ลบที่เลือก</button>
         <button id="sel-clear" class="btn ghost sm" type="button">ล้าง</button>
       </div>
     </section>
