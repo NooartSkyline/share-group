@@ -1,11 +1,15 @@
 package httpapi
 
 import (
+	"archive/zip"
 	"bufio"
 	"errors"
+	"io"
 	"mime"
 	"net/http"
+	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -370,6 +374,11 @@ func (s *Server) download(w http.ResponseWriter, r *http.Request, actor domain.D
 			ctype = "text/plain; charset=utf-8"
 		} else if kind := domain.KindOf(dl.File.Name); kind == domain.KindImage || kind == domain.KindVideo || kind == domain.KindAudio {
 			disp = "inline"
+		} else if strings.EqualFold(filepath.Ext(dl.File.Name), ".pdf") {
+			disp = "inline"
+			if ctype == "application/octet-stream" {
+				ctype = "application/pdf"
+			}
 		}
 	}
 	h.Set("Content-Type", ctype)
@@ -442,7 +451,14 @@ func (s *Server) joinInfo(w http.ResponseWriter, r *http.Request, actor domain.D
 		}
 		phones := make([]map[string]string, 0, len(st.Phones))
 		for _, p := range st.Phones {
-			phones = append(phones, map[string]string{"device": p.Device, "name": p.Name})
+			item := map[string]string{"device": p.Device, "name": p.Name}
+			if p.Kernel != "" {
+				item["kernel"] = p.Kernel
+			}
+			if p.Android != "" {
+				item["android"] = p.Android
+			}
+			phones = append(phones, item)
 		}
 		out["cable"] = map[string]any{"state": st.State, "links": links, "phones": phones}
 	}
@@ -493,8 +509,10 @@ func (s *Server) cableStatus(w http.ResponseWriter, r *http.Request, actor domai
 		URL    string `json:"url"`
 	}
 	type phone struct {
-		Device string `json:"device"`
-		Name   string `json:"name"`
+		Device  string `json:"device"`
+		Name    string `json:"name"`
+		Kernel  string `json:"kernel,omitempty"`
+		Android string `json:"android,omitempty"`
 	}
 	links := make([]link, 0, len(st.Links))
 	for _, l := range st.Links {
@@ -502,12 +520,214 @@ func (s *Server) cableStatus(w http.ResponseWriter, r *http.Request, actor domai
 	}
 	phones := make([]phone, 0, len(st.Phones))
 	for _, p := range st.Phones {
-		phones = append(phones, phone{p.Device, p.Name})
+		phones = append(phones, phone{p.Device, p.Name, p.Kernel, p.Android})
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
 		"state":  st.State,
 		"links":  links,
 		"phones": phones,
+	})
+}
+
+func (s *Server) cableFS(w http.ResponseWriter, r *http.Request, actor domain.Device) {
+	list, err := s.Network.ListCableFS(r.Context(), actor, r.URL.Query().Get("path"))
+	if err != nil {
+		s.fail(w, r, err)
+		return
+	}
+	entries := make([]map[string]any, 0, len(list.Entries))
+	for _, e := range list.Entries {
+		entries = append(entries, map[string]any{
+			"name": e.Name, "path": e.Path, "dir": e.Dir, "size": e.Size, "kind": e.Kind,
+		})
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"device":  list.Device,
+		"name":    list.Name,
+		"path":    list.Path,
+		"parent":  list.Parent,
+		"title":   list.Title,
+		"hint":    list.Hint,
+		"entries": entries,
+	})
+}
+
+func (s *Server) cableFSFile(w http.ResponseWriter, r *http.Request, actor domain.Device) {
+	cf, err := s.Network.OpenCableFile(r.Context(), actor, r.URL.Query().Get("path"))
+	if err != nil {
+		s.fail(w, r, err)
+		return
+	}
+	defer cf.Content.Close()
+	rs, ok := cf.Content.(io.ReadSeeker)
+	if !ok {
+		s.fail(w, r, errors.New("cable file is not seekable"))
+		return
+	}
+	ctype := mime.TypeByExtension(filepath.Ext(cf.Name))
+	if ctype == "" {
+		ctype = "application/octet-stream"
+	}
+	disp := "attachment"
+	if r.URL.Query().Get("view") == "1" {
+		if domain.IsTextPreview(cf.Name) {
+			disp = "inline"
+			ctype = "text/plain; charset=utf-8"
+		} else if kind := domain.KindOf(cf.Name); kind == domain.KindImage || kind == domain.KindVideo || kind == domain.KindAudio {
+			disp = "inline"
+		} else if strings.EqualFold(filepath.Ext(cf.Name), ".pdf") {
+			disp = "inline"
+			if ctype == "application/octet-stream" {
+				ctype = "application/pdf"
+			}
+		}
+	}
+	h := w.Header()
+	h.Set("Content-Type", ctype)
+	h.Set("Content-Disposition", mime.FormatMediaType(disp, map[string]string{"filename": cf.Name}))
+	h.Set("Cache-Control", "private, no-store")
+	http.ServeContent(w, r, cf.Name, time.Time{}, rs)
+}
+
+func (s *Server) cableFSHead(w http.ResponseWriter, r *http.Request, actor domain.Device) {
+	peek, err := s.Network.PeekCableFile(r.Context(), actor, r.URL.Query().Get("path"), 0)
+	if err != nil {
+		s.fail(w, r, err)
+		return
+	}
+	h := w.Header()
+	h.Set("Content-Type", "application/octet-stream")
+	h.Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": peek.Name}))
+	h.Set("Cache-Control", "private, no-store")
+	_, _ = w.Write(peek.Data)
+}
+
+func (s *Server) cableFSThumb(w http.ResponseWriter, r *http.Request, actor domain.Device) {
+	cf, err := s.Network.OpenCableFile(r.Context(), actor, r.URL.Query().Get("path"))
+	if err != nil {
+		s.fail(w, r, err)
+		return
+	}
+	defer cf.Content.Close()
+	b, err := s.Transfer.PreviewBytes(r.Context(), cf.Name, cf.Content)
+	if err != nil {
+		s.fail(w, r, err)
+		return
+	}
+	h := w.Header()
+	h.Set("Content-Type", "image/jpeg")
+	h.Set("Cache-Control", "private, no-store")
+	_, _ = w.Write(b)
+}
+
+func (s *Server) cableFSZip(w http.ResponseWriter, r *http.Request, actor domain.Device) {
+	q := r.URL.Query()
+	items, err := s.Network.PlanCableZip(r.Context(), actor, q["path"], q["folder"])
+	if err != nil {
+		s.fail(w, r, err)
+		return
+	}
+	h := w.Header()
+	h.Set("Content-Type", "application/zip")
+	h.Set("Content-Disposition", mime.FormatMediaType("attachment",
+		map[string]string{"filename": "phone-" + time.Now().Format("2006-01-02-1504") + ".zip"}))
+	h.Set("Cache-Control", "private, no-store")
+	bw := bufio.NewWriterSize(w, 4<<20)
+	zw := zip.NewWriter(bw)
+	used := map[string]int{}
+	for _, item := range items {
+		if r.Context().Err() != nil {
+			_ = zw.Close()
+			panic(http.ErrAbortHandler)
+		}
+		cf, err := s.Network.OpenCableFile(r.Context(), actor, item.Loc)
+		if err != nil {
+			continue
+		}
+		hdr := &zip.FileHeader{Name: zipEntryName(item.Name, used), Method: zip.Store}
+		dst, err := zw.CreateHeader(hdr)
+		if err != nil {
+			_ = cf.Content.Close()
+			_ = zw.Close()
+			s.Log.Warn("cable zip aborted", "err", err)
+			panic(http.ErrAbortHandler)
+		}
+		_, copyErr := io.Copy(dst, cf.Content)
+		_ = cf.Content.Close()
+		if copyErr != nil {
+			_ = zw.Close()
+			s.Log.Warn("cable zip aborted", "err", copyErr)
+			panic(http.ErrAbortHandler)
+		}
+	}
+	if err := zw.Close(); err != nil {
+		s.Log.Warn("cable zip aborted", "err", err)
+		panic(http.ErrAbortHandler)
+	}
+	if err := bw.Flush(); err != nil {
+		s.Log.Warn("cable zip aborted", "err", err)
+		panic(http.ErrAbortHandler)
+	}
+}
+
+func zipEntryName(name string, used map[string]int) string {
+	parts := strings.Split(strings.ReplaceAll(name, "\\", "/"), "/")
+	clean := make([]string, 0, len(parts))
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p == "" || p == "." || p == ".." {
+			continue
+		}
+		clean = append(clean, p)
+	}
+	if len(clean) == 0 {
+		name = "file"
+	} else {
+		name = strings.Join(clean, "/")
+	}
+	n := used[name]
+	used[name]++
+	if n == 0 {
+		return name
+	}
+	base := path.Base(name)
+	ext := path.Ext(base)
+	stem := strings.TrimSuffix(base, ext)
+	out := stem + " (" + strconv.Itoa(n+1) + ")" + ext
+	if dir := path.Dir(name); dir != "." {
+		return dir + "/" + out
+	}
+	return out
+}
+
+func (s *Server) cableFSImport(w http.ResponseWriter, r *http.Request, actor domain.Device) {
+	cf, err := s.Network.OpenCableFile(r.Context(), actor, r.URL.Query().Get("path"))
+	if err != nil {
+		s.fail(w, r, err)
+		return
+	}
+	defer cf.Content.Close()
+	f, err := s.Transfer.Upload(r.Context(), actor, transfer.UploadInput{
+		Name: cf.Name, Size: cf.Size, Body: cf.Content,
+	})
+	if err != nil {
+		s.fail(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, s.toFileDTO(f, actor.ID))
+}
+
+func (s *Server) cableOpen(w http.ResponseWriter, r *http.Request, actor domain.Device) {
+	res, err := s.Network.OpenOnCable(r.Context(), actor)
+	if err != nil {
+		s.fail(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"opened": res.Opened,
+		"device": res.Device,
+		"url":    res.URL,
+		"hint":   res.Hint,
 	})
 }
 

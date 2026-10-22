@@ -291,6 +291,26 @@ func (s *Service) CanPreview(name string) bool {
 	return s.sys != nil
 }
 
+// PreviewBytes draws a thumbnail JPEG of an unsaved file (USB phone files).
+// Formats the Go decoders know are drawn in-process; others go to the system
+// previewer. A file that cannot be previewed is domain.ErrUnsupported.
+func (s *Service) PreviewBytes(ctx context.Context, name string, src io.Reader) ([]byte, error) {
+	kind := domain.PreviewOf(name)
+	if kind == domain.PreviewNone || (kind != domain.PreviewNative && s.sys == nil) {
+		return nil, domain.ErrUnsupported
+	}
+	select {
+	case s.jobs <- struct{}{}:
+		defer func() { <-s.jobs }()
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+	if kind == domain.PreviewNative {
+		return s.render.Render(src, ThumbSize)
+	}
+	return s.systemPreview(ctx, name, kind, src)
+}
+
 // Thumbnail returns a JPEG preview, rendering and caching it on first use.
 // Formats the Go decoders know are drawn in-process; others go to the system
 // previewer, and the result is normalized to a small JPEG by the same renderer.

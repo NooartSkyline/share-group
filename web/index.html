@@ -48,7 +48,7 @@
 </main>
 
 <!-- ===== app ===== -->
-<div id="app" class="shell" data-view="files" hidden>
+<div id="app" class="shell" data-view="files" data-files-src="room" hidden>
   <aside class="side">
     <div class="side-room"><span class="side-room-icon">🏠</span><div><b id="side-room-name"></b><small class="mut" id="side-room-sub"></small></div></div>
     <div id="room-switch" hidden>
@@ -81,6 +81,11 @@
   </aside>
 
   <section class="main">
+    <nav id="files-tabs" class="files-tabs" hidden aria-label="แหล่งไฟล์">
+      <button type="button" data-files-src="room" aria-current="page" data-i18n="files_tab_room">ไฟล์ในห้อง</button>
+      <button type="button" data-files-src="device" data-i18n="files_tab_device">ไฟล์บนเครื่อง</button>
+    </nav>
+
     <section id="pending-banner" class="card pending-banner" hidden>
       <h2 data-i18n="pending_title">อุปกรณ์รออนุมัติ</h2>
       <ul id="pending-devices" class="pending-devs"></ul>
@@ -201,6 +206,50 @@
         <button id="sel-zip" class="btn sm" type="button">⬇ ดาวน์โหลดเป็น .zip</button>
         <button id="sel-delete" class="btn danger sm" type="button" hidden>🗑 ลบที่เลือก</button>
         <button id="sel-clear" class="btn ghost sm" type="button">ล้าง</button>
+      </div>
+    </section>
+
+    <!-- files on the plugged USB device -->
+    <section id="pane-cable-fs" class="pane">
+      <div class="card cable-fs-pane">
+        <div class="pane-head">
+          <h2 id="cable-fs-title" data-i18n="cable_fs_title">ไฟล์บนเครื่อง</h2>
+          <button id="cable-fs-select-all" class="btn ghost sm" type="button" hidden>เลือกทั้งหมด</button>
+        </div>
+        <div id="cable-fs-browse">
+          <div class="cable-fs-bar">
+            <button id="cable-fs-back" class="btn ghost sm" type="button" data-i18n="cable_fs_back">ย้อนกลับ</button>
+            <div id="cable-fs-crumb" class="cable-fs-crumb ellipsis"></div>
+            <nav id="cable-fs-layouts" class="preview-views browse-views" aria-label="มุมมองโฟลเดอร์">
+              <button type="button" data-cable-layout="list" data-i18n="cable_fs_layout_list">รายการ</button>
+              <button type="button" data-cable-layout="icons" data-i18n="cable_fs_layout_icons">ไอคอน</button>
+              <button type="button" data-cable-layout="gallery" data-i18n="cable_fs_layout_gallery">แกลเลอรี</button>
+            </nav>
+          </div>
+          <p id="cable-fs-hint" class="mut small cable-fs-hint"></p>
+          <ul id="cable-fs-list" class="cable-fs-list"></ul>
+          <div id="cable-fs-selbar" class="selbar" hidden>
+            <span class="grow"><b id="cable-fs-sel-count"></b> <span id="cable-fs-sel-size"></span></span>
+            <button id="cable-fs-save" class="btn sm" type="button" data-i18n="cable_fs_save">⬇ บันทึกลงเครื่อง</button>
+            <button id="cable-fs-sel-clear" class="btn ghost sm" type="button" data-i18n="cable_fs_clear">ล้าง</button>
+          </div>
+        </div>
+        <div id="cable-fs-preview" hidden>
+          <div class="cable-fs-bar">
+            <div id="cable-fs-preview-name" class="cable-fs-crumb ellipsis"></div>
+            <button id="cable-fs-preview-save" class="btn ghost sm" type="button" data-i18n="cable_fs_save">⬇ บันทึกลงเครื่อง</button>
+            <button id="cable-fs-preview-import" class="btn ghost sm" type="button" data-i18n="cable_fs_import">ดึงเข้าห้อง</button>
+          </div>
+          <p id="cable-fs-preview-meta" class="mut small"></p>
+          <nav id="cable-fs-preview-views" class="preview-views" aria-label="มุมมองพรีวิว">
+            <button type="button" data-preview-view="preview" data-i18n="cable_fs_view_preview">พรีวิว</button>
+            <button type="button" data-preview-view="text" data-i18n="cable_fs_view_text">ข้อความ</button>
+            <button type="button" data-preview-view="hex" data-i18n="cable_fs_view_hex">ข้อมูลดิบ</button>
+          </nav>
+          <div id="cable-fs-preview-visual" class="cable-fs-preview-visual"></div>
+          <pre id="cable-fs-preview-hex" class="hex-view" hidden></pre>
+          <p id="cable-fs-preview-hex-note" class="mut small" hidden></p>
+        </div>
       </div>
     </section>
 

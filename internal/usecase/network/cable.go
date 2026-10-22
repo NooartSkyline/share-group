@@ -32,8 +32,10 @@ type CableLink struct {
 
 // CablePhone is a USB device that looks like a phone, even before tethering.
 type CablePhone struct {
-	Device string
-	Name   string
+	Device  string
+	Name    string
+	Kernel  string // Android: `uname -r`, empty on iOS
+	Android string // Android release, e.g. "16"
 }
 
 // CableStatus is what the Owner panel shows for USB transfers.
@@ -56,7 +58,7 @@ func (s *Service) Cable(ctx context.Context, actor domain.Device) (CableStatus, 
 	st := CableStatus{
 		State:  CableIdle,
 		Links:  make([]CableLink, 0),
-		Phones: s.usbPhones(ctx),
+		Phones: s.fillAndroidKernel(ctx, s.usbPhones(ctx)),
 	}
 	for _, n := range all {
 		if n.Kind != domain.NetUSB {

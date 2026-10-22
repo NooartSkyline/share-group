@@ -42,6 +42,64 @@ func (s *Service) adbCableLink(ctx context.Context, room domain.RoomID, phones [
 	}, true
 }
 
+func (s *Service) fillAndroidKernel(ctx context.Context, phones []CablePhone) []CablePhone {
+	hasAndroid := false
+	for _, p := range phones {
+		if p.Device == domain.CableAndroid {
+			hasAndroid = true
+			break
+		}
+	}
+	if !hasAndroid {
+		return phones
+	}
+	kernel, release := s.androidBuild(ctx)
+	if kernel == "" && release == "" {
+		return phones
+	}
+	for i := range phones {
+		if phones[i].Device != domain.CableAndroid {
+			continue
+		}
+		phones[i].Kernel = kernel
+		phones[i].Android = release
+	}
+	return phones
+}
+
+func (s *Service) androidBuild(ctx context.Context) (kernel, release string) {
+	adb := s.findADB(ctx)
+	if adb == "" {
+		return "", ""
+	}
+	if !adbHasDevice(s.runShort(ctx, adb, "devices")) {
+		s.mu.Lock()
+		s.androidKernel, s.androidRelease = "", ""
+		s.mu.Unlock()
+		return "", ""
+	}
+	s.mu.RLock()
+	kernel, release = s.androidKernel, s.androidRelease
+	s.mu.RUnlock()
+	if kernel != "" || release != "" {
+		return kernel, release
+	}
+	kernel = firstLine(s.runShort(ctx, adb, "shell", "uname", "-r"))
+	release = firstLine(s.runShort(ctx, adb, "shell", "getprop", "ro.build.version.release"))
+	s.mu.Lock()
+	s.androidKernel, s.androidRelease = kernel, release
+	s.mu.Unlock()
+	return kernel, release
+}
+
+func firstLine(b []byte) string {
+	s := strings.TrimSpace(strings.ReplaceAll(string(b), "\r", ""))
+	if i := strings.IndexByte(s, '\n'); i >= 0 {
+		s = strings.TrimSpace(s[:i])
+	}
+	return s
+}
+
 func (s *Service) findADB(ctx context.Context) string {
 	s.mu.RLock()
 	cached := s.adb

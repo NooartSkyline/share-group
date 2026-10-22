@@ -26,6 +26,7 @@ const state = {
   messages: [],
   clip: null,
   view: 'files',
+  filesSrc: 'room',
   unread: 0,
 };
 
@@ -104,6 +105,22 @@ const I18N = {
     invite_help: 'สแกน QR หรือเปิดลิงก์ แล้วกรอก PIN บนอุปกรณ์ที่อยู่ใน Wi-Fi วงเดียวกัน',
     path_wifi: 'Wi-Fi', via_wifi: 'Wi-Fi', via_usb: 'สาย USB',
     cable_plugged_pill: 'เสียบสาย', cable_not_joined: 'ยังไม่เข้าห้อง', cable_idle: 'ยังไม่พบสาย',
+    cable_open: 'เปิดไฟล์', cable_open_ok: 'เปิดหน้าไฟล์บนมือถือแล้ว',
+    cable_open_fail: 'เปิดบนมือถือไม่สำเร็จ',
+    cable_open_ios_help: 'สแกน QR หรือเปิดลิงก์ใน Safari บน iPhone/iPad ที่เสียบสาย',
+    files_tab_room: 'ไฟล์ในห้อง', files_tab_device: 'ไฟล์บนเครื่อง',
+    cable_fs_title: 'ไฟล์บนเครื่อง', cable_fs_empty: 'โฟลเดอร์นี้ว่าง',
+    cable_fs_import: 'ดึงเข้าห้อง', cable_fs_imported: 'ดึงเข้าห้องแล้ว',
+    cable_fs_back: 'ย้อนกลับ', cable_fs_hint_idle: 'ยังไม่พบเครื่องที่เสียบสาย',
+    cable_fs_hex: 'ข้อมูลดิบ', cable_fs_hex_trunc: 'แสดงเฉพาะต้นไฟล์',
+    cable_fs_preview_load: 'กำลังดึงไฟล์จากเครื่อง…',
+    cable_fs_view_preview: 'พรีวิว', cable_fs_view_text: 'ข้อความ', cable_fs_view_hex: 'ข้อมูลดิบ',
+    cable_fs_no_preview: 'ไม่มีภาพตัวอย่างสำหรับไฟล์นี้',
+    cable_fs_layout_list: 'รายการ', cable_fs_layout_icons: 'ไอคอน', cable_fs_layout_gallery: 'แกลเลอรี',
+    cable_fs_select_all: 'เลือกทั้งหมด', cable_fs_select_none: 'ยกเลิกทั้งหมด',
+    cable_fs_save: '⬇ บันทึกลงเครื่อง', cable_fs_clear: 'ล้าง',
+    cable_fs_picked: 'เลือก {n} รายการ',
+    cable_fs_save_need: 'เลือกไฟล์ก่อน', cable_fs_save_limit: 'เลือกได้ไม่เกิน 200 ไฟล์',
     copy: 'คัดลอก', rotate_pin: '🔄 สร้างใหม่', network_used: 'เครือข่ายที่ใช้:',
     require_approval: 'อนุมัติอุปกรณ์ใหม่ก่อนเข้าใช้ห้อง',
     guest_title: 'ลิงก์แขก (อัปโหลดอย่างเดียว)', guest_clear: 'ปิดลิงก์', guest_make: 'สร้างลิงก์แขก 1 ชั่วโมง',
@@ -119,7 +136,7 @@ const I18N = {
     conn_on: 'เชื่อมต่อแล้ว', conn_off: 'ขาดการเชื่อมต่อ กำลังลองใหม่…',
     quota_label: 'โควตาห้อง', quota_none: 'ไม่จำกัด', ttl_label: 'ไฟล์หมดอายุ',
     ttl_none: 'ไม่หมดอายุ', ttl_1h: '1 ชั่วโมง', ttl_1d: '1 วัน', ttl_7d: '7 วัน', ttl_30d: '30 วัน',
-    rename: 'เปลี่ยนชื่อ', you: ' (คุณ)', details: 'รายละเอียด', download: '⬇ ดาวน์โหลด', del: 'ลบ',
+    rename: 'เปลี่ยนชื่อ', you: ' (คุณ)', details: 'รายละเอียด', download: '⬇ ดาวน์โหลด', open_file: 'เปิด', del: 'ลบ',
     rename_prompt: 'ชื่ออุปกรณ์ใหม่', code_fail: 'เปิดไฟล์ข้อความไม่สำเร็จ',
   },
   en: {
@@ -133,6 +150,22 @@ const I18N = {
     invite_help: 'Scan the QR code or open the link, then enter the PIN on a device on the same Wi-Fi.',
     path_wifi: 'Wi-Fi', via_wifi: 'Wi-Fi', via_usb: 'USB',
     cable_plugged_pill: 'Plugged', cable_not_joined: 'not in the room yet', cable_idle: 'No USB device',
+    cable_open: 'Open files', cable_open_ok: 'Opened the files page on the phone',
+    cable_open_fail: 'Could not open on the phone',
+    cable_open_ios_help: 'Scan the QR code or open the link in Safari on the plugged-in iPhone/iPad',
+    files_tab_room: 'Room files', files_tab_device: 'On device',
+    cable_fs_title: 'Files on device', cable_fs_empty: 'This folder is empty',
+    cable_fs_import: 'Add to room', cable_fs_imported: 'Added to the room',
+    cable_fs_back: 'Back', cable_fs_hint_idle: 'No USB device is plugged in',
+    cable_fs_hex: 'Raw bytes', cable_fs_hex_trunc: 'Showing the start of the file',
+    cable_fs_preview_load: 'Pulling the file from the device…',
+    cable_fs_view_preview: 'Preview', cable_fs_view_text: 'Text', cable_fs_view_hex: 'Hex',
+    cable_fs_no_preview: 'No picture preview for this file',
+    cable_fs_layout_list: 'List', cable_fs_layout_icons: 'Icons', cable_fs_layout_gallery: 'Gallery',
+    cable_fs_select_all: 'Select all', cable_fs_select_none: 'Clear all',
+    cable_fs_save: '⬇ Save to this Mac', cable_fs_clear: 'Clear',
+    cable_fs_picked: 'Selected {n} items',
+    cable_fs_save_need: 'Select files first', cable_fs_save_limit: 'Choose up to 200 files',
     copy: 'Copy', rotate_pin: '🔄 New PIN', network_used: 'Network:',
     require_approval: 'Approve new devices before they can use the room',
     guest_title: 'Guest link (upload only)', guest_clear: 'Turn off', guest_make: 'Create 1-hour guest link',
@@ -148,7 +181,7 @@ const I18N = {
     conn_on: 'Connected', conn_off: 'Disconnected, retrying…',
     quota_label: 'Room quota', quota_none: 'No limit', ttl_label: 'File expiry',
     ttl_none: 'Never', ttl_1h: '1 hour', ttl_1d: '1 day', ttl_7d: '7 days', ttl_30d: '30 days',
-    rename: 'Rename', you: ' (you)', details: 'Details', download: '⬇ Download', del: 'Delete',
+    rename: 'Rename', you: ' (you)', details: 'Details', download: '⬇ Download', open_file: 'Open', del: 'Delete',
     rename_prompt: 'New device name', code_fail: 'Could not open this text file',
   },
 };
@@ -689,8 +722,14 @@ function setupNotifySetting() {
 function setupNav() {
   if (setupNav.done) return;
   setupNav.done = true;
-  for (const btn of $$('[data-go]')) btn.addEventListener('click', () => setView(btn.dataset.go));
+  for (const btn of $$('[data-go]')) {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.go === 'files' || btn.dataset.go === 'upload') setFilesSrc('room');
+      setView(btn.dataset.go);
+    });
+  }
   window.matchMedia('(min-width: 821px)').addEventListener('change', () => setView(state.view));
+  setupCableFS();
 }
 
 function setView(v) {
@@ -704,7 +743,27 @@ function setView(v) {
     renderUnread();
     scrollMessages();
   }
+  syncFilesTabs();
   if (ownerView) ownerView(v); // only an Owner ever sets this (see setupOwnerTools)
+}
+
+function setFilesSrc(src) {
+  state.filesSrc = src === 'device' ? 'device' : 'room';
+  $('app').dataset.filesSrc = state.filesSrc;
+  for (const b of $$('#files-tabs [data-files-src]')) {
+    if (b.dataset.filesSrc === state.filesSrc) b.setAttribute('aria-current', 'page');
+    else b.removeAttribute('aria-current');
+  }
+  if (state.filesSrc === 'device') loadCableFS(cableFS.path);
+}
+
+function syncFilesTabs() {
+  const tabs = $('files-tabs');
+  if (!tabs) return;
+  const owner = state.me && role() === 'owner';
+  const filesView = state.view === 'files' || state.view === 'upload';
+  tabs.hidden = !owner || !filesView;
+  if (!owner && state.filesSrc === 'device') setFilesSrc('room');
 }
 
 function renderUnread() {
@@ -739,17 +798,28 @@ function visibleCablePhones() {
   return phones;
 }
 
+function cableKernelDetail(phone, fallback) {
+  const bits = [];
+  if (phone.android) bits.push('Android ' + phone.android);
+  if (phone.kernel) bits.push('kernel ' + phone.kernel);
+  if (bits.length) return bits.join(' · ');
+  return fallback;
+}
+
 function renderCablePhone(phone) {
   const name = phone.name || t('via_usb');
   const ready = state.cable && state.cable.state === 'ready';
-  const detail = ready ? t('via_usb') : t('cable_not_joined');
+  const detail = cableKernelDetail(phone, ready ? t('via_usb') : t('cable_not_joined'));
   const head = el('div', { class: 'dev-head' },
     el('span', { class: 'dev-ic' }, cablePhoneIcon(phone.device)),
     el('span', { class: 'dev-name ellipsis', title: name }, name, el('small', {}, detail)),
     el('span', { class: 'dot', title: t('cable_plugged_pill') }),
     el('span', { class: 'pill via-usb' }, t('cable_plugged_pill')),
   );
-  return el('li', { class: 'cable-dev' }, head);
+  const tools = el('div', { class: 'dev-tools' },
+    el('button', { class: 'btn sm', type: 'button', onclick: () => openCableFiles() }, t('cable_open')),
+  );
+  return el('li', { class: 'cable-dev' }, head, tools);
 }
 
 function renderDeviceRow(d, isOwner) {
@@ -770,6 +840,9 @@ function renderDeviceRow(d, isOwner) {
   if (isOwner && !d.pending) {
     const tools = el('div', { class: 'dev-tools' });
     tools.append(el('button', { class: 'btn ghost sm', type: 'button', onclick: () => renameDevice(d) }, t('rename')));
+    if (usb) {
+      tools.append(el('button', { class: 'btn sm', type: 'button', onclick: () => openCableFiles() }, t('cable_open')));
+    }
     if (!d.me) {
       const sel = el('select', { class: 'select', onchange: (e) => setDeviceRole(d.id, e.target.value) });
       for (const r of ['member', 'viewer', 'uploader']) {
@@ -807,6 +880,409 @@ function renderDeviceList() {
     usbGroup.hidden = !isOwner && usb.length === 0;
   }
   renderPendingBanner();
+}
+
+const cableFS = { path: '', seq: 0, preview: null, previewSeq: 0, view: 'preview', layout: 'list', entries: [], selected: new Set() };
+
+function setupCableFS() {
+  if (setupCableFS.done) return;
+  setupCableFS.done = true;
+  $('cable-fs-back').addEventListener('click', () => {
+    if (cableFS.path) loadCableFS(cableFSParent(cableFS.path));
+  });
+  $('cable-fs-preview-import').addEventListener('click', () => {
+    if (cableFS.preview) importOrOpenCableFS(cableFS.preview, 'import');
+  });
+  $('cable-fs-preview-save').addEventListener('click', () => {
+    if (cableFS.preview) saveCableFiles([cableFS.preview]);
+  });
+  $('cable-fs-select-all').addEventListener('click', toggleCableSelectAll);
+  $('cable-fs-save').addEventListener('click', () => {
+    saveCableFiles(cableFS.entries.filter((f) => cableFS.selected.has(f.path)));
+  });
+  $('cable-fs-sel-clear').addEventListener('click', () => {
+    cableFS.selected.clear();
+    syncCablePicks();
+  });
+  for (const b of $$('#cable-fs-preview-views [data-preview-view]')) {
+    b.addEventListener('click', () => setCablePreviewView(b.dataset.previewView));
+  }
+  for (const b of $$('#cable-fs-layouts [data-cable-layout]')) {
+    b.addEventListener('click', () => setCableLayout(b.dataset.cableLayout));
+  }
+  const saved = localStorage.getItem('lanshare.cableLayout');
+  setCableLayout(saved === 'icons' || saved === 'gallery' ? saved : 'list');
+  for (const b of $$('#files-tabs [data-files-src]')) {
+    b.addEventListener('click', () => setFilesSrc(b.dataset.filesSrc));
+  }
+}
+
+function setCableLayout(layout) {
+  cableFS.layout = layout === 'icons' || layout === 'gallery' ? layout : 'list';
+  try { localStorage.setItem('lanshare.cableLayout', cableFS.layout); } catch { /* ignore */ }
+  const list = $('cable-fs-list');
+  if (list) {
+    list.classList.remove('layout-list', 'layout-icons', 'layout-gallery');
+    list.classList.add('layout-' + cableFS.layout);
+  }
+  for (const b of $$('#cable-fs-layouts [data-cable-layout]')) {
+    if (b.dataset.cableLayout === cableFS.layout) b.setAttribute('aria-current', 'page');
+    else b.removeAttribute('aria-current');
+  }
+}
+
+function openCableFiles() {
+  cableFS.path = '';
+  setView('files');
+  setFilesSrc('device');
+}
+
+async function loadCableFS(path) {
+  closeCablePreview();
+  const loc = path || '';
+  const seq = ++cableFS.seq;
+  cableFS.path = loc;
+  cableFS.entries = [];
+  cableFS.selected.clear();
+  const back = $('cable-fs-back');
+  const list = $('cable-fs-list');
+  const hint = $('cable-fs-hint');
+  const title = $('cable-fs-title');
+  const crumb = $('cable-fs-crumb');
+  back.disabled = !loc;
+  list.replaceChildren(el('li', { class: 'mut' }, '…'));
+  hint.textContent = '';
+  renderCableSelection();
+  try {
+    const r = await api('/api/admin/cable/fs?path=' + encodeURIComponent(loc));
+    if (seq !== cableFS.seq) return;
+    title.textContent = t('cable_fs_title') + (r.name ? ' · ' + r.name : '');
+    crumb.textContent = r.title || t('cable_fs_title');
+    hint.textContent = r.hint || '';
+    const entries = r.entries || [];
+    cableFS.entries = entries;
+    if (!entries.length) {
+      list.replaceChildren(el('li', { class: 'mut' }, r.hint || t('cable_fs_empty')));
+      renderCableSelection();
+      return;
+    }
+    list.replaceChildren(...entries.map((e) => cableFSRow(e, () => loadCableFS(e.path), importOrOpenCableFS)));
+    renderCableSelection();
+  } catch (e) {
+    if (seq !== cableFS.seq) return;
+    title.textContent = t('cable_fs_title');
+    crumb.textContent = t('cable_fs_title');
+    if (e.status === 404) hint.textContent = t('cable_fs_hint_idle');
+    else hint.textContent = t('cable_open_fail') + ': ' + e.message;
+    list.replaceChildren();
+    renderCableSelection();
+  }
+}
+
+async function importOrOpenCableFS(e, action) {
+  const q = encodeURIComponent(e.path);
+  if (action === 'open') {
+    previewCableFile(e);
+    return;
+  }
+  try {
+    await api('/api/admin/cable/fs/import?path=' + q, { method: 'POST' });
+    toast(t('cable_fs_imported') + ': ' + e.name);
+    refreshFiles();
+  } catch (err) {
+    toast(t('cable_open_fail') + ': ' + err.message);
+  }
+}
+
+function cableFSParent(path) {
+  const i = String(path || '').lastIndexOf('/');
+  return i <= 0 ? '' : path.slice(0, i);
+}
+
+function cableFSRow(e, enter, act) {
+  const ext = fileExt(e.name);
+  const ic = e.dir ? '📁' : (KIND_ICON[e.kind] || '📄');
+  const meta = e.dir ? '' : formatBytes(e.size);
+  let icon = el('span', { class: 'dev-ic' }, ic);
+  if (!e.dir && SHOW_IMAGE.has(ext)) {
+    const img = el('img', { class: 'cable-fs-thumb', alt: '', loading: 'lazy', src: cableFileURL(e.path, 'file') });
+    img.addEventListener('error', () => {
+      if (img.parentNode) img.replaceWith(el('span', { class: 'dev-ic' }, ic));
+    }, { once: true });
+    icon = img;
+  }
+  const ck = el('button', {
+    class: 'cable-fs-ck', type: 'button', 'aria-label': e.name,
+    onclick: (ev) => { ev.stopPropagation(); toggleCablePick(e.path); },
+  });
+  const row = el('li', { class: e.dir ? 'dir' : 'file' },
+    ck,
+    icon,
+    el('span', { class: 'nm ellipsis', title: e.name }, e.name, meta ? el('small', {}, meta) : null),
+  );
+  row.dataset.path = e.path;
+  row.dataset.size = String(e.size || 0);
+  row.tabIndex = 0;
+  if (e.dir) {
+    row.onclick = () => enter();
+  } else {
+    row.onclick = () => previewCableFile(e);
+    row.append(el('div', { class: 'cable-fs-acts' },
+      el('button', { class: 'btn ghost sm', type: 'button', onclick: (ev) => { ev.stopPropagation(); act(e, 'import'); } }, t('cable_fs_import')),
+    ));
+  }
+  return row;
+}
+
+function toggleCablePick(path) {
+  if (cableFS.selected.has(path)) cableFS.selected.delete(path);
+  else cableFS.selected.add(path);
+  syncCablePicks();
+}
+
+function toggleCableSelectAll() {
+  const items = cableFS.entries;
+  if (!items.length) return;
+  if (items.every((f) => cableFS.selected.has(f.path))) cableFS.selected.clear();
+  else items.forEach((f) => cableFS.selected.add(f.path));
+  syncCablePicks();
+}
+
+function syncCablePicks() {
+  for (const li of $$('#cable-fs-list li.file, #cable-fs-list li.dir')) {
+    const on = cableFS.selected.has(li.dataset.path);
+    li.classList.toggle('picked', on);
+    const ck = li.querySelector('.cable-fs-ck');
+    if (ck) ck.textContent = on ? '✓' : '';
+  }
+  renderCableSelection();
+}
+
+function renderCableSelection() {
+  const n = cableFS.selected.size;
+  const allBtn = $('cable-fs-select-all');
+  const bar = $('cable-fs-selbar');
+  if (allBtn) {
+    allBtn.hidden = cableFS.entries.length === 0;
+    allBtn.textContent = n > 0 && n === cableFS.entries.length ? t('cable_fs_select_none') : t('cable_fs_select_all');
+  }
+  if (bar) bar.hidden = n === 0;
+  if (!n) return;
+  const total = cableFS.entries.filter((f) => cableFS.selected.has(f.path)).reduce((s, f) => s + (f.size || 0), 0);
+  $('cable-fs-sel-count').textContent = t('cable_fs_picked').replace('{n}', String(n));
+  $('cable-fs-sel-size').textContent = total ? '• ' + formatBytes(total) : '';
+}
+
+function saveCableFiles(files) {
+  const list = (files || []).filter((f) => f && f.path);
+  if (!list.length) {
+    toast(t('cable_fs_save_need'));
+    return;
+  }
+  if (list.length > 200) {
+    toast(t('cable_fs_save_limit'));
+    return;
+  }
+  const only = list.length === 1 ? list[0] : null;
+  if (only && !only.dir) {
+    const a = el('a', { href: '/api/admin/cable/fs/file?path=' + encodeURIComponent(only.path) });
+    a.setAttribute('download', only.name || '');
+    document.body.append(a);
+    a.click();
+    a.remove();
+    return;
+  }
+  const q = list.map((f) => (f.dir ? 'folder=' : 'path=') + encodeURIComponent(f.path)).join('&');
+  const a = el('a', { href: '/api/admin/cable/fs/zip?' + q });
+  a.setAttribute('download', '');
+  document.body.append(a);
+  a.click();
+  a.remove();
+}
+
+function closeCablePreview() {
+  cableFS.preview = null;
+  cableFS.previewSeq++;
+  const box = $('cable-fs-preview');
+  if (box) box.hidden = true;
+  for (const li of $$('#cable-fs-list li')) li.classList.remove('sel');
+  clearCablePreviewBody();
+}
+
+function cableFileURL(path, kind) {
+  const q = encodeURIComponent(path);
+  if (kind === 'thumb') return '/api/admin/cable/fs/thumb?path=' + q;
+  if (kind === 'head') return '/api/admin/cable/fs/head?path=' + q;
+  return '/api/admin/cable/fs/file?path=' + q + '&view=1';
+}
+
+function previewCableFile(e) {
+  cableFS.preview = e;
+  cableFS.view = defaultCableView(e);
+  $('cable-fs-browse').hidden = false;
+  $('cable-fs-preview').hidden = false;
+  $('cable-fs-preview-name').textContent = e.name;
+  const ext = fileExt(e.name);
+  $('cable-fs-preview-meta').textContent = [ext ? ext.toUpperCase() : '', formatBytes(e.size)].filter(Boolean).join(' · ');
+  for (const li of $$('#cable-fs-list li')) li.classList.toggle('sel', li.dataset.path === e.path);
+  setCablePreviewView(cableFS.view);
+}
+
+function defaultCableView(e) {
+  const ext = fileExt(e.name);
+  if (SHOW_IMAGE.has(ext) || PLAY_VIDEO.has(ext) || PLAY_AUDIO.has(ext) || cableCanThumb(ext)) return 'preview';
+  if (CODE_EXT.has(ext)) return 'text';
+  return 'hex';
+}
+
+function setCablePreviewView(view) {
+  if (!cableFS.preview) return;
+  cableFS.view = view === 'text' || view === 'hex' ? view : 'preview';
+  const seq = ++cableFS.previewSeq;
+  for (const b of $$('#cable-fs-preview-views [data-preview-view]')) {
+    if (b.dataset.previewView === cableFS.view) b.setAttribute('aria-current', 'page');
+    else b.removeAttribute('aria-current');
+  }
+  renderCablePreviewContent(cableFS.preview, seq);
+}
+
+function clearCablePreviewBody() {
+  const visual = $('cable-fs-preview-visual');
+  if (visual) visual.replaceChildren();
+  const hex = $('cable-fs-preview-hex');
+  if (hex) { hex.hidden = true; hex.textContent = ''; }
+  const note = $('cable-fs-preview-hex-note');
+  if (note) { note.hidden = true; note.textContent = ''; }
+}
+
+function renderCablePreviewContent(e, seq) {
+  clearCablePreviewBody();
+  const visual = $('cable-fs-preview-visual');
+  visual.replaceChildren(el('p', { class: 'mut small' }, t('cable_fs_preview_load')));
+  if (cableFS.view === 'hex') {
+    visual.replaceChildren();
+    loadCableHex(e, seq);
+    return;
+  }
+  if (cableFS.view === 'text') {
+    loadCableText(e, seq);
+    return;
+  }
+  fillCableVisual(e, seq);
+}
+
+function fillCableVisual(e, seq) {
+  const ext = fileExt(e.name);
+  const visual = $('cable-fs-preview-visual');
+  const fileURL = cableFileURL(e.path, 'file');
+  const thumbURL = cableFileURL(e.path, 'thumb');
+  const showVisual = (node) => {
+    if (seq !== cableFS.previewSeq) return;
+    visual.replaceChildren(node);
+  };
+  const showThumb = () => {
+    const img = el('img', { src: thumbURL, alt: e.name });
+    img.addEventListener('error', () => {
+      if (seq !== cableFS.previewSeq) return;
+      visual.replaceChildren(el('p', { class: 'mut small' }, t('cable_fs_no_preview')));
+    }, { once: true });
+    showVisual(img);
+  };
+
+  if (SHOW_IMAGE.has(ext)) {
+    const img = el('img', { src: fileURL, alt: e.name });
+    img.addEventListener('error', () => { if (seq === cableFS.previewSeq) showThumb(); }, { once: true });
+    showVisual(img);
+    return;
+  }
+  if (PLAY_VIDEO.has(ext)) {
+    showVisual(el('video', { src: fileURL, controls: true, preload: 'metadata', playsInline: true }));
+    return;
+  }
+  if (PLAY_AUDIO.has(ext)) {
+    showVisual(el('audio', { src: fileURL, controls: true, preload: 'metadata' }));
+    return;
+  }
+  if (cableCanThumb(ext)) {
+    showThumb();
+    return;
+  }
+  showVisual(el('p', { class: 'mut small' }, t('cable_fs_no_preview')));
+}
+
+function cableCanThumb(ext) {
+  return SHOW_IMAGE.has(ext) || ext === 'pdf' || ext === 'heic' || ext === 'heif' ||
+    ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'pages', 'numbers', 'key', 'rtf',
+      'tif', 'tiff', 'psd', 'ico', 'icns', 'svg', 'ai', 'eps', 'epub'].includes(ext);
+}
+
+async function loadCableText(e, seq) {
+  const visual = $('cable-fs-preview-visual');
+  const note = $('cable-fs-preview-hex-note');
+  const ext = fileExt(e.name);
+  const small = !(Number(e.size) > 2 * 1024 * 1024);
+  const url = cableFileURL(e.path, small ? 'file' : 'head');
+  try {
+    const res = await fetch(url, { credentials: 'same-origin', headers: { 'X-LanShare-Client': '1' } });
+    if (!res.ok) throw new Error(res.statusText);
+    const buf = new Uint8Array(await res.arrayBuffer());
+    if (seq !== cableFS.previewSeq) return;
+    const text = new TextDecoder('utf-8', { fatal: false }).decode(buf);
+    const box = el('pre', { class: 'code-view' });
+    if (CODE_EXT.has(ext) && small) {
+      box.replaceChildren(...Logic.highlightCode(text, ext).map((tok) => el('span', { class: tok.cls || '' }, tok.text)));
+    } else {
+      box.textContent = text;
+    }
+    visual.replaceChildren(box);
+    const truncated = Number(e.size) > buf.length;
+    note.textContent = truncated ? t('cable_fs_hex_trunc') : '';
+    note.hidden = !truncated;
+  } catch {
+    if (seq !== cableFS.previewSeq) return;
+    visual.replaceChildren(el('p', { class: 'mut small' }, t('code_fail')));
+  }
+}
+
+async function loadCableHex(e, seq) {
+  const hex = $('cable-fs-preview-hex');
+  const note = $('cable-fs-preview-hex-note');
+  try {
+    const small = !(Number(e.size) > 64 * 1024);
+    const res = await fetch(cableFileURL(e.path, small ? 'file' : 'head'), { credentials: 'same-origin', headers: { 'X-LanShare-Client': '1' } });
+    if (!res.ok) throw new Error(res.statusText);
+    const buf = new Uint8Array(await res.arrayBuffer());
+    if (seq !== cableFS.previewSeq) return;
+    hex.textContent = formatHexDump(buf);
+    hex.hidden = !buf.length;
+    const truncated = Number(e.size) > buf.length;
+    note.textContent = truncated ? t('cable_fs_hex_trunc') : '';
+    note.hidden = !truncated;
+  } catch {
+    if (seq !== cableFS.previewSeq) return;
+    $('cable-fs-preview-visual').replaceChildren(el('p', { class: 'mut small' }, t('cable_open_fail')));
+  }
+}
+
+function formatHexDump(bytes) {
+  const lines = [];
+  for (let i = 0; i < bytes.length; i += 16) {
+    let hex = '';
+    let ascii = '';
+    for (let j = 0; j < 16; j++) {
+      if (j === 8) hex += ' ';
+      if (i + j < bytes.length) {
+        const b = bytes[i + j];
+        hex += b.toString(16).padStart(2, '0') + ' ';
+        ascii += (b >= 32 && b < 127) ? String.fromCharCode(b) : '.';
+      } else {
+        hex += '   ';
+        ascii += ' ';
+      }
+    }
+    lines.push(i.toString(16).padStart(8, '0') + '  ' + hex + ' |' + ascii + '|');
+  }
+  return lines.join('\n');
 }
 
 function renderPendingBanner() {
@@ -921,6 +1397,12 @@ const PLAY_AUDIO = new Set(['mp3', 'm4a', 'wav', 'aac', 'ogg', 'opus', 'flac']);
 const SHOW_IMAGE = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'bmp']);
 const CODE_EXT = new Set(['txt', 'md', 'csv', 'json', 'xml', 'yaml', 'yml', 'toml', 'ini', 'css', 'js', 'ts', 'py', 'go', 'c', 'h', 'cpp', 'java', 'swift', 'sh', 'rb', 'sql', 'php', 'rs', 'kt', 'html', 'htm', 'log']);
 
+function canViewInBrowser(f) {
+  const ext = fileExt(f.name);
+  return SHOW_IMAGE.has(ext) || PLAY_VIDEO.has(ext) || PLAY_AUDIO.has(ext) ||
+    CODE_EXT.has(ext) || ext === 'pdf' || ext === 'heic' || ext === 'heif';
+}
+
 function fileExt(name) {
   const s = String(name || '');
   const i = s.lastIndexOf('.');
@@ -985,7 +1467,14 @@ function renderFiles() {
     th.append(el('span', { class: 'ck', 'aria-hidden': 'true' }, checked ? '✓' : ''));
     th.addEventListener('click', () => toggleSelect(f.id));
 
-    const acts = el('div', { class: 'acts' },
+    const acts = el('div', { class: 'acts' });
+    if (canViewInBrowser(f)) {
+      acts.append(el('a', {
+        class: 'btn sm', href: '/api/files/' + encodeURIComponent(f.id) + '?view=1',
+        target: '_blank', rel: 'noopener',
+      }, t('open_file')));
+    }
+    acts.append(
       el('a', { class: 'btn ghost sm', href: '/api/files/' + encodeURIComponent(f.id), download: f.name }, t('download')),
       el('button', { class: 'btn ghost sm', type: 'button', onclick: () => openFileDetails(f.id) }, t('details')));
     if (isOwner) {

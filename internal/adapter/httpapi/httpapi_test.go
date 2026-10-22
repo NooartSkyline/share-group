@@ -233,6 +233,14 @@ func TestMemberCannotUseOwnerEndpoints(t *testing.T) {
 			t.Errorf("member GET %s = %d, want 403", p, res.StatusCode)
 		}
 	}
+	if res, _ := do(t, c, "POST", ts.URL+"/api/admin/cable/open", nil, nil); res.StatusCode != http.StatusForbidden {
+		t.Errorf("member POST /api/admin/cable/open = %d, want 403", res.StatusCode)
+	}
+	for _, p := range []string{"/api/admin/cable/fs", "/api/admin/cable/fs/file", "/api/admin/cable/fs/head", "/api/admin/cable/fs/thumb", "/api/admin/cable/fs/zip"} {
+		if res, _ := do(t, c, "GET", ts.URL+p, nil, nil); res.StatusCode != http.StatusForbidden {
+			t.Errorf("member GET %s = %d, want 403", p, res.StatusCode)
+		}
+	}
 	if res, _ := do(t, c, "POST", ts.URL+"/api/admin/pin/rotate", nil, nil); res.StatusCode != http.StatusForbidden {
 		t.Errorf("member rotate PIN = %d, want 403", res.StatusCode)
 	}
@@ -832,6 +840,23 @@ func TestShortcutsLoopbackAndViewInline(t *testing.T) {
 		t.Errorf("view body = %q", body)
 	}
 
+	res, sent = do(t, c, "POST", ts.URL+"/api/shortcuts/files?name=note.pdf",
+		strings.NewReader("%PDF-1.4"), nil)
+	if res.StatusCode != http.StatusCreated {
+		t.Fatalf("pdf send = %d %s", res.StatusCode, sent)
+	}
+	_ = json.Unmarshal(sent, &f)
+	res, _ = do(t, owner, "GET", ts.URL+"/api/files/"+f.ID+"?view=1", nil, nil)
+	if res.StatusCode != 200 {
+		t.Fatalf("pdf view = %d", res.StatusCode)
+	}
+	if cd := res.Header.Get("Content-Disposition"); !strings.HasPrefix(cd, "inline") {
+		t.Errorf("pdf view Content-Disposition = %q, want inline", cd)
+	}
+	if ct := res.Header.Get("Content-Type"); !strings.Contains(ct, "pdf") {
+		t.Errorf("pdf view Content-Type = %q", ct)
+	}
+
 	_, meb := do(t, owner, "GET", ts.URL+"/api/me", nil, nil)
 	var me struct {
 		Device struct{ ID string }
@@ -927,5 +952,46 @@ func TestCableEndpoint(t *testing.T) {
 	res, png := do(t, owner, "GET", ts.URL+"/api/admin/cable/qr.png", nil, nil)
 	if res.StatusCode != 200 || !bytes.HasPrefix(png, []byte("\x89PNG")) {
 		t.Errorf("ready QR = %d len=%d", res.StatusCode, len(png))
+	}
+
+	res, b = do(t, owner, "POST", ts.URL+"/api/admin/cable/open", nil, nil)
+	if res.StatusCode != 200 {
+		t.Fatalf("open cable = %d %s", res.StatusCode, b)
+	}
+	var opened struct {
+		Opened bool   `json:"opened"`
+		Device string `json:"device"`
+		URL    string `json:"url"`
+	}
+	_ = json.Unmarshal(b, &opened)
+	if opened.Device != "android" || opened.URL == "" {
+		t.Fatalf("open = %s", b)
+	}
+}
+
+func TestCableOpenIdleNotFound(t *testing.T) {
+	ts, _ := newServer(t)
+	owner := ownerClient(t, ts)
+	res, _ := do(t, owner, "POST", ts.URL+"/api/admin/cable/open", nil, nil)
+	if res.StatusCode != http.StatusNotFound {
+		t.Fatalf("idle open = %d, want 404", res.StatusCode)
+	}
+	if res, _ := do(t, owner, "GET", ts.URL+"/api/admin/cable/fs", nil, nil); res.StatusCode != http.StatusNotFound {
+		t.Fatalf("idle fs = %d, want 404", res.StatusCode)
+	}
+	if res, _ := do(t, owner, "GET", ts.URL+"/api/admin/cable/fs/head?path=download/a.bin", nil, nil); res.StatusCode != http.StatusNotFound {
+		t.Fatalf("idle fs head = %d, want 404", res.StatusCode)
+	}
+	if res, _ := do(t, owner, "GET", ts.URL+"/api/admin/cable/fs/thumb?path=download/a.jpg", nil, nil); res.StatusCode != http.StatusNotFound {
+		t.Fatalf("idle fs thumb = %d, want 404", res.StatusCode)
+	}
+	if res, _ := do(t, owner, "GET", ts.URL+"/api/admin/cable/fs/zip", nil, nil); res.StatusCode != http.StatusBadRequest {
+		t.Fatalf("empty zip = %d, want 400", res.StatusCode)
+	}
+	if res, _ := do(t, owner, "GET", ts.URL+"/api/admin/cable/fs/zip?path=download/a.jpg", nil, nil); res.StatusCode != http.StatusNotFound {
+		t.Fatalf("idle zip = %d, want 404", res.StatusCode)
+	}
+	if res, _ := do(t, owner, "GET", ts.URL+"/api/admin/cable/fs/zip?folder=download", nil, nil); res.StatusCode != http.StatusNotFound {
+		t.Fatalf("idle folder zip = %d, want 404", res.StatusCode)
 	}
 }

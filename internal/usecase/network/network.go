@@ -19,9 +19,11 @@ type Service struct {
 	secure   bool
 	runner   port.CommandRunner // optional; USB hardware ports and plugged phones
 
-	mu       sync.RWMutex
-	selected string // interface name; empty means automatic
-	adb      string // cached adb binary, if found
+	mu             sync.RWMutex
+	selected       string // interface name; empty means automatic
+	adb            string // cached adb binary, if found
+	androidKernel  string
+	androidRelease string
 }
 
 // NewService builds the service. preferred may be empty (automatic choice).

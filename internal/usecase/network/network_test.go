@@ -234,6 +234,8 @@ func TestCableReadyFromADBReverse(t *testing.T) {
 	run.On("adb version", fake.RunResult{Out: []byte("Android Debug Bridge version 1.0.41")})
 	run.On("adb devices", fake.RunResult{Out: []byte("List of devices attached\nR58M123\tdevice\n")})
 	run.On("adb reverse tcp:8080 tcp:8080", fake.RunResult{})
+	run.On("adb shell uname -r", fake.RunResult{Out: []byte("5.15.189-android13-8\n")})
+	run.On("adb shell getprop ro.build.version.release", fake.RunResult{Out: []byte("16\n")})
 	svc := NewService(netList{{Name: "en0", IP: "192.168.1.23", Kind: domain.NetPhysical}}, 8080, "")
 	svc.SetRunner(run)
 	st, err := svc.Cable(context.Background(), owner())
@@ -248,6 +250,9 @@ func TestCableReadyFromADBReverse(t *testing.T) {
 	}
 	if st.Links[0].Device != domain.CableAndroid || st.Links[0].Label != "Pixel 8" {
 		t.Errorf("device = %+v", st.Links[0])
+	}
+	if len(st.Phones) != 1 || st.Phones[0].Kernel != "5.15.189-android13-8" || st.Phones[0].Android != "16" {
+		t.Errorf("phones = %+v", st.Phones)
 	}
 }
 
@@ -300,6 +305,93 @@ func TestHTTPSCableURL(t *testing.T) {
 	}
 	if !strings.HasPrefix(st.Links[0].URL, "https://172.20.10.2:8080/") {
 		t.Errorf("url = %s", st.Links[0].URL)
+	}
+}
+
+func TestOpenOnCableForbiddenForMember(t *testing.T) {
+	svc := NewService(netList{{Name: "en0", IP: "192.168.1.23", Kind: domain.NetPhysical}}, 8080, "")
+	if _, err := svc.OpenOnCable(context.Background(), domain.Device{Role: domain.RoleMember, RoomID: "main"}); err != domain.ErrForbidden {
+		t.Errorf("OpenOnCable = %v", err)
+	}
+}
+
+func TestOpenOnCableIdleNotFound(t *testing.T) {
+	svc := NewService(netList{{Name: "en0", IP: "192.168.1.23", Kind: domain.NetPhysical}}, 8080, "")
+	if _, err := svc.OpenOnCable(context.Background(), owner()); err != domain.ErrNotFound {
+		t.Errorf("OpenOnCable idle = %v", err)
+	}
+}
+
+func TestOpenOnCableAndroidLaunchesBrowser(t *testing.T) {
+	run := fake.NewRunner()
+	run.On("/usr/sbin/networksetup -listallhardwareports", fake.RunResult{Out: []byte("Hardware Port: Wi-Fi\nDevice: en0\n")})
+	run.On("/usr/sbin/ioreg -r -c IOUSBHostDevice -l -d 1 -w 0", fake.RunResult{Out: []byte(ioregPixel)})
+	run.On("adb version", fake.RunResult{Out: []byte("Android Debug Bridge version 1.0.41")})
+	run.On("adb devices", fake.RunResult{Out: []byte("List of devices attached\nR58M123\tdevice\n")})
+	run.On("adb reverse tcp:8080 tcp:8080", fake.RunResult{})
+	run.On("adb shell am start -a android.intent.action.VIEW -d http://127.0.0.1:8080/?r=main", fake.RunResult{})
+	svc := NewService(netList{{Name: "en0", IP: "192.168.1.23", Kind: domain.NetPhysical}}, 8080, "")
+	svc.SetRunner(run)
+	got, err := svc.OpenOnCable(context.Background(), owner())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !got.Opened || got.Device != domain.CableAndroid || got.URL != "http://127.0.0.1:8080/?r=main" {
+		t.Fatalf("%+v", got)
+	}
+	var launched bool
+	for _, c := range run.Calls() {
+		if len(c.Args) >= 2 && c.Args[0] == "shell" && c.Args[1] == "am" {
+			launched = true
+		}
+	}
+	if !launched {
+		t.Fatal("expected adb shell am start")
+	}
+}
+
+func TestOpenOnCableiPhoneReturnsUSBURL(t *testing.T) {
+	run := fake.NewRunner()
+	run.On("/usr/sbin/networksetup -listallhardwareports", fake.RunResult{Out: []byte(
+		"Hardware Port: iPhone USB\nDevice: en5\nEthernet Address: 00:00:00:00:00:00\n")})
+	run.On("/usr/sbin/ioreg -r -c IOUSBHostDevice -l -d 1 -w 0", fake.RunResult{Out: []byte(ioregIPhone)})
+	svc := NewService(netList{
+		{Name: "en0", IP: "192.168.1.23", Kind: domain.NetPhysical},
+		{Name: "en5", IP: "172.20.10.2", Kind: domain.NetPhysical},
+	}, 8080, "")
+	svc.SetRunner(run)
+	got, err := svc.OpenOnCable(context.Background(), owner())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Opened {
+		t.Fatalf("iOS should not auto-open without a device tool: %+v", got)
+	}
+	if got.Device != domain.CableiPhone || got.URL != "http://172.20.10.2:8080/?r=main" {
+		t.Fatalf("%+v", got)
+	}
+	if got.Hint == "" {
+		t.Fatal("want a Safari hint")
+	}
+}
+
+func TestOpenOnCableiOSSafariWhenDevicectlWorks(t *testing.T) {
+	run := fake.NewRunner()
+	run.On("/usr/sbin/networksetup -listallhardwareports", fake.RunResult{Out: []byte(
+		"Hardware Port: iPhone USB\nDevice: en5\nEthernet Address: 00:00:00:00:00:00\n")})
+	run.On("/usr/sbin/ioreg -r -c IOUSBHostDevice -l -d 1 -w 0", fake.RunResult{Out: []byte(ioregIPhone)})
+	run.On("idevice_id -l", fake.RunResult{Out: []byte("00008110-001A4D123456789A\n")})
+	run.On("xcrun devicectl device process launch --device 00008110-001A4D123456789A com.apple.mobilesafari", fake.RunResult{})
+	svc := NewService(netList{
+		{Name: "en5", IP: "172.20.10.2", Kind: domain.NetPhysical},
+	}, 8080, "")
+	svc.SetRunner(run)
+	got, err := svc.OpenOnCable(context.Background(), owner())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !got.Opened || got.Device != domain.CableiPhone || got.URL != "http://172.20.10.2:8080/?r=main" {
+		t.Fatalf("%+v", got)
 	}
 }
 

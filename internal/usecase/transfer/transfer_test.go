@@ -453,6 +453,21 @@ func TestArchiveValidation(t *testing.T) {
 	}
 }
 
+func TestPreviewBytes(t *testing.T) {
+	e := newEnv()
+	ctx := context.Background()
+	b, err := e.svc.PreviewBytes(ctx, "p.jpg", bytes.NewReader([]byte("PIXELS")))
+	if err != nil || string(b) != "thumb:PIXELS" {
+		t.Fatalf("PreviewBytes jpg = %q, %v", b, err)
+	}
+	if _, err := e.svc.PreviewBytes(ctx, "n.txt", bytes.NewReader([]byte("text"))); !errors.Is(err, domain.ErrUnsupported) {
+		t.Errorf("PreviewBytes text = %v", err)
+	}
+	if _, err := e.svc.PreviewBytes(ctx, "pack.apk", bytes.NewReader([]byte("PK"))); !errors.Is(err, domain.ErrUnsupported) {
+		t.Errorf("PreviewBytes apk = %v", err)
+	}
+}
+
 func TestThumbnailIsRenderedOnceAndCached(t *testing.T) {
 	e := newEnv()
 	ctx := context.Background()
