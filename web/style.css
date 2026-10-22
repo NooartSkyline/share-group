@@ -99,6 +99,9 @@ textarea.text-input{resize:vertical;line-height:1.5}
 .path-tag{flex:none;font-size:11px;font-weight:700;padding:3px 8px;border-radius:99px;background:var(--chip);color:var(--mut)}
 .path-tag.usb{background:#5b7cff22;color:var(--accent)}
 .pill.via-usb{background:#5b7cff22;color:var(--accent)}
+.devices li.cable-dev{border:1px dashed #5b7cff66;background:#5b7cff14}
+.cable-found{margin:0;font-size:13px;font-weight:600;color:var(--warn)}
+.cable-found.ready{color:var(--ok)}
 .owner-info{min-width:0;display:flex;flex-direction:column;gap:10px}
 .owner-info h2{margin:0;overflow-wrap:anywhere}
 .url-row,.pin-row,.net-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;min-width:0}
@@ -259,6 +262,8 @@ textarea.text-input{resize:vertical;line-height:1.5}
   .dev-head{gap:6px}
   .devices .dev-ic{display:none}
   .devices .pill{display:none}
+  .devices li.cable-dev .pill{display:inline-flex}
+  .devices li.cable-dev .dev-ic{display:inline}
   .owner{grid-template-columns:1fr;justify-items:center}
   .owner-info{width:100%}
   .owner-qr img{width:130px;height:130px}

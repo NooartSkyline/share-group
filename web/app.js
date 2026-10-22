@@ -22,6 +22,7 @@ const state = {
   selected: new Set(),
   uploads: [], // local uploads (XHR gives accurate progress)
   remote: new Map(), // transfers of other devices, from WebSocket events
+  cable: null, // owner: last /api/admin/cable payload, so plugged phones appear in the device list
   messages: [],
   clip: null,
   view: 'files',
@@ -101,6 +102,8 @@ const I18N = {
     pending_title: 'อุปกรณ์รออนุมัติ', invite_title: 'เชิญอุปกรณ์อื่นเข้าห้อง',
     invite_help: 'สแกน QR หรือเปิดลิงก์ แล้วกรอก PIN ใช้ Wi-Fi วงเดียวกัน หรือสาย USB ที่เสียบอยู่',
     path_wifi: 'Wi-Fi', path_usb: 'สาย USB', via_usb: 'สาย USB',
+    cable_plugged_pill: 'เสียบสาย', cable_not_joined: 'ยังไม่เข้าห้อง',
+    cable_found: 'พบ {name} บนสาย USB',
     copy: 'คัดลอก', rotate_pin: '🔄 สร้างใหม่', network_used: 'เครือข่ายที่ใช้:',
     require_approval: 'อนุมัติอุปกรณ์ใหม่ก่อนเข้าใช้ห้อง',
     guest_title: 'ลิงก์แขก (อัปโหลดอย่างเดียว)', guest_clear: 'ปิดลิงก์', guest_make: 'สร้างลิงก์แขก 1 ชั่วโมง',
@@ -140,6 +143,8 @@ const I18N = {
     pending_title: 'Devices waiting for approval', invite_title: 'Invite others to',
     invite_help: 'Scan the QR code or open the link, then enter the PIN. Use the same Wi-Fi, or a plugged-in USB cable.',
     path_wifi: 'Wi-Fi', path_usb: 'USB cable', via_usb: 'USB cable',
+    cable_plugged_pill: 'Plugged in', cable_not_joined: 'not in the room yet',
+    cable_found: '{name} is on USB',
     copy: 'Copy', rotate_pin: '🔄 New PIN', network_used: 'Network:',
     require_approval: 'Approve new devices before they can use the room',
     guest_title: 'Guest link (upload only)', guest_clear: 'Turn off', guest_make: 'Create 1-hour guest link',
@@ -738,8 +743,43 @@ function renderUnread() {
 
 async function refreshDevices() {
   try { state.devices = await api('/api/devices'); } catch { return; }
+  renderDeviceList();
+}
+
+function cablePhoneIcon(device) {
+  if (device === 'iphone' || device === 'ipad') return PLATFORM_ICON.iOS;
+  if (device === 'android') return PLATFORM_ICON.Android;
+  return '🔌';
+}
+
+function visibleCablePhones() {
+  const st = state.cable;
+  if (!st || (st.state !== 'plugged' && st.state !== 'ready')) return [];
+  const phones = [...(st.phones || [])];
+  if (!phones.length && st.links) {
+    for (const l of st.links) {
+      phones.push({ device: l.device, name: l.label || l.name });
+    }
+  }
+  return phones;
+}
+
+function renderCablePhone(phone) {
+  const name = phone.name || t('path_usb');
+  const ready = state.cable && state.cable.state === 'ready';
+  const detail = ready ? t('via_usb') : t('cable_not_joined');
+  const head = el('div', { class: 'dev-head' },
+    el('span', { class: 'dev-ic' }, cablePhoneIcon(phone.device)),
+    el('span', { class: 'dev-name ellipsis', title: name }, name, el('small', {}, detail)),
+    el('span', { class: 'dot', title: t('cable_plugged_pill') }),
+    el('span', { class: 'pill via-usb' }, t('cable_plugged_pill')),
+  );
+  return el('li', { class: 'cable-dev' }, head);
+}
+
+function renderDeviceList() {
   const isOwner = role() === 'owner';
-  $('device-list').replaceChildren(...state.devices.map((d) => {
+  const rows = state.devices.map((d) => {
     const head = el('div', { class: 'dev-head' },
       el('span', { class: 'dev-ic' }, PLATFORM_ICON[d.platform] || '🌐'),
       el('span', { class: 'dev-name ellipsis', title: d.name }, d.name + (d.me ? t('you') : ''), el('small', {}, d.platform + (d.via === 'usb' ? ' · ' + t('via_usb') : ''))),
@@ -767,7 +807,11 @@ async function refreshDevices() {
       row.append(tools);
     }
     return row;
-  }));
+  });
+  if (isOwner) {
+    for (const phone of visibleCablePhones()) rows.push(renderCablePhone(phone));
+  }
+  $('device-list').replaceChildren(...rows);
   renderPendingBanner();
 }
 
@@ -3035,11 +3079,24 @@ function cableStatusText(st) {
 }
 
 function renderCableInvite(st) {
+  state.cable = st || null;
   const status = $('cable-status');
   const steps = $('cable-steps');
   const qr = $('cable-qr');
   const fig = $('cable-qr-fig');
   const row = $('cable-url-row');
+  const found = $('cable-found');
+  const phone = (st && st.phones && st.phones[0]) || (st && st.links && st.links[0]) || null;
+  const phoneName = phone && (phone.name || phone.label) ? (phone.name || phone.label) : '';
+  if (found) {
+    const show = !!(st && (st.state === 'plugged' || st.state === 'ready') && phoneName);
+    found.hidden = !show;
+    if (show) {
+      found.textContent = t('cable_found').replace('{name}', phoneName);
+      found.className = 'cable-found' + (st.state === 'ready' ? ' ready' : '');
+    }
+  }
+  renderDeviceList();
   if (!status) return;
   const text = cableStatusText(st);
   if (status.textContent !== text) status.textContent = text;

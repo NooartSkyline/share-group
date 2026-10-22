@@ -440,7 +440,11 @@ func (s *Server) joinInfo(w http.ResponseWriter, r *http.Request, actor domain.D
 				"name": l.Name, "label": l.Label, "ip": l.IP, "device": l.Device, "url": l.URL,
 			})
 		}
-		out["cable"] = map[string]any{"state": st.State, "links": links}
+		phones := make([]map[string]string, 0, len(st.Phones))
+		for _, p := range st.Phones {
+			phones = append(phones, map[string]string{"device": p.Device, "name": p.Name})
+		}
+		out["cable"] = map[string]any{"state": st.State, "links": links, "phones": phones}
 	}
 	writeJSON(w, http.StatusOK, out)
 }
