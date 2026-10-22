@@ -69,6 +69,12 @@ textarea.text-input{resize:vertical;line-height:1.5}
 .dev-head{display:flex;gap:8px;align-items:center;min-width:0}
 .devices .dev-name{flex:1;min-width:0}
 .devices .dev-name small{display:block;font-size:11px;color:var(--mut)}
+.dev-groups{display:flex;flex-direction:column;gap:10px}
+.dev-group h4{margin:0 8px 6px}
+.dev-group.usb.has-items > h4{color:var(--ok)}
+.devices li.cable-dev{background:#3ddc9714}
+.devices li.dev-empty{background:transparent;border:1px dashed var(--line);padding:8px 10px}
+.pill.via-usb{background:#3ddc9726;color:var(--ok)}
 .dev-tools{display:flex;gap:6px;min-width:0;align-items:center}
 .dev-tools .btn{flex:0 1 auto;min-width:0;max-width:100%}
 .dev-tools .select{flex:1 1 auto;min-width:0;width:auto;max-width:100%}
@@ -89,19 +95,13 @@ textarea.text-input{resize:vertical;line-height:1.5}
 .empty{padding:14px 4px}
 
 /* ---------- invite card (owner) ---------- */
-.owner{display:grid;grid-template-columns:auto minmax(0,1fr);gap:22px;align-items:start}
-.owner.has-cable{grid-template-columns:1fr}
+.owner{display:flex;flex-direction:column;gap:16px}
+.invite-wifi{display:grid;grid-template-columns:auto minmax(0,1fr);gap:22px;align-items:start;min-width:0}
 .owner-qr{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;flex:none}
 .invite-path{margin:0;background:#fff;border-radius:12px;padding:8px 8px 10px;line-height:0;text-align:center}
 .invite-path img{width:150px;height:150px;display:block}
 .path-cap{margin:8px 0 0;font-size:12px;font-weight:700;line-height:1.2;color:#333}
-.path-cap.usb{color:#4b64d6}
 .path-tag{flex:none;font-size:11px;font-weight:700;padding:3px 8px;border-radius:99px;background:var(--chip);color:var(--mut)}
-.path-tag.usb{background:#5b7cff22;color:var(--accent)}
-.pill.via-usb{background:#5b7cff22;color:var(--accent)}
-.devices li.cable-dev{border:1px dashed #5b7cff66;background:#5b7cff14}
-.cable-found{margin:0;font-size:13px;font-weight:600;color:var(--warn)}
-.cable-found.ready{color:var(--ok)}
 .owner-info{min-width:0;display:flex;flex-direction:column;gap:10px}
 .owner-info h2{margin:0;overflow-wrap:anywhere}
 .url-row,.pin-row,.net-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;min-width:0}
@@ -256,15 +256,18 @@ textarea.text-input{resize:vertical;line-height:1.5}
   .shell{grid-template-columns:1fr;padding:12px 12px 84px}
   .side{position:static;padding:8px;max-height:none;overflow:visible}
   .side h4,.side-nav,.side-room-sub{display:none}
+  .side .dev-groups h4{display:block;margin:8px 4px 4px}
   .side-room{padding:2px 4px 6px}
   .devices{flex-direction:row;flex-wrap:wrap;gap:6px}
   .devices li{flex-direction:row;background:var(--chip);padding:4px 10px 4px 8px;border-radius:99px;gap:6px}
+  .devices li.cable-dev{background:#3ddc9726}
+  .devices li.dev-empty{display:none}
+  .dev-group.usb:not(.has-items){display:none}
   .dev-head{gap:6px}
   .devices .dev-ic{display:none}
   .devices .pill{display:none}
-  .devices li.cable-dev .pill{display:inline-flex}
-  .devices li.cable-dev .dev-ic{display:inline}
-  .owner{grid-template-columns:1fr;justify-items:center}
+  .devices .pill.via-usb{display:inline}
+  .invite-wifi{grid-template-columns:1fr;justify-items:center}
   .owner-info{width:100%}
   .owner-qr img{width:130px;height:130px}
   .room-limits{grid-template-columns:1fr}
@@ -295,15 +298,10 @@ textarea.text-input{resize:vertical;line-height:1.5}
 .room-limits{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:stretch;font-size:13px}
 .room-limits .limit{display:flex;flex-direction:column;gap:4px;min-width:0}
 .room-limits .select{width:100%;min-width:0}
-.guest-box,.cable-box{display:flex;flex-direction:column;gap:8px;padding-top:6px;border-top:1px solid var(--line)}
-.cable-st{margin:0;font-size:13px;font-weight:600}
-.cable-st.ready{color:var(--ok)}
-.cable-st.plugged{color:var(--warn)}
-.cable-steps{margin:0;padding-left:1.2em;font-size:13px;color:var(--mut);display:flex;flex-direction:column;gap:4px}
-#cable-qr-fig[hidden]{display:none}
+.guest-box{display:flex;flex-direction:column;gap:8px;padding-top:6px;border-top:1px solid var(--line)}
 .code-view{margin:0;padding:10px 12px;background:var(--input);border:1px solid var(--line);border-radius:10px;font-family:ui-monospace,Menlo,monospace;font-size:12px;line-height:1.45;white-space:pre-wrap;word-break:break-word;max-height:50vh;overflow:auto}
 .code-view .kw{color:#7f9aff}.code-view .st{color:#3ddc97}.code-view .cm{color:var(--mut);font-style:italic}.code-view .nu{color:#ffb84d}
-.guest-box h3,.cable-box h3{font-size:13px;text-transform:none;letter-spacing:0;color:var(--text);margin:0}
+.guest-box h3{font-size:13px;text-transform:none;letter-spacing:0;color:var(--text);margin:0}
 .settings-row{display:flex;flex-direction:column;gap:6px;padding:8px 0;border-bottom:1px solid var(--line)}
 .settings-row:last-child{border-bottom:0}
 .settings-row label{font-size:13px}
@@ -321,7 +319,8 @@ textarea.text-input{resize:vertical;line-height:1.5}
   .th{height:124px}
   .messages{max-height:min(56vh,560px)}
   .owner-qr img{width:168px;height:168px}
-  .owner{gap:28px}
+  .invite-wifi{gap:28px}
+  .owner{gap:22px}
   .card{padding:20px}
 }
 @media (min-width:1600px){

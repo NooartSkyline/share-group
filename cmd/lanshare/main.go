@@ -219,6 +219,7 @@ func run() error {
 	}
 
 	printBanner(ctx, cfg, defaultRoom, networkSvc)
+	go networkSvc.KeepCable(ctx, defaultRoom.ID)
 
 	errc := make(chan error, 1)
 	go func() {
@@ -279,8 +280,9 @@ func printBanner(ctx context.Context, cfg config.Config, r domain.Room, nw *netw
 			fmt.Println(art)
 		}
 	}
-	if st, err := nw.Cable(ctx, domain.Device{Role: domain.RoleOwner, RoomID: r.ID}); err == nil && len(st.Links) > 0 {
-		fmt.Printf("  สาย USB:                %s\n", st.Links[0].URL)
+	fmt.Printf("  สาย USB: เสียบสายแล้วเปิด %s://127.0.0.1:%d/?r=%s กรอก PIN เดียวกับ Wi-Fi (ไม่เปิดเซิร์ฟเวอร์ใหม่)\n", scheme, cfg.Port, r.ID)
+	if st, err := nw.Cable(ctx, domain.Device{Role: domain.RoleOwner, RoomID: r.ID}); err == nil && len(st.Links) > 0 && st.Links[0].URL != "" {
+		fmt.Printf("           พร้อมแล้ว:         %s\n", st.Links[0].URL)
 	}
 	fmt.Printf("  ห้อง: %s   PIN: %s\n", r.Name, r.PIN)
 	fmt.Printf("  โฟลเดอร์ข้อมูล: %s\n\n", cfg.DataDir)

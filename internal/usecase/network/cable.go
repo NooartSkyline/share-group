@@ -75,6 +75,11 @@ func (s *Service) Cable(ctx context.Context, actor domain.Device) (CableStatus, 
 			URL: s.URLOn(n, actor.RoomID),
 		})
 	}
+	if len(st.Links) == 0 {
+		if link, ok := s.adbCableLink(ctx, actor.RoomID, st.Phones); ok {
+			st.Links = append(st.Links, link)
+		}
+	}
 	switch {
 	case len(st.Links) > 0:
 		st.State = CableReady
@@ -82,6 +87,26 @@ func (s *Service) Cable(ctx context.Context, actor domain.Device) (CableStatus, 
 		st.State = CablePlugged
 	}
 	return st, nil
+}
+
+const cableKeepInterval = 3 * time.Second
+
+// KeepCable maintains USB access to this process so a plugged-in phone joins
+// the same server as Wi-Fi. It does not start another listener; it only sets
+// up `adb reverse` (and reads USB status) against s.port.
+func (s *Service) KeepCable(ctx context.Context, room domain.RoomID) {
+	actor := domain.Device{Role: domain.RoleOwner, RoomID: room}
+	_, _ = s.Cable(ctx, actor)
+	t := time.NewTicker(cableKeepInterval)
+	defer t.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+			_, _ = s.Cable(ctx, actor)
+		}
+	}
 }
 
 func (s *Service) hardwarePorts(ctx context.Context) map[string]string {

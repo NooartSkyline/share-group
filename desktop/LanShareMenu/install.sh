@@ -1,13 +1,11 @@
 #!/bin/sh
-# คัดลอกแอป menu bar ไป ~/Applications แล้วเปิดครั้งแรก
+# สร้างแอป menu bar แล้วติดตั้งไป ~/Applications และเปิดทันที
 set -e
 SRC="$(CDPATH= cd -- "$(dirname "$0")" && pwd)"
 APP_SRC="$SRC/build/LAN Share.app"
 DEST="$HOME/Applications/LAN Share.app"
 
-if [ ! -d "$APP_SRC" ]; then
-  "$SRC/build.sh"
-fi
+"$SRC/build.sh"
 
 mkdir -p "$HOME/Applications"
 rm -rf "$DEST"

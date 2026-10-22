@@ -38,6 +38,16 @@ Popover จากไอคอน menu bar
 จากโฟลเดอร์โปรเจกต์:
 
 ```bash
+sh scripts/run-local.sh
+```
+
+Wi-Fi และสาย USB เข้าเซิร์ฟเวอร์ตัวเดียวกัน กรอก PIN เดียวกัน ถ้ามีเซิร์ฟเวอร์ทำงานอยู่แล้ว (เช่น แอป menu bar ที่พอร์ต `8080`) สคริปต์จะไม่เปิดตัวใหม่ แค่เชื่อมสาย USB เข้าเซิร์ฟเวอร์นั้น มือถือที่เสียบสายเปิด `http://127.0.0.1:8080/?r=main` ได้โดยไม่ต้องมีเน็ต
+
+ถ้ายังไม่มีเซิร์ฟเวอร์ จะ build แล้วรันจากซอร์สที่พอร์ต `8080` ข้อมูลอยู่ที่ `./tmp/local` หยุดด้วย Ctrl+C
+
+หรือรันตรง ๆ:
+
+```bash
 go run ./cmd/lanshare
 ```
 
@@ -110,7 +120,6 @@ sh desktop/FinderQuickAction/install.sh
 สร้างและเปิดไอคอนบนแถบเมนู (ไม่โผล่ที่ Dock) ด้วย Swift AppKit:
 
 ```bash
-sh desktop/LanShareMenu/build.sh
 sh desktop/LanShareMenu/install.sh
 ```
 

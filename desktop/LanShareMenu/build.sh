@@ -26,5 +26,4 @@ cp "$BIN/share" "$RES/share"
 chmod +x "$MACOS/LAN Share" "$RES/lanshare" "$RES/share"
 
 echo "เสร็จ: $OUT"
-echo "เปิดด้วย: open \"$OUT\""
-echo "ติดตั้งเปิดเมื่อเข้าสู่ระบบ: $APP_SRC/install.sh"
+echo "ติดตั้งและเปิดแอป: sh desktop/LanShareMenu/install.sh"

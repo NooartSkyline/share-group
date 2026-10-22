@@ -1,0 +1,22 @@
+{
+  "rooms": [
+    {
+      "id": "main",
+      "name": "ห้องหลัก",
+      "pin": "175493",
+      "createdAt": "2026-10-22T20:11:51.81193+07:00",
+      "guestUntil": "0001-01-01T00:00:00Z"
+    }
+  ],
+  "files": null,
+  "devices": [
+    {
+      "id": "owner-main",
+      "roomId": "main",
+      "name": "MacBook (เครื่องนี้)",
+      "platform": "macOS",
+      "role": "owner",
+      "joinedAt": "2026-10-22T20:13:08.400525+07:00"
+    }
+  ]
+}

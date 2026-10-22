@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 
 	"lanshare/internal/domain"
 	"lanshare/internal/usecase/fake"
@@ -223,6 +224,70 @@ func TestViaUSB(t *testing.T) {
 	}
 	if ViaUSB("192.168.1.23") || ViaUSB("10.0.0.8") || ViaUSB("") {
 		t.Fatal("LAN addresses should not be USB")
+	}
+}
+
+func TestCableReadyFromADBReverse(t *testing.T) {
+	run := fake.NewRunner()
+	run.On("/usr/sbin/networksetup -listallhardwareports", fake.RunResult{Out: []byte("Hardware Port: Wi-Fi\nDevice: en0\n")})
+	run.On("/usr/sbin/ioreg -r -c IOUSBHostDevice -l -d 1 -w 0", fake.RunResult{Out: []byte(ioregPixel)})
+	run.On("adb version", fake.RunResult{Out: []byte("Android Debug Bridge version 1.0.41")})
+	run.On("adb devices", fake.RunResult{Out: []byte("List of devices attached\nR58M123\tdevice\n")})
+	run.On("adb reverse tcp:8080 tcp:8080", fake.RunResult{})
+	svc := NewService(netList{{Name: "en0", IP: "192.168.1.23", Kind: domain.NetPhysical}}, 8080, "")
+	svc.SetRunner(run)
+	st, err := svc.Cable(context.Background(), owner())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if st.State != CableReady || len(st.Links) != 1 {
+		t.Fatalf("%+v", st)
+	}
+	if st.Links[0].IP != "127.0.0.1" || st.Links[0].URL != "http://127.0.0.1:8080/?r=main" {
+		t.Fatalf("link = %+v", st.Links[0])
+	}
+	if st.Links[0].Device != domain.CableAndroid || st.Links[0].Label != "Pixel 8" {
+		t.Errorf("device = %+v", st.Links[0])
+	}
+}
+
+func TestKeepCableStopsOnCancel(t *testing.T) {
+	run := fake.NewRunner()
+	run.On("/usr/sbin/networksetup -listallhardwareports", fake.RunResult{Out: []byte("Hardware Port: Wi-Fi\nDevice: en0\n")})
+	run.On("/usr/sbin/ioreg -r -c IOUSBHostDevice -l -d 1 -w 0", fake.RunResult{Out: []byte(ioregPixel)})
+	run.On("adb version", fake.RunResult{Out: []byte("Android Debug Bridge version 1.0.41")})
+	run.On("adb devices", fake.RunResult{Out: []byte("List of devices attached\nR58M123\tdevice\n")})
+	run.On("adb reverse tcp:8080 tcp:8080", fake.RunResult{})
+	svc := NewService(netList{{Name: "en0", IP: "192.168.1.23", Kind: domain.NetPhysical}}, 8080, "")
+	svc.SetRunner(run)
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{})
+	go func() {
+		svc.KeepCable(ctx, "main")
+		close(done)
+	}()
+	cancel()
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("KeepCable did not stop")
+	}
+}
+
+func TestCableADBUnauthorizedStaysPlugged(t *testing.T) {
+	run := fake.NewRunner()
+	run.On("/usr/sbin/networksetup -listallhardwareports", fake.RunResult{Out: []byte("Hardware Port: Wi-Fi\nDevice: en0\n")})
+	run.On("/usr/sbin/ioreg -r -c IOUSBHostDevice -l -d 1 -w 0", fake.RunResult{Out: []byte(ioregPixel)})
+	run.On("adb version", fake.RunResult{Out: []byte("Android Debug Bridge version 1.0.41")})
+	run.On("adb devices", fake.RunResult{Out: []byte("List of devices attached\nR58M123\tunauthorized\n")})
+	svc := NewService(netList{{Name: "en0", IP: "192.168.1.23", Kind: domain.NetPhysical}}, 8080, "")
+	svc.SetRunner(run)
+	st, err := svc.Cable(context.Background(), owner())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if st.State != CablePlugged || len(st.Links) != 0 {
+		t.Fatalf("%+v", st)
 	}
 }
 
