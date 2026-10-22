@@ -666,6 +666,7 @@ function renderFiles() {
   $('files-empty').hidden = state.files.length > 0;
   $('file-count').textContent = state.files.length ? `(${state.files.length})` : '';
   $('select-all').hidden = state.files.length === 0;
+  $('delete-all').hidden = state.files.length === 0 || role() !== 'owner'; // only the Owner may empty the room
   $('nav-files-count').hidden = state.files.length === 0;
   $('nav-files-count').textContent = state.files.length;
   const isOwner = role() === 'owner';
@@ -722,6 +723,7 @@ function setupFilesPane() {
     else state.files.forEach((f) => state.selected.add(f.id));
     renderFiles();
   });
+  $('delete-all').addEventListener('click', deleteAllFiles);
   $('sel-clear').addEventListener('click', () => { state.selected.clear(); renderFiles(); });
   $('sel-zip').addEventListener('click', () => {
     if (!state.selected.size) return;
@@ -732,6 +734,23 @@ function setupFilesPane() {
     a.click();
     a.remove();
   });
+}
+
+async function deleteAllFiles() {
+  const n = state.files.length;
+  if (role() !== 'owner' || n === 0) return;
+  if (!confirm(`ลบไฟล์ทั้งหมด ${n} ไฟล์ในห้องนี้ ?\nลบแล้วกู้คืนไม่ได้`)) return;
+  const btn = $('delete-all');
+  btn.disabled = true;
+  try {
+    const r = await api('/api/files', { method: 'DELETE' });
+    toast(`ลบแล้ว ${r.deleted} ไฟล์`);
+  } catch (e) {
+    toast('ลบไม่สำเร็จ: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    refreshFiles();
+  }
 }
 
 async function deleteFile(f) {

@@ -75,6 +75,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/files/{id}/thumb", s.authed(s.thumbnail))
 	mux.HandleFunc("GET /api/files/{id}/sha256", s.authed(s.fileChecksum))
 	mux.HandleFunc("DELETE /api/files/{id}", s.authed(s.deleteFile))
+	mux.HandleFunc("DELETE /api/files", s.authed(s.deleteAllFiles))
 	mux.HandleFunc("POST /api/uploads", s.authed(s.createUpload))
 	mux.HandleFunc("GET /api/uploads/{id}", s.authed(s.queryUpload))
 	mux.HandleFunc("PATCH /api/uploads/{id}", s.authed(s.appendUpload))

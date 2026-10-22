@@ -73,6 +73,7 @@ textarea.text-input{resize:vertical;line-height:1.5}
 }
 .pane-head{display:flex;align-items:center;gap:10px;justify-content:space-between}
 .pane-head h2{margin:0}
+.pane-tools{display:flex;gap:8px;flex-wrap:wrap}
 .empty{padding:14px 4px}
 
 /* ---------- invite card (owner) ---------- */

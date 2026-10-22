@@ -195,6 +195,38 @@ func (s *Service) Open(ctx context.Context, actor domain.Device, id domain.FileI
 	return Download{File: f, Content: &countingSeeker{rsc: rc, t: t, size: f.Size, end: s.activity().Begin()}}, nil
 }
 
+// DeleteAll removes every file of the actor's own room, for the Owner only,
+// and returns how many were removed. It keeps going when one file cannot be
+// removed and reports those failures together afterwards. Unfinished upload
+// sessions are not touched: they are not files yet.
+func (s *Service) DeleteAll(ctx context.Context, actor domain.Device) (int, error) {
+	if !actor.Role.CanManage() {
+		return 0, domain.ErrForbidden
+	}
+	list, err := s.files.ListByRoom(ctx, actor.RoomID)
+	if err != nil {
+		return 0, err
+	}
+	var (
+		removed int
+		errs    []error
+	)
+	for _, f := range list {
+		if err := ctx.Err(); err != nil {
+			errs = append(errs, err)
+			break
+		}
+		if err := s.Delete(ctx, actor, f.ID); err != nil {
+			if !errors.Is(err, domain.ErrNotFound) { // already gone: fine
+				errs = append(errs, fmt.Errorf("delete file %s: %w", f.ID, err))
+			}
+			continue
+		}
+		removed++
+	}
+	return removed, errors.Join(errs...)
+}
+
 // Delete removes a file from the actor's room.
 func (s *Service) Delete(ctx context.Context, actor domain.Device, id domain.FileID) error {
 	if !actor.Role.CanManage() {
