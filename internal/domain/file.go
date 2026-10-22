@@ -163,6 +163,33 @@ func init() {
 	add(KindArchive, "zip", "rar", "7z", "tar", "gz", "tgz", "bz2", "xz", "zst", "dmg", "iso", "pkg")
 }
 
+// IsHEIC reports whether name is a HEIC/HEIF still image.
+func IsHEIC(name string) bool {
+	ext := strings.ToLower(strings.TrimPrefix(path.Ext(name), "."))
+	return ext == "heic" || ext == "heif"
+}
+
+// JPEGNameFromHEIC replaces a HEIC/HEIF extension with .jpg, or appends .jpg.
+func JPEGNameFromHEIC(name string) string {
+	ext := path.Ext(name)
+	if ext == "" {
+		return name + ".jpg"
+	}
+	return name[:len(name)-len(ext)] + ".jpg"
+}
+
+// IsTextPreview reports whether name is safe to show as text in the browser.
+func IsTextPreview(name string) bool {
+	ext := strings.ToLower(strings.TrimPrefix(path.Ext(name), "."))
+	switch ext {
+	case "txt", "md", "csv", "tsv", "log", "json", "xml", "yaml", "yml", "toml", "ini",
+		"css", "js", "ts", "py", "go", "c", "h", "cpp", "java", "swift", "sh", "rb",
+		"sql", "php", "rs", "kt", "html", "htm":
+		return true
+	}
+	return false
+}
+
 // KindOf classifies a file by its extension.
 func KindOf(name string) FileKind {
 	ext := strings.ToLower(strings.TrimPrefix(path.Ext(name), "."))

@@ -6,7 +6,7 @@
 
 ## หน้าตา
 
-ภาพจากต้นแบบ [`mock/ui-mock-v2.html`](mock/ui-mock-v2.html) หน้า menu bar ยังเป็นต้นแบบของเฟสที่ยังไม่ทำ
+ภาพจากต้นแบบ [`mock/ui-mock-v2.html`](mock/ui-mock-v2.html)
 
 แดชบอร์ดบน Mac
 
@@ -95,7 +95,41 @@ go run ./cmd/share send photo.jpg
 go run ./cmd/share send -port 9000 ./report.pdf
 ```
 
-คำสั่งนี้เข้าเป็น Owner ผ่าน `localhost` แล้วอัปโหลดไฟล์เข้าห้องปัจจุบัน สคริปต์ [`scripts/share-send.sh`](scripts/share-send.sh) ใช้เป็นต้นทางของ Finder Quick Action ได้ (Automator → Quick Action → Run Shell Script ส่งไฟล์เป็น arguments)
+คำสั่งนี้เข้าเป็น Owner ผ่าน `localhost` แล้วอัปโหลดไฟล์เข้าห้องปัจจุบัน
+
+ติดตั้ง Finder Quick Action:
+
+```bash
+sh desktop/FinderQuickAction/install.sh
+```
+
+จากนั้นใน Finder คลิกขวาไฟล์ → Quick Actions / Services → **ส่งไป LAN Share** (เซิร์ฟเวอร์ต้องเปิดอยู่)
+
+## แอป menu bar
+
+สร้างและเปิดไอคอนบนแถบเมนู (ไม่โผล่ที่ Dock) ด้วย Swift AppKit:
+
+```bash
+sh desktop/LanShareMenu/build.sh
+sh desktop/LanShareMenu/install.sh
+```
+
+เมนูแสดงห้อง, PIN, เครือข่าย, จำนวนอุปกรณ์ และอุปกรณ์ที่รออนุมัติ กดเปิดแดชบอร์ดหรือเปิดเมื่อเข้าสู่ระบบได้จากเมนู
+
+## Shortcuts และ HTTP บนเครื่องนี้
+
+เรียกได้เฉพาะจาก `127.0.0.1` / `localhost` ไม่ต้องใส่ PIN:
+
+| Method และ path | หน้าที่ |
+|---|---|
+| `GET /api/shortcuts/info` | ห้อง, PIN, URL, โควตา, จำนวนอุปกรณ์ |
+| `GET /api/shortcuts/qr.png` | QR ของลิงก์เข้าห้อง |
+| `GET /api/shortcuts/files` | รายการไฟล์ในห้องปัจจุบัน |
+| `POST /api/shortcuts/files?name=photo.jpg` | อัปโหลดเนื้อหาไฟล์จาก body |
+
+ในแอป Shortcuts ใช้ Get Contents of URL ชี้ `http://127.0.0.1:8080/...`
+
+รูป HEIC/HEIF ที่อัปโหลดบน Mac จะถูกแปลงเป็น JPG อัตโนมัติด้วย `sips` หลังส่งเสร็จ ไฟล์ข้อความเปิดดูในหน้าเว็บพร้อมระบายสี syntax
 
 ## HTTPS
 

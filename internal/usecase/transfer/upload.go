@@ -134,6 +134,7 @@ func (s *Service) UploadVerified(ctx context.Context, actor domain.Device, in Up
 		t.finish(StateFailed)
 		return domain.File{}, err
 	}
+	f = s.convertPublishedHEIC(bg, f)
 	t.finish(StateDone)
 	return f, nil
 }

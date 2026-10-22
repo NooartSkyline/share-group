@@ -1,0 +1,36 @@
+{
+  "rooms": [
+    {
+      "id": "main",
+      "name": "ห้องหลัก",
+      "pin": "112427",
+      "createdAt": "2026-10-22T16:52:38.392244+07:00",
+      "quotaBytes": 1073741824,
+      "fileTTLNanos": 86400000000000,
+      "guestUntil": "0001-01-01T00:00:00Z"
+    }
+  ],
+  "files": [
+    {
+      "id": "106073a858448f428fbbfab2cdaa3d4c",
+      "roomId": "main",
+      "name": "hello.go",
+      "size": 40,
+      "uploaderId": "owner-main",
+      "uploaderName": "MacBook (เครื่องนี้)",
+      "createdAt": "2026-10-22T16:52:57.048487+07:00",
+      "sha256": "c9c9c8da432b7ae0aedfff5fd9a222aaf4f9b2860932bd1e9c015279ada301eb",
+      "integrity": "unverified"
+    }
+  ],
+  "devices": [
+    {
+      "id": "owner-main",
+      "roomId": "main",
+      "name": "MacBook (เครื่องนี้)",
+      "platform": "macOS",
+      "role": "owner",
+      "joinedAt": "2026-10-22T16:52:38.864902+07:00"
+    }
+  ]
+}

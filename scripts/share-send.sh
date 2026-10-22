@@ -4,10 +4,10 @@
 # แล้วเรียกสคริปต์นี้พร้อม "$@"
 set -e
 ROOT="$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)"
+if [ -x "$HOME/LANShare/bin/share" ]; then
+  exec "$HOME/LANShare/bin/share" send "$@"
+fi
 if [ -x "$ROOT/share" ]; then
   exec "$ROOT/share" send "$@"
-fi
-if [ -x "$ROOT/lanshare" ]; then
-  :
 fi
 exec go run "$ROOT/cmd/share" send "$@"

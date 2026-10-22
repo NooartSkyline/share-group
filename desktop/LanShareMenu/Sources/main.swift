@@ -1,0 +1,266 @@
+import AppKit
+import Foundation
+
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    private let status = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+    private let menu = NSMenu()
+    private var server: Process?
+    private var poll: Timer?
+    private var info = Info()
+    private var launching = false
+
+    private let roomItem = NSMenuItem(title: "ห้อง: —", action: nil, keyEquivalent: "")
+    private let pinItem = NSMenuItem(title: "PIN: —", action: #selector(copyPIN), keyEquivalent: "")
+    private let urlItem = NSMenuItem(title: "คัดลอก URL", action: #selector(copyURL), keyEquivalent: "")
+    private let nicItem = NSMenuItem(title: "เครือข่าย: —", action: nil, keyEquivalent: "")
+    private let devicesItem = NSMenuItem(title: "อุปกรณ์: —", action: nil, keyEquivalent: "")
+    private let pendingItem = NSMenuItem(title: "รออนุมัติ: —", action: nil, keyEquivalent: "")
+    private let toggleItem = NSMenuItem(title: "เปิดเซิร์ฟเวอร์", action: #selector(toggleServer), keyEquivalent: "")
+    private let loginItem = NSMenuItem(title: "เปิดเมื่อเข้าสู่ระบบ", action: #selector(toggleLogin), keyEquivalent: "")
+
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        if let btn = status.button {
+            btn.title = "📡"
+            btn.toolTip = "LAN Share"
+        }
+        roomItem.isEnabled = false
+        nicItem.isEnabled = false
+        devicesItem.isEnabled = false
+        pendingItem.isEnabled = false
+        for item in [roomItem, pinItem, urlItem, nicItem, devicesItem, pendingItem] {
+            menu.addItem(item)
+        }
+        menu.addItem(.separator())
+        let dash = NSMenuItem(title: "เปิดแดชบอร์ด", action: #selector(openDashboard), keyEquivalent: "o")
+        let quit = NSMenuItem(title: "ออก", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        for item in [dash, toggleItem, loginItem] { item.target = self }
+        quit.target = NSApp
+        menu.addItem(dash)
+        menu.addItem(toggleItem)
+        menu.addItem(loginItem)
+        menu.addItem(.separator())
+        menu.addItem(quit)
+        pinItem.target = self
+        urlItem.target = self
+        status.menu = menu
+        refreshLoginState()
+        startServerIfNeeded()
+        poll = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
+            self?.refresh()
+        }
+        poll?.tolerance = 0.5
+        refresh()
+        NSApp.servicesProvider = self
+        NSUpdateDynamicServices()
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        poll?.invalidate()
+        stopServer()
+    }
+
+    @objc func sendToLANShare(_ pboard: NSPasteboard, userData: String, error: AutoreleasingUnsafeMutablePointer<NSString?>) {
+        let urls = (pboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL]) ?? []
+        sendFiles(urls)
+    }
+
+    func application(_ application: NSApplication, open urls: [URL]) {
+        sendFiles(urls)
+    }
+
+    private func sendFiles(_ urls: [URL]) {
+        guard let share = shareBinary() else { return }
+        let proc = Process()
+        proc.executableURL = share
+        proc.arguments = ["send"] + urls.map(\.path)
+        proc.standardOutput = FileHandle.nullDevice
+        proc.standardError = FileHandle.nullDevice
+        try? proc.run()
+    }
+
+    @objc private func copyPIN() {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(info.pin, forType: .string)
+    }
+
+    @objc private func copyURL() {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(info.url, forType: .string)
+    }
+
+    @objc private func openDashboard() {
+        let url = URL(string: "http://127.0.0.1:\(port())/")!
+        NSWorkspace.shared.open(url)
+    }
+
+    @objc private func toggleServer() {
+        if serverRunning() {
+            stopServer()
+        } else {
+            startServerIfNeeded()
+        }
+        refresh()
+    }
+
+    @objc private func toggleLogin() {
+        setLaunchAtLogin(!isLaunchAtLogin())
+        refreshLoginState()
+    }
+
+    private func refreshLoginState() {
+        loginItem.state = isLaunchAtLogin() ? .on : .off
+    }
+
+    private func refresh() {
+        applyMenu()
+        let url = URL(string: "http://127.0.0.1:\(port())/api/shortcuts/info")!
+        var req = URLRequest(url: url, timeoutInterval: 1.5)
+        req.cachePolicy = .reloadIgnoringLocalCacheData
+        URLSession.shared.dataTask(with: req) { [weak self] data, resp, _ in
+            var next = Info()
+            if let data, (resp as? HTTPURLResponse)?.statusCode == 200,
+               let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                next.ok = true
+                next.roomName = obj["roomName"] as? String ?? ""
+                next.pin = obj["pin"] as? String ?? ""
+                next.url = obj["url"] as? String ?? ""
+                if let iface = obj["interface"] as? [String: Any] {
+                    let name = iface["name"] as? String ?? ""
+                    let ip = iface["ip"] as? String ?? ""
+                    next.iface = [name, ip].filter { !$0.isEmpty }.joined(separator: " • ")
+                }
+                next.deviceCount = (obj["deviceCount"] as? NSNumber)?.intValue ?? 0
+                next.pendingCount = (obj["pendingCount"] as? NSNumber)?.intValue ?? 0
+            }
+            DispatchQueue.main.async {
+                self?.info = next
+                self?.applyMenu()
+            }
+        }.resume()
+    }
+
+    private func applyMenu() {
+        let running = serverRunning() || info.ok
+        status.button?.title = running ? "📡" : "📴"
+        roomItem.title = "ห้อง: \(info.roomName.isEmpty ? "—" : info.roomName)"
+        pinItem.title = info.pin.isEmpty ? "PIN: —" : "PIN: \(info.pin)  (คัดลอก)"
+        urlItem.isEnabled = !info.url.isEmpty
+        nicItem.title = info.iface.isEmpty ? "เครือข่าย: —" : "เครือข่าย: \(info.iface)"
+        devicesItem.title = "อุปกรณ์: \(info.deviceCount)"
+        pendingItem.title = "รออนุมัติ: \(info.pendingCount)"
+        pendingItem.isHidden = info.pendingCount == 0
+        toggleItem.title = running ? "หยุดเซิร์ฟเวอร์" : "เปิดเซิร์ฟเวอร์"
+    }
+
+    private func startServerIfNeeded() {
+        if serverRunning() || launching { return }
+        guard let bin = lanshareBinary() else { return }
+        launching = true
+        let proc = Process()
+        proc.executableURL = bin
+        proc.arguments = []
+        proc.standardOutput = FileHandle.nullDevice
+        proc.standardError = FileHandle.nullDevice
+        proc.terminationHandler = { [weak self] _ in
+            DispatchQueue.main.async { self?.server = nil }
+        }
+        do {
+            try proc.run()
+            server = proc
+        } catch {
+            launching = false
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
+            self?.launching = false
+            self?.refresh()
+        }
+    }
+
+    private func stopServer() {
+        // หยุดเฉพาะโปรเซสที่แอปนี้เปิดเอง ถ้าผู้ใช้รัน lanshare ในเทอร์มินัลไว้แล้วจะไม่ถูกปิด
+        server?.terminate()
+        server = nil
+    }
+
+    private func serverRunning() -> Bool {
+        if let s = server, s.isRunning { return true }
+        return false
+    }
+
+    private func port() -> Int { 8080 }
+
+    private func bundleDir() -> URL {
+        Bundle.main.bundleURL.deletingLastPathComponent()
+    }
+
+    private func lanshareBinary() -> URL? {
+        let names = ["lanshare"]
+        let dirs = [
+            Bundle.main.resourceURL,
+            Bundle.main.bundleURL.appendingPathComponent("Contents/Resources"),
+            bundleDir(),
+            URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("LANShare/bin"),
+        ].compactMap { $0 }
+        for dir in dirs {
+            for name in names {
+                let u = dir.appendingPathComponent(name)
+                if FileManager.default.isExecutableFile(atPath: u.path) { return u }
+            }
+        }
+        return nil
+    }
+
+    private func shareBinary() -> URL? {
+        let u = URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("LANShare/bin/share")
+        if FileManager.default.isExecutableFile(atPath: u.path) { return u }
+        return lanshareBinary()?.deletingLastPathComponent().appendingPathComponent("share")
+    }
+
+    private func launchAgentURL() -> URL {
+        FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/LaunchAgents/app.lanshare.menubar.plist")
+    }
+
+    private func isLaunchAtLogin() -> Bool {
+        FileManager.default.fileExists(atPath: launchAgentURL().path)
+    }
+
+    private func setLaunchAtLogin(_ on: Bool) {
+        let dest = launchAgentURL()
+        if !on {
+            try? FileManager.default.removeItem(at: dest)
+            return
+        }
+        let exe = Bundle.main.executableURL?.path ?? ProcessInfo.processInfo.arguments[0]
+        let plist = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+            <key>Label</key><string>app.lanshare.menubar</string>
+            <key>ProgramArguments</key>
+            <array><string>\(exe)</string></array>
+            <key>RunAtLoad</key><true/>
+        </dict>
+        </plist>
+        """
+        try? FileManager.default.createDirectory(at: dest.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try? plist.write(to: dest, atomically: true, encoding: .utf8)
+    }
+}
+
+private struct Info {
+    var ok = false
+    var roomName = ""
+    var pin = ""
+    var url = ""
+    var iface = ""
+    var deviceCount = 0
+    var pendingCount = 0
+}
+
+let app = NSApplication.shared
+let delegate = AppDelegate()
+app.delegate = delegate
+app.setActivationPolicy(.accessory)
+app.run()

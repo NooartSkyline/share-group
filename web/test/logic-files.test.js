@@ -18,3 +18,17 @@ test('filterAndSortFiles searches name and device then sorts', () => {
   assert.equal(Logic.fileGroupKey(byDevice[0], 'device'), 'MacBook');
   assert.equal(Logic.fileGroupKey(files[0], 'date'), '2026-10-22');
 });
+
+test('highlightCode tags keywords strings and comments without HTML', () => {
+  const tokens = Logic.highlightCode('func hello() { return "x" } // hi', 'go');
+  const joined = tokens.map((t) => t.text).join('');
+  assert.equal(joined, 'func hello() { return "x" } // hi');
+  const kinds = Object.fromEntries(tokens.filter((t) => t.cls).map((t) => [t.text, t.cls]));
+  assert.equal(kinds.func, 'kw');
+  assert.equal(kinds.return, 'kw');
+  assert.equal(kinds['"x"'], 'st');
+  assert.equal(kinds['// hi'], 'cm');
+  for (const t of tokens) {
+    assert.equal(t.text.includes('<'), false);
+  }
+});

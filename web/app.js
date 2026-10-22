@@ -109,6 +109,10 @@ const I18N = {
     theme: 'ธีม', theme_system: 'ตามระบบ', theme_dark: 'มืด', theme_light: 'สว่าง',
     language: 'ภาษา', resize: 'ย่อรูปใหญ่ก่อนส่ง (ยาวสุด 1920 พิกเซล)',
     conn_on: 'เชื่อมต่อแล้ว', conn_off: 'ขาดการเชื่อมต่อ กำลังลองใหม่…',
+    quota_label: 'โควตาห้อง', quota_none: 'ไม่จำกัด', ttl_label: 'ไฟล์หมดอายุ',
+    ttl_none: 'ไม่หมดอายุ', ttl_1h: '1 ชั่วโมง', ttl_1d: '1 วัน', ttl_7d: '7 วัน', ttl_30d: '30 วัน',
+    rename: 'เปลี่ยนชื่อ', you: ' (คุณ)', details: 'รายละเอียด', download: '⬇ ดาวน์โหลด', del: 'ลบ',
+    rename_prompt: 'ชื่ออุปกรณ์ใหม่', code_fail: 'เปิดไฟล์ข้อความไม่สำเร็จ',
   },
   en: {
     join_title: 'Join room', join_room_label: 'Room:', join_pin_label: 'PIN',
@@ -128,6 +132,10 @@ const I18N = {
     theme: 'Theme', theme_system: 'System', theme_dark: 'Dark', theme_light: 'Light',
     language: 'Language', resize: 'Shrink large photos before upload (max edge 1920 px)',
     conn_on: 'Connected', conn_off: 'Disconnected, retrying…',
+    quota_label: 'Room quota', quota_none: 'No limit', ttl_label: 'File expiry',
+    ttl_none: 'Never', ttl_1h: '1 hour', ttl_1d: '1 day', ttl_7d: '7 days', ttl_30d: '30 days',
+    rename: 'Rename', you: ' (you)', details: 'Details', download: '⬇ Download', del: 'Delete',
+    rename_prompt: 'New device name', code_fail: 'Could not open this text file',
   },
 };
 
@@ -701,12 +709,15 @@ async function refreshDevices() {
   $('device-list').replaceChildren(...state.devices.map((d) => {
     const row = el('li', { class: (d.me ? 'me' : '') + (d.pending ? ' wait' : '') },
       el('span', { class: 'dev-ic' }, PLATFORM_ICON[d.platform] || '🌐'),
-      el('span', { class: 'dev-name grow ellipsis' }, d.name + (d.me ? ' (คุณ)' : ''), el('small', {}, d.platform)),
+      el('span', { class: 'dev-name grow ellipsis' }, d.name + (d.me ? t('you') : ''), el('small', {}, d.platform)),
       el('span', { class: 'dot' + (d.online ? '' : ' off'), title: d.online ? 'ออนไลน์' : 'ออฟไลน์' }),
       d.pending
         ? el('span', { class: 'pill pending' }, t('pending_pill'))
         : el('span', { class: 'pill ' + d.role }, ROLE_LABEL[d.role] || d.role),
     );
+    if (isOwner && !d.pending) {
+      row.append(el('button', { class: 'btn ghost sm dev-admin', type: 'button', onclick: () => renameDevice(d) }, t('rename')));
+    }
     if (isOwner && !d.me && !d.pending) {
       const sel = el('select', { class: 'select dev-admin', onchange: (e) => setDeviceRole(d.id, e.target.value) });
       for (const r of ['member', 'viewer', 'uploader']) {
@@ -753,6 +764,15 @@ async function setDeviceRole(id, roleName) {
     await api('/api/admin/devices/' + encodeURIComponent(id), jsonBody('PATCH', { role: roleName }));
     refreshDevices();
   } catch (e) { toast('เปลี่ยนบทบาทไม่สำเร็จ: ' + e.message); }
+}
+
+async function renameDevice(d) {
+  const name = prompt(t('rename_prompt'), d.name);
+  if (!name || name === d.name) return;
+  try {
+    await api('/api/admin/devices/' + encodeURIComponent(d.id), jsonBody('PATCH', { name }));
+    refreshDevices();
+  } catch (e) { toast('เปลี่ยนชื่อไม่สำเร็จ: ' + e.message); }
 }
 
 // ---------- files ----------
@@ -808,7 +828,7 @@ function thumbFor(f) {
   } else if (f.kind === 'video') {
     const v = el('video', { muted: true, preload: 'metadata', playsInline: true, onerror: fallback });
     v.muted = true;
-    lazyVideo(v, '/api/files/' + encodeURIComponent(f.id) + '#t=0.1');
+    lazyVideo(v, '/api/files/' + encodeURIComponent(f.id) + '?view=1#t=0.1');
     th.append(v, el('span', { class: 'play' }, '▶'));
   } else {
     addExt();
@@ -820,21 +840,38 @@ function thumbFor(f) {
 const PLAY_VIDEO = new Set(['mp4', 'm4v', 'mov', 'webm']);
 const PLAY_AUDIO = new Set(['mp3', 'm4a', 'wav', 'aac', 'ogg', 'opus', 'flac']);
 const SHOW_IMAGE = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'bmp']);
+const CODE_EXT = new Set(['txt', 'md', 'csv', 'json', 'xml', 'yaml', 'yml', 'toml', 'ini', 'css', 'js', 'ts', 'py', 'go', 'c', 'h', 'cpp', 'java', 'swift', 'sh', 'rb', 'sql', 'php', 'rs', 'kt', 'html', 'htm', 'log']);
+
+function fileExt(name) {
+  const s = String(name || '');
+  const i = s.lastIndexOf('.');
+  return i >= 0 ? s.slice(i + 1).toLowerCase() : '';
+}
 
 // previewNode is the large preview of the details dialog, or null when there is nothing to show:
 // the picture itself, a player for video and audio, or the server's preview picture for other
 // formats (HEIC, camera RAW, PDF, Office, text ...). The file is loaded only when the dialog opens.
 function previewNode(f) {
   const url = '/api/files/' + encodeURIComponent(f.id);
-  const ext = f.name.includes('.') ? f.name.slice(f.name.lastIndexOf('.') + 1).toLowerCase() : '';
+  const ext = fileExt(f.name);
   const thumbImg = () => el('img', { src: url + '/thumb', alt: '' });
   if (SHOW_IMAGE.has(ext)) {
-    const img = el('img', { src: url, alt: '', loading: 'lazy' });
+    const img = el('img', { src: url + '?view=1', alt: '', loading: 'lazy' });
     img.addEventListener('error', () => { if (f.thumb) img.replaceWith(thumbImg()); else img.remove(); }, { once: true });
     return img;
   }
-  if (PLAY_VIDEO.has(ext)) return el('video', { src: url, controls: true, preload: 'metadata', playsInline: true });
-  if (PLAY_AUDIO.has(ext)) return el('audio', { src: url, controls: true, preload: 'metadata' });
+  if (PLAY_VIDEO.has(ext)) return el('video', { src: url + '?view=1', controls: true, preload: 'metadata', playsInline: true });
+  if (PLAY_AUDIO.has(ext)) return el('audio', { src: url + '?view=1', controls: true, preload: 'metadata' });
+  if (CODE_EXT.has(ext) && !(Number(f.size) > 200 * 1024)) {
+    const box = el('pre', { class: 'code-view' });
+    fetch(url + '?view=1', { credentials: 'same-origin', headers: { 'X-LanShare-Client': '1' } })
+      .then((r) => { if (!r.ok) throw new Error(r.statusText); return r.text(); })
+      .then((text) => {
+        box.replaceChildren(...Logic.highlightCode(text, ext).map((tok) => el('span', { class: tok.cls || '' }, tok.text)));
+      })
+      .catch(() => { box.textContent = t('code_fail'); });
+    return box;
+  }
   if (f.thumb) {
     const img = thumbImg();
     img.addEventListener('error', () => img.remove(), { once: true });
@@ -870,10 +907,10 @@ function renderFiles() {
     th.addEventListener('click', () => toggleSelect(f.id));
 
     const acts = el('div', { class: 'acts' },
-      el('a', { class: 'btn ghost sm', href: '/api/files/' + encodeURIComponent(f.id), download: f.name }, '⬇ ดาวน์โหลด'),
-      el('button', { class: 'btn ghost sm', type: 'button', onclick: () => openFileDetails(f.id) }, 'รายละเอียด'));
+      el('a', { class: 'btn ghost sm', href: '/api/files/' + encodeURIComponent(f.id), download: f.name }, t('download')),
+      el('button', { class: 'btn ghost sm', type: 'button', onclick: () => openFileDetails(f.id) }, t('details')));
     if (isOwner) {
-      acts.append(el('button', { class: 'btn danger sm', type: 'button', onclick: () => deleteFile(f) }, 'ลบ'));
+      acts.append(el('button', { class: 'btn danger sm', type: 'button', onclick: () => deleteFile(f) }, t('del')));
     }
     nodes.push(el('div', { class: 'fc' + (checked ? ' chk' : '') },
       th,
@@ -2743,16 +2780,28 @@ async function setupOwner() {
   });
   $('require-approval').addEventListener('change', async (e) => {
     try {
-      await api('/api/admin/room', jsonBody('PATCH', {
-        name: state.room.name,
-        quotaBytes: state.room.quotaBytes || 0,
-        fileTTLSeconds: state.room.fileTTLSeconds || 0,
-        requireApproval: e.target.checked,
-      }));
-      state.room.requireApproval = e.target.checked;
+      await saveRoomSettings({ requireApproval: e.target.checked });
     } catch (err) {
       e.target.checked = !e.target.checked;
       toast('บันทึกการตั้งค่าไม่สำเร็จ: ' + err.message);
+    }
+  });
+  $('room-quota').addEventListener('change', async (e) => {
+    const prev = state.room.quotaBytes || 0;
+    try {
+      await saveRoomSettings({ quotaBytes: Number(e.target.value) || 0 });
+    } catch (err) {
+      e.target.value = String(prev);
+      toast('บันทึกโควตาไม่สำเร็จ: ' + err.message);
+    }
+  });
+  $('room-ttl').addEventListener('change', async (e) => {
+    const prev = state.room.fileTTLSeconds || 0;
+    try {
+      await saveRoomSettings({ fileTTLSeconds: Number(e.target.value) || 0 });
+    } catch (err) {
+      e.target.value = String(prev);
+      toast('บันทึกอายุไฟล์ไม่สำเร็จ: ' + err.message);
     }
   });
   $('make-guest').addEventListener('click', async () => {
@@ -2773,6 +2822,27 @@ async function setupOwner() {
     } catch (e) { toast('ปิดลิงก์ไม่สำเร็จ: ' + e.message); }
   });
   setupOwnerTools();
+}
+
+async function saveRoomSettings(patch) {
+  const body = {
+    name: state.room.name,
+    quotaBytes: Number($('room-quota').value) || 0,
+    fileTTLSeconds: Number($('room-ttl').value) || 0,
+    requireApproval: $('require-approval').checked,
+    ...patch,
+  };
+  await api('/api/admin/room', jsonBody('PATCH', body));
+  Object.assign(state.room, body);
+}
+
+function setSelectValue(id, value) {
+  const sel = $(id);
+  const v = String(value || 0);
+  if (![...sel.options].some((o) => o.value === v)) {
+    sel.append(el('option', { value: v }, v));
+  }
+  sel.value = v;
 }
 
 function renderGuest(info) {
@@ -2826,6 +2896,14 @@ async function loadJoinInfo() {
     renderPin(info.pin);
     $('qr').src = '/api/admin/qr.png?ts=' + Date.now();
     $('require-approval').checked = !!info.requireApproval;
+    setSelectValue('room-quota', info.quotaBytes);
+    setSelectValue('room-ttl', info.fileTTLSeconds);
+    if (state.room) {
+      state.room.quotaBytes = info.quotaBytes || 0;
+      state.room.fileTTLSeconds = info.fileTTLSeconds || 0;
+      state.room.requireApproval = !!info.requireApproval;
+      if (info.roomName) state.room.name = info.roomName;
+    }
     renderGuest(info);
   } catch (e) { toast('โหลดข้อมูลห้องไม่สำเร็จ: ' + e.message); }
 }

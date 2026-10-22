@@ -84,6 +84,8 @@ type Service struct {
 	// sys draws previews of formats the Go decoders cannot read; nil = none.
 	// Set by SetSystemPreviewer before the service is shared.
 	sys port.SystemPreviewer
+	// heic turns published HEIC/HEIF files into JPEG; nil = leave as uploaded.
+	heic port.HEICConverter
 	// noPreview remembers files the system could not draw, so a slow or failing
 	// tool is not asked again for the same file until the process restarts.
 	noPreviewMu sync.Mutex
@@ -221,6 +223,9 @@ func (s *Service) Delete(ctx context.Context, actor domain.Device, id domain.Fil
 // SetSystemPreviewer enables previews of formats beyond JPEG, PNG, GIF and
 // WebP. Call it before the service is shared between goroutines.
 func (s *Service) SetSystemPreviewer(p port.SystemPreviewer) { s.sys = p }
+
+// SetHEICConverter enables converting published HEIC/HEIF files to JPEG.
+func (s *Service) SetHEICConverter(c port.HEICConverter) { s.heic = c }
 
 // SetRooms enables per-room quota and automatic file expiry. Call it before
 // the service is shared between goroutines.

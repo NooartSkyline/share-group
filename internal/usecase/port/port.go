@@ -105,6 +105,12 @@ type ThumbRenderer interface {
 	Render(r io.Reader, maxDim int) ([]byte, error)
 }
 
+// HEICConverter turns a HEIC/HEIF picture into a JPEG. It is optional: without
+// one those files stay as uploaded. Convert must not keep the whole file in RAM.
+type HEICConverter interface {
+	Convert(ctx context.Context, name string, src io.Reader) (jpegName string, jpeg io.ReadCloser, size int64, err error)
+}
+
 // SystemPreviewer draws a preview picture of formats the in-process decoders
 // cannot read (HEIC, camera RAW, PDF, Office, text ...), using the host
 // operating system. It is optional: without one those files get an icon.

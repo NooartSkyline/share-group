@@ -346,12 +346,19 @@ func (s *Server) download(w http.ResponseWriter, r *http.Request, actor domain.D
 		ctype = "application/octet-stream"
 	}
 	h := w.Header()
-	h.Set("Content-Type", ctype)
-	// Default is a download. A Range request is a player seeking, so serve inline.
 	disp := "attachment"
 	if r.Header.Get("Range") != "" {
 		disp = "inline"
 	}
+	if r.URL.Query().Get("view") == "1" {
+		if domain.IsTextPreview(dl.File.Name) {
+			disp = "inline"
+			ctype = "text/plain; charset=utf-8"
+		} else if kind := domain.KindOf(dl.File.Name); kind == domain.KindImage || kind == domain.KindVideo || kind == domain.KindAudio {
+			disp = "inline"
+		}
+	}
+	h.Set("Content-Type", ctype)
 	h.Set("Content-Disposition", mime.FormatMediaType(disp, map[string]string{"filename": dl.File.Name}))
 	h.Set("Cache-Control", "private, no-store")
 	http.ServeContent(w, r, dl.File.Name, dl.File.CreatedAt, dl.Content)
@@ -401,6 +408,16 @@ func (s *Server) joinInfo(w http.ResponseWriter, r *http.Request, actor domain.D
 		gurl, _ := s.Network.GuestURL(r.Context(), rm.GuestKey)
 		out["guestUrl"] = gurl
 		out["guestUntil"] = rm.GuestUntil
+	}
+	if list, err := s.Devices.List(r.Context(), actor); err == nil {
+		pending := 0
+		for _, d := range list {
+			if d.Pending {
+				pending++
+			}
+		}
+		out["deviceCount"] = len(list)
+		out["pendingCount"] = pending
 	}
 	writeJSON(w, http.StatusOK, out)
 }

@@ -66,6 +66,10 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/guest/{key}/info", s.guestInfo)
 	mux.HandleFunc("POST /api/guest/{key}/join", s.guestJoin)
 	mux.HandleFunc("POST /api/owner/session", s.ownerSession)
+	mux.HandleFunc("GET /api/shortcuts/info", s.shortcuts(s.shortcutsInfo))
+	mux.HandleFunc("GET /api/shortcuts/qr.png", s.shortcuts(s.shortcutsQR))
+	mux.HandleFunc("GET /api/shortcuts/files", s.shortcuts(s.shortcutsFiles))
+	mux.HandleFunc("POST /api/shortcuts/files", s.shortcuts(s.shortcutsSend))
 
 	// any joined device
 	mux.HandleFunc("GET /api/me", s.authed(s.me))

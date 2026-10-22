@@ -734,3 +734,98 @@ func TestOwnerCreatesAndSwitchesRooms(t *testing.T) {
 		t.Fatalf("switched to %+v", me.Room)
 	}
 }
+
+func TestShortcutsLoopbackAndViewInline(t *testing.T) {
+	ts, _ := newServer(t)
+	c := newClient(t)
+
+	res, b := do(t, c, "GET", ts.URL+"/api/shortcuts/info", nil, nil)
+	if res.StatusCode != 200 {
+		t.Fatalf("shortcuts info = %d %s", res.StatusCode, b)
+	}
+	var info struct {
+		PIN         string `json:"pin"`
+		DeviceCount int    `json:"deviceCount"`
+	}
+	_ = json.Unmarshal(b, &info)
+	if !domain.ValidPINFormat(info.PIN) || info.DeviceCount < 1 {
+		t.Fatalf("info = %s", b)
+	}
+
+	req, err := http.NewRequest("GET", ts.URL+"/api/shortcuts/info", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Host = "evil.example.com"
+	req.Header.Set("X-LanShare-Client", "1")
+	bad, err := c.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bad.Body.Close()
+	if bad.StatusCode != http.StatusForbidden {
+		t.Fatalf("rebinding host = %d, want 403", bad.StatusCode)
+	}
+
+	res, sent := do(t, c, "POST", ts.URL+"/api/shortcuts/files?name=note.go",
+		strings.NewReader("package main"), nil)
+	if res.StatusCode != http.StatusCreated {
+		t.Fatalf("shortcuts send = %d %s", res.StatusCode, sent)
+	}
+	var f struct{ ID, Name string }
+	_ = json.Unmarshal(sent, &f)
+	if f.Name != "note.go" || f.ID == "" {
+		t.Fatalf("sent file = %s", sent)
+	}
+
+	owner := ownerClient(t, ts)
+	res, body := do(t, owner, "GET", ts.URL+"/api/files/"+f.ID+"?view=1", nil, nil)
+	if res.StatusCode != 200 {
+		t.Fatalf("view = %d", res.StatusCode)
+	}
+	cd := res.Header.Get("Content-Disposition")
+	if !strings.HasPrefix(cd, "inline") {
+		t.Errorf("view Content-Disposition = %q, want inline", cd)
+	}
+	if ct := res.Header.Get("Content-Type"); !strings.HasPrefix(ct, "text/plain") {
+		t.Errorf("view Content-Type = %q", ct)
+	}
+	if string(body) != "package main" {
+		t.Errorf("view body = %q", body)
+	}
+
+	_, meb := do(t, owner, "GET", ts.URL+"/api/me", nil, nil)
+	var me struct {
+		Device struct{ ID string }
+	}
+	_ = json.Unmarshal(meb, &me)
+	res, b = do(t, owner, "PATCH", ts.URL+"/api/admin/devices/"+me.Device.ID,
+		strings.NewReader(`{"name":"Mac โต๊ะทำงาน"}`),
+		map[string]string{"Content-Type": "application/json"})
+	if res.StatusCode != 200 {
+		t.Fatalf("rename = %d %s", res.StatusCode, b)
+	}
+}
+
+func TestOwnerQuotaAndTTLSettings(t *testing.T) {
+	ts, _ := newServer(t)
+	owner := ownerClient(t, ts)
+	res, b := do(t, owner, "PATCH", ts.URL+"/api/admin/room",
+		strings.NewReader(`{"name":"ห้องหลัก","quotaBytes":1073741824,"fileTTLSeconds":86400}`),
+		map[string]string{"Content-Type": "application/json"})
+	if res.StatusCode != 200 {
+		t.Fatalf("patch room = %d %s", res.StatusCode, b)
+	}
+	res, b = do(t, owner, "GET", ts.URL+"/api/admin/join-info", nil, nil)
+	if res.StatusCode != 200 {
+		t.Fatalf("join-info = %d %s", res.StatusCode, b)
+	}
+	var info struct {
+		QuotaBytes     int64 `json:"quotaBytes"`
+		FileTTLSeconds int64 `json:"fileTTLSeconds"`
+	}
+	_ = json.Unmarshal(b, &info)
+	if info.QuotaBytes != 1073741824 || info.FileTTLSeconds != 86400 {
+		t.Fatalf("limits = %+v", info)
+	}
+}

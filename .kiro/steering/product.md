@@ -21,8 +21,8 @@ LAN Share คือเซิร์ฟเวอร์แชร์ไฟล์ใ�
 
 ## สถานะ (ดู `docs/project-scope.md` หัวข้อ 11)
 - Phase A (MVP), B (ความสะดวก), C (ความเสถียร), D (หลายห้อง, อนุมัติอุปกรณ์, ลิงก์แขก, HTTPS ด้วย `-tls`) และ E (ธีม, ภาษา, ค้นหาไฟล์) เสร็จฝั่งโค้ดแล้ว
-- Phase F บางส่วน: CLI `share send`, สตรีมด้วย HTTP Range, Web Share Target, ย่อรูปก่อนส่ง — ยังไม่ทำแปลง HEIC ทั้งไฟล์และ syntax highlight
-- Phase G (แอป menu bar ด้วย Wails v3) ยังไม่ทำ เพราะ Wails v3 เป็น alpha
+- Phase F เสร็จฝั่งโค้ด: CLI `share send`, สตรีมด้วย HTTP Range, Web Share Target, ย่อรูปก่อนส่ง, แปลง HEIC เป็น JPG ด้วย `sips`, syntax highlight, Shortcuts HTTP API, Finder Quick Action
+- Phase G เสร็จฝั่งโค้ด: แอป menu bar ด้วย Swift AppKit (`desktop/LanShareMenu`) ไม่ใช้ Wails เพราะ v3 เป็น alpha
 - ค่าเริ่มต้นยังเป็น HTTP ธรรมดา เปิด `-tls` และเปิดอนุมัติอุปกรณ์ในหน้า Owner ก่อนให้คนอื่นที่ยังไม่ไว้ใจเชื่อมต่อ
 
 ## กฎของผลิตภัณฑ์

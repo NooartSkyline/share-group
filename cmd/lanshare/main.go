@@ -23,6 +23,7 @@ import (
 	"lanshare/internal/adapter/cmdrunner"
 	"lanshare/internal/adapter/diskspace"
 	"lanshare/internal/adapter/filestore"
+	"lanshare/internal/adapter/heicconv"
 	"lanshare/internal/adapter/httpapi"
 	"lanshare/internal/adapter/jsonstore"
 	"lanshare/internal/adapter/memory"
@@ -105,6 +106,9 @@ func run() error {
 	// Previews of HEIC, camera RAW, PDF, Office files and the like come from macOS itself.
 	if cfg.SystemPreview && syspreview.Available() {
 		transferSvc.SetSystemPreviewer(syspreview.New(cmdrunner.New()))
+	}
+	if cfg.SystemPreview && heicconv.Available() {
+		transferSvc.SetHEICConverter(heicconv.New(cmdrunner.New()))
 	}
 
 	// Keeps the Mac awake while any transfer (upload, append, download, zip)

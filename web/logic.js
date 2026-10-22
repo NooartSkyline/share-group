@@ -473,6 +473,46 @@
     return '';
   }
 
+  const CODE_KEYWORDS = {
+    go: 'func package import return if else for range struct interface type const var map chan defer go select case switch break continue default',
+    js: 'function const let var return if else for of in while class async await import export default new this try catch finally throw',
+    ts: 'function const let var return if else for of in while class async await import export default new this try catch finally throw type interface',
+    py: 'def class return if elif else for while import from as try except finally with yield lambda pass break continue True False None',
+    json: 'true false null',
+  };
+
+  function keywordsFor(ext) {
+    const e = String(ext || '').toLowerCase();
+    if (e === 'ts') return CODE_KEYWORDS.ts;
+    if (e === 'py') return CODE_KEYWORDS.py;
+    if (e === 'go') return CODE_KEYWORDS.go;
+    if (e === 'json') return CODE_KEYWORDS.json;
+    return CODE_KEYWORDS.js;
+  }
+
+  // highlightCode แยก token ของข้อความโค้ดโดยไม่ใช้ HTML — ผู้เรียกใส่ textContent
+  function highlightCode(src, ext) {
+    const text = String(src || '');
+    const kw = new Set(keywordsFor(ext).split(' ').filter(Boolean));
+    const re = /("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`|\/\/[^\n]*|\/\*[\s\S]*?\*\/|#(?!\{)[^\n]*|\b\d+(?:\.\d+)?\b|[A-Za-z_][\w]*)/g;
+    const out = [];
+    let last = 0;
+    let m;
+    while ((m = re.exec(text)) !== null) {
+      if (m.index > last) out.push({ text: text.slice(last, m.index) });
+      const tok = m[0];
+      let cls = '';
+      if (tok.startsWith('//') || tok.startsWith('/*') || tok.startsWith('#')) cls = 'cm';
+      else if (tok[0] === '"' || tok[0] === "'" || tok[0] === '`') cls = 'st';
+      else if (/^\d/.test(tok)) cls = 'nu';
+      else if (kw.has(tok)) cls = 'kw';
+      out.push(cls ? { cls, text: tok } : { text: tok });
+      last = m.index + tok.length;
+    }
+    if (last < text.length) out.push({ text: text.slice(last) });
+    return out;
+  }
+
   return {
     // ค่าคงที่
     CHUNK_SIZE,
@@ -506,6 +546,7 @@
     // ค้นหาและจัดกลุ่มไฟล์
     filterAndSortFiles,
     fileGroupKey,
+    highlightCode,
     // แจ้งเตือน
     roleCanDownload,
     isNotifiable,

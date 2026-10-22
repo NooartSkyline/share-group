@@ -482,3 +482,68 @@ func TestThumbnailIsRenderedOnceAndCached(t *testing.T) {
 		t.Error("a failed render must not be cached")
 	}
 }
+
+type stubHEIC struct {
+	fail bool
+	body string
+}
+
+func (s stubHEIC) Convert(_ context.Context, name string, src io.Reader) (string, io.ReadCloser, int64, error) {
+	_, _ = io.Copy(io.Discard, src)
+	if s.fail {
+		return "", nil, 0, domain.ErrUnsupported
+	}
+	b := []byte(s.body)
+	return domain.JPEGNameFromHEIC(name), io.NopCloser(bytes.NewReader(b)), int64(len(b)), nil
+}
+
+func TestConvertPublishedHEICReplacesFile(t *testing.T) {
+	e := newEnv()
+	e.svc.SetHEICConverter(stubHEIC{body: "JPEGDATA"})
+	m := dev("m", "A", domain.RoleMember)
+
+	f, err := e.upIn(m, put("photo.HEIC", "", "heic-bytes", ""))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if f.Name != "photo.jpg" || f.Size != 8 || f.Integrity != domain.IntegrityUnverified {
+		t.Fatalf("converted file = %+v", f)
+	}
+	dl, err := e.svc.Open(context.Background(), m, f.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, _ := io.ReadAll(dl.Content)
+	dl.Content.Close()
+	if string(got) != "JPEGDATA" {
+		t.Fatalf("content = %q", got)
+	}
+}
+
+func TestConvertPublishedHEICKeepsOriginalOnFailure(t *testing.T) {
+	e := newEnv()
+	e.svc.SetHEICConverter(stubHEIC{fail: true})
+	m := dev("m", "A", domain.RoleMember)
+
+	f, err := e.upIn(m, put("photo.heic", "", "heic-bytes", ""))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if f.Name != "photo.heic" || string(mustRead(t, e, m, f.ID)) != "heic-bytes" {
+		t.Fatalf("original was lost: %+v", f)
+	}
+}
+
+func mustRead(t *testing.T, e env, actor domain.Device, id domain.FileID) []byte {
+	t.Helper()
+	dl, err := e.svc.Open(context.Background(), actor, id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer dl.Content.Close()
+	b, err := io.ReadAll(dl.Content)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return b
+}

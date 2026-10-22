@@ -90,6 +90,24 @@
           <input id="require-approval" type="checkbox">
           <span data-i18n="require_approval">อนุมัติอุปกรณ์ใหม่ก่อนเข้าใช้ห้อง</span>
         </label>
+        <div class="room-limits">
+          <label class="mut small" for="room-quota" data-i18n="quota_label">โควตาห้อง</label>
+          <select id="room-quota" class="select">
+            <option value="0" data-i18n="quota_none">ไม่จำกัด</option>
+            <option value="536870912">512 MiB</option>
+            <option value="1073741824">1 GiB</option>
+            <option value="5368709120">5 GiB</option>
+            <option value="21474836480">20 GiB</option>
+          </select>
+          <label class="mut small" for="room-ttl" data-i18n="ttl_label">ไฟล์หมดอายุ</label>
+          <select id="room-ttl" class="select">
+            <option value="0" data-i18n="ttl_none">ไม่หมดอายุ</option>
+            <option value="3600" data-i18n="ttl_1h">1 ชั่วโมง</option>
+            <option value="86400" data-i18n="ttl_1d">1 วัน</option>
+            <option value="604800" data-i18n="ttl_7d">7 วัน</option>
+            <option value="2592000" data-i18n="ttl_30d">30 วัน</option>
+          </select>
+        </div>
         <div class="guest-box">
           <h3 data-i18n="guest_title">ลิงก์แขก (อัปโหลดอย่างเดียว)</h3>
           <div class="url-row" id="guest-url-row" hidden>

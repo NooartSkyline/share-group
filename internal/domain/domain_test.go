@@ -205,3 +205,22 @@ func TestGuestActive(t *testing.T) {
 		t.Fatal("empty key reported active")
 	}
 }
+
+func TestHEICAndTextPreviewHelpers(t *testing.T) {
+	if !IsHEIC("IMG.HEIC") || !IsHEIC("a.heif") || IsHEIC("a.jpg") || IsHEIC("heic") {
+		t.Fatal("IsHEIC")
+	}
+	if got := JPEGNameFromHEIC("IMG.HEIC"); got != "IMG.jpg" {
+		t.Errorf("JPEGNameFromHEIC HEIC = %q", got)
+	}
+	if got := JPEGNameFromHEIC("photo"); got != "photo.jpg" {
+		t.Errorf("JPEGNameFromHEIC no ext = %q", got)
+	}
+	for name, want := range map[string]bool{
+		"a.go": true, "b.JSON": true, "c.html": true, "d.jpg": false, "e": false,
+	} {
+		if got := IsTextPreview(name); got != want {
+			t.Errorf("IsTextPreview(%q) = %v, want %v", name, got, want)
+		}
+	}
+}

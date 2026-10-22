@@ -197,6 +197,7 @@ func (s *Service) leadComplete(ctx context.Context, actor domain.Device, rt *ses
 
 	// Published. Remember the outcome before the session disappears, so a
 	// repeat that loses the race still finds it.
+	file = s.convertPublishedHEIC(bg, file)
 	s.rememberCompletion(rt, file)
 	s.completeTeardown(bg, rt, false).finish(StateDone)
 	return file, nil
