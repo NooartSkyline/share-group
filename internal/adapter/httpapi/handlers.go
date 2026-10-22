@@ -458,6 +458,12 @@ func (s *Server) joinInfo(w http.ResponseWriter, r *http.Request, actor domain.D
 			if p.Android != "" {
 				item["android"] = p.Android
 			}
+			if p.Serial != "" {
+				item["serial"] = p.Serial
+			}
+			if p.Path != "" {
+				item["path"] = p.Path
+			}
 			phones = append(phones, item)
 		}
 		out["cable"] = map[string]any{"state": st.State, "links": links, "phones": phones}
@@ -513,6 +519,8 @@ func (s *Server) cableStatus(w http.ResponseWriter, r *http.Request, actor domai
 		Name    string `json:"name"`
 		Kernel  string `json:"kernel,omitempty"`
 		Android string `json:"android,omitempty"`
+		Serial  string `json:"serial,omitempty"`
+		Path    string `json:"path,omitempty"`
 	}
 	links := make([]link, 0, len(st.Links))
 	for _, l := range st.Links {
@@ -520,7 +528,7 @@ func (s *Server) cableStatus(w http.ResponseWriter, r *http.Request, actor domai
 	}
 	phones := make([]phone, 0, len(st.Phones))
 	for _, p := range st.Phones {
-		phones = append(phones, phone{p.Device, p.Name, p.Kernel, p.Android})
+		phones = append(phones, phone{p.Device, p.Name, p.Kernel, p.Android, p.Serial, p.Path})
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
 		"state":  st.State,
@@ -707,6 +715,75 @@ func (s *Server) cableFSDelete(w http.ResponseWriter, r *http.Request, actor dom
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"deleted": n})
+}
+
+func clipboardJSON(c network.CableClipboard) map[string]any {
+	targets := make([]map[string]string, 0, len(c.Targets))
+	for _, t := range c.Targets {
+		targets = append(targets, map[string]string{"id": t.ID, "name": t.Name})
+	}
+	names := c.Names
+	if names == nil {
+		names = []string{}
+	}
+	kind := c.Kind
+	if kind == "" && c.Count > 0 {
+		kind = "apps"
+	}
+	return map[string]any{
+		"kind":       kind,
+		"count":      c.Count,
+		"names":      names,
+		"source":     c.Source,
+		"sourceName": c.SourceName,
+		"targets":    targets,
+	}
+}
+
+func (s *Server) cableFSClipboard(w http.ResponseWriter, r *http.Request, actor domain.Device) {
+	c, err := s.Network.CableClipboard(r.Context(), actor)
+	if err != nil {
+		s.fail(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, clipboardJSON(c))
+}
+
+func (s *Server) cableFSCopy(w http.ResponseWriter, r *http.Request, actor domain.Device) {
+	q := r.URL.Query()
+	c, err := s.Network.CopyCableItems(r.Context(), actor, q["path"], q["folder"])
+	if err != nil {
+		s.fail(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, clipboardJSON(c))
+}
+
+func (s *Server) cableFSPaste(w http.ResponseWriter, r *http.Request, actor domain.Device) {
+	n, err := s.Network.PasteCableApps(r.Context(), actor, r.URL.Query().Get("dest"))
+	if err != nil {
+		s.fail(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"count": n, "installed": n})
+}
+
+func (s *Server) cableFSMkdir(w http.ResponseWriter, r *http.Request, actor domain.Device) {
+	q := r.URL.Query()
+	path, err := s.Network.MkdirCableFolder(r.Context(), actor, q.Get("path"), q.Get("name"))
+	if err != nil {
+		s.fail(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"path": path})
+}
+
+func (s *Server) cableFSClearClipboard(w http.ResponseWriter, r *http.Request, actor domain.Device) {
+	if err := s.Network.ClearCableClipboard(r.Context(), actor); err != nil {
+		s.fail(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, clipboardJSON(network.CableClipboard{}))
 }
 
 func (s *Server) cableFSImport(w http.ResponseWriter, r *http.Request, actor domain.Device) {

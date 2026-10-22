@@ -236,8 +236,20 @@ func TestMemberCannotUseOwnerEndpoints(t *testing.T) {
 	if res, _ := do(t, c, "POST", ts.URL+"/api/admin/cable/open", nil, nil); res.StatusCode != http.StatusForbidden {
 		t.Errorf("member POST /api/admin/cable/open = %d, want 403", res.StatusCode)
 	}
-	if res, _ := do(t, c, "DELETE", ts.URL+"/api/admin/cable/fs?path=download/a.jpg", nil, nil); res.StatusCode != http.StatusForbidden {
+	if res, _ := do(t, c, "DELETE", ts.URL+"/api/admin/cable/fs?path=android/download/a.jpg", nil, nil); res.StatusCode != http.StatusForbidden {
 		t.Errorf("member DELETE /api/admin/cable/fs = %d, want 403", res.StatusCode)
+	}
+	if res, _ := do(t, c, "POST", ts.URL+"/api/admin/cable/fs/copy?path=android/apps/com.foo", nil, nil); res.StatusCode != http.StatusForbidden {
+		t.Errorf("member POST /api/admin/cable/fs/copy = %d, want 403", res.StatusCode)
+	}
+	if res, _ := do(t, c, "POST", ts.URL+"/api/admin/cable/fs/paste?dest=android", nil, nil); res.StatusCode != http.StatusForbidden {
+		t.Errorf("member POST /api/admin/cable/fs/paste = %d, want 403", res.StatusCode)
+	}
+	if res, _ := do(t, c, "POST", ts.URL+"/api/admin/cable/fs/mkdir?path=android/download&name=x", nil, nil); res.StatusCode != http.StatusForbidden {
+		t.Errorf("member POST /api/admin/cable/fs/mkdir = %d, want 403", res.StatusCode)
+	}
+	if res, _ := do(t, c, "GET", ts.URL+"/api/admin/cable/fs/clipboard", nil, nil); res.StatusCode != http.StatusForbidden {
+		t.Errorf("member GET /api/admin/cable/fs/clipboard = %d, want 403", res.StatusCode)
 	}
 	for _, p := range []string{"/api/admin/cable/fs", "/api/admin/cable/fs/file", "/api/admin/cable/fs/head", "/api/admin/cable/fs/thumb", "/api/admin/cable/fs/zip"} {
 		if res, _ := do(t, c, "GET", ts.URL+p, nil, nil); res.StatusCode != http.StatusForbidden {
@@ -982,25 +994,31 @@ func TestCableOpenIdleNotFound(t *testing.T) {
 	if res, _ := do(t, owner, "GET", ts.URL+"/api/admin/cable/fs", nil, nil); res.StatusCode != http.StatusNotFound {
 		t.Fatalf("idle fs = %d, want 404", res.StatusCode)
 	}
-	if res, _ := do(t, owner, "GET", ts.URL+"/api/admin/cable/fs/head?path=download/a.bin", nil, nil); res.StatusCode != http.StatusNotFound {
+	if res, _ := do(t, owner, "GET", ts.URL+"/api/admin/cable/fs/head?path=android/download/a.bin", nil, nil); res.StatusCode != http.StatusNotFound {
 		t.Fatalf("idle fs head = %d, want 404", res.StatusCode)
 	}
-	if res, _ := do(t, owner, "GET", ts.URL+"/api/admin/cable/fs/thumb?path=download/a.jpg", nil, nil); res.StatusCode != http.StatusNotFound {
+	if res, _ := do(t, owner, "GET", ts.URL+"/api/admin/cable/fs/thumb?path=android/download/a.jpg", nil, nil); res.StatusCode != http.StatusNotFound {
 		t.Fatalf("idle fs thumb = %d, want 404", res.StatusCode)
 	}
 	if res, _ := do(t, owner, "GET", ts.URL+"/api/admin/cable/fs/zip", nil, nil); res.StatusCode != http.StatusBadRequest {
 		t.Fatalf("empty zip = %d, want 400", res.StatusCode)
 	}
-	if res, _ := do(t, owner, "GET", ts.URL+"/api/admin/cable/fs/zip?path=download/a.jpg", nil, nil); res.StatusCode != http.StatusNotFound {
+	if res, _ := do(t, owner, "GET", ts.URL+"/api/admin/cable/fs/zip?path=android/download/a.jpg", nil, nil); res.StatusCode != http.StatusNotFound {
 		t.Fatalf("idle zip = %d, want 404", res.StatusCode)
 	}
-	if res, _ := do(t, owner, "GET", ts.URL+"/api/admin/cable/fs/zip?folder=download", nil, nil); res.StatusCode != http.StatusNotFound {
+	if res, _ := do(t, owner, "GET", ts.URL+"/api/admin/cable/fs/zip?folder=android/download", nil, nil); res.StatusCode != http.StatusNotFound {
 		t.Fatalf("idle folder zip = %d, want 404", res.StatusCode)
 	}
 	if res, _ := do(t, owner, "DELETE", ts.URL+"/api/admin/cable/fs", nil, nil); res.StatusCode != http.StatusBadRequest {
 		t.Fatalf("empty delete = %d, want 400", res.StatusCode)
 	}
-	if res, _ := do(t, owner, "DELETE", ts.URL+"/api/admin/cable/fs?path=download/a.jpg", nil, nil); res.StatusCode != http.StatusNotFound {
+	if res, _ := do(t, owner, "DELETE", ts.URL+"/api/admin/cable/fs?path=android/download/a.jpg", nil, nil); res.StatusCode != http.StatusNotFound {
 		t.Fatalf("idle delete = %d, want 404", res.StatusCode)
+	}
+	if res, _ := do(t, owner, "POST", ts.URL+"/api/admin/cable/fs/copy?path=android/apps/com.foo", nil, nil); res.StatusCode != http.StatusNotFound {
+		t.Fatalf("idle copy = %d, want 404", res.StatusCode)
+	}
+	if res, _ := do(t, owner, "POST", ts.URL+"/api/admin/cable/fs/mkdir?path=android/download&name=x", nil, nil); res.StatusCode != http.StatusNotFound {
+		t.Fatalf("idle mkdir = %d, want 404", res.StatusCode)
 	}
 }

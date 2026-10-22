@@ -230,9 +230,16 @@
           <ul id="cable-fs-list" class="cable-fs-list"></ul>
           <div id="cable-fs-selbar" class="selbar" hidden>
             <span class="grow"><b id="cable-fs-sel-count"></b> <span id="cable-fs-sel-size"></span></span>
+            <button id="cable-fs-copy" class="btn sm" type="button" data-i18n="cable_fs_copy">คัดลอก</button>
             <button id="cable-fs-save" class="btn sm" type="button" data-i18n="cable_fs_save">⬇ บันทึกลงเครื่อง</button>
             <button id="cable-fs-delete" class="btn danger sm" type="button" data-i18n="cable_fs_del">🗑 ลบ</button>
             <button id="cable-fs-sel-clear" class="btn ghost sm" type="button" data-i18n="cable_fs_clear">ล้าง</button>
+          </div>
+          <div id="cable-fs-clipbar" class="selbar clipbar" hidden>
+            <span class="grow"><b id="cable-fs-clip-count"></b> <span id="cable-fs-clip-from" class="mut"></span></span>
+            <button id="cable-fs-mkdir" class="btn ghost sm" type="button" data-i18n="cable_fs_mkdir">โฟลเดอร์ใหม่</button>
+            <button id="cable-fs-paste" class="btn sm" type="button" data-i18n="cable_fs_paste">วาง</button>
+            <button id="cable-fs-clip-clear" class="btn ghost sm" type="button" data-i18n="cable_fs_clear">ล้าง</button>
           </div>
         </div>
         <div id="cable-fs-preview" hidden>
@@ -289,6 +296,18 @@
   <button type="button" data-go="files"><span>🗂️</span>ไฟล์</button>
   <button type="button" data-go="chat"><span>💬</span>ข้อความ<i id="tab-chat-badge" class="badge dotbadge" hidden></i></button>
 </nav>
+
+<dialog id="cable-mkdir-dlg" class="dlg">
+  <form id="cable-mkdir-form" method="dialog">
+    <h3 data-i18n="cable_fs_mkdir">โฟลเดอร์ใหม่</h3>
+    <p class="mut small" data-i18n="cable_fs_mkdir_prompt">ชื่อโฟลเดอร์ใหม่</p>
+    <input id="cable-mkdir-name" class="text-input" type="text" maxlength="80" autocomplete="off" required>
+    <div class="dlg-actions">
+      <button class="btn ghost" type="button" id="cable-mkdir-cancel">ยกเลิก</button>
+      <button class="btn" value="ok">สร้าง</button>
+    </div>
+  </form>
+</dialog>
 
 <dialog id="conflict-dlg" class="dlg">
   <form id="conflict-form" method="dialog">

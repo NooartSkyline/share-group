@@ -89,7 +89,7 @@ function formatTime(iso) {
   } catch { return iso; }
 }
 
-const KIND_ICON = { image: '🖼️', video: '🎬', audio: '🎵', document: '📄', archive: '📦', other: '📄' };
+const KIND_ICON = { image: '🖼️', video: '🎬', audio: '🎵', document: '📄', archive: '📦', app: '📦', other: '📄' };
 const PLATFORM_ICON = { iOS: '📱', Android: '🤖', Windows: '🖥️', macOS: '💻', Linux: '🐧', Web: '🌐' };
 const ROLE_LABEL = { owner: 'Owner', member: 'Member', viewer: 'Viewer', uploader: 'Uploader' };
 
@@ -121,11 +121,28 @@ const I18N = {
     cable_fs_save: '⬇ บันทึกลงเครื่อง', cable_fs_clear: 'ล้าง',
     cable_fs_picked: 'เลือก {n} รายการ',
     cable_fs_save_need: 'เลือกไฟล์ก่อน', cable_fs_save_limit: 'เลือกได้ไม่เกิน 200 ไฟล์',
+    cable_fs_copy: 'คัดลอก', cable_fs_copy_need: 'เลือกรายการก่อน',
+    cable_fs_copy_ok: 'คัดลอก {n} รายการแล้ว · เปิดหน้าที่จะวาง แล้วกดวาง',
+    cable_fs_copy_limit: 'คัดลอกได้ไม่เกิน 8 แอปต่อครั้ง',
+    cable_fs_copy_mixed: 'เลือกแอปกับไฟล์พร้อมกันไม่ได้',
+    cable_fs_paste: 'วาง',
+    cable_fs_paste_need: 'เปิดหน้าที่จะวางบนเครื่องอื่น แล้วกดวาง',
+    cable_fs_paste_need_device: 'เสียบ Android เครื่องอื่นที่เปิด USB debugging ก่อน',
+    cable_fs_paste_need_folder: 'เปิดโฟลเดอร์ที่จะวาง แล้วกดวาง',
+    cable_fs_mkdir: 'โฟลเดอร์ใหม่',
+    cable_fs_mkdir_prompt: 'ชื่อโฟลเดอร์ใหม่',
+    cable_fs_mkdir_ok: 'สร้างโฟลเดอร์แล้ว',
+    cable_fs_mkdir_ios: 'สร้างโฟลเดอร์บน iPhone ผ่านสายยังไม่ได้',
+    cable_fs_pasted: 'ติดตั้งแล้ว {n} แอป',
+    cable_fs_pasted_files: 'วางแล้ว {n} รายการ',
+    cable_fs_clip_from: 'จาก {name}',
+    cable_fs_clip_count: 'คัดลอก {n} รายการ',
     cable_fs_del: '🗑 ลบ',
     cable_fs_del_confirm: 'ลบ {n} รายการออกจากเครื่องที่เสียบสาย?\nลบแล้วกู้คืนไม่ได้',
     cable_fs_deleted: 'ลบแล้ว',
     cable_fs_del_root: 'ลบโฟลเดอร์หลักไม่ได้',
     cable_fs_del_ios: 'ลบไฟล์บน iPhone ผ่านสายยังไม่ได้ ให้ลบในแอป Files',
+    cable_fs_need_adb: 'เปิด USB debugging แล้วกด Trust บนเครื่องนี้ จึงจะดูไฟล์ได้',
     copy: 'คัดลอก', rotate_pin: '🔄 สร้างใหม่', network_used: 'เครือข่ายที่ใช้:',
     require_approval: 'อนุมัติอุปกรณ์ใหม่ก่อนเข้าใช้ห้อง',
     guest_title: 'ลิงก์แขก (อัปโหลดอย่างเดียว)', guest_clear: 'ปิดลิงก์', guest_make: 'สร้างลิงก์แขก 1 ชั่วโมง',
@@ -171,11 +188,28 @@ const I18N = {
     cable_fs_save: '⬇ Save to this Mac', cable_fs_clear: 'Clear',
     cable_fs_picked: 'Selected {n} items',
     cable_fs_save_need: 'Select files first', cable_fs_save_limit: 'Choose up to 200 files',
+    cable_fs_copy: 'Copy', cable_fs_copy_need: 'Select items first',
+    cable_fs_copy_ok: 'Copied {n} items · open the destination, then paste',
+    cable_fs_copy_limit: 'Copy up to 8 apps at a time',
+    cable_fs_copy_mixed: 'Apps and files cannot be copied together',
+    cable_fs_paste: 'Paste',
+    cable_fs_paste_need: 'Open the destination on another device, then paste',
+    cable_fs_paste_need_device: 'Plug in another Android with USB debugging first',
+    cable_fs_paste_need_folder: 'Open the folder to paste into, then paste',
+    cable_fs_mkdir: 'New folder',
+    cable_fs_mkdir_prompt: 'New folder name',
+    cable_fs_mkdir_ok: 'Folder created',
+    cable_fs_mkdir_ios: 'Creating folders on iPhone over USB is not available',
+    cable_fs_pasted: 'Installed {n} apps',
+    cable_fs_pasted_files: 'Pasted {n} items',
+    cable_fs_clip_from: 'from {name}',
+    cable_fs_clip_count: '{n} items copied',
     cable_fs_del: '🗑 Delete',
     cable_fs_del_confirm: 'Delete {n} items from the plugged-in device?\nThis cannot be undone',
     cable_fs_deleted: 'Deleted',
     cable_fs_del_root: 'The top folders cannot be deleted',
     cable_fs_del_ios: 'USB delete is not available on iPhone. Delete in the Files app',
+    cable_fs_need_adb: 'Turn on USB debugging and tap Trust on this phone to browse files',
     copy: 'Copy', rotate_pin: '🔄 New PIN', network_used: 'Network:',
     require_approval: 'Approve new devices before they can use the room',
     guest_title: 'Guest link (upload only)', guest_clear: 'Turn off', guest_make: 'Create 1-hour guest link',
@@ -827,7 +861,7 @@ function renderCablePhone(phone) {
     el('span', { class: 'pill via-usb' }, t('cable_plugged_pill')),
   );
   const tools = el('div', { class: 'dev-tools' },
-    el('button', { class: 'btn sm', type: 'button', onclick: () => openCableFiles() }, t('cable_open')),
+    el('button', { class: 'btn sm', type: 'button', onclick: () => openCablePhone(phone) }, t('cable_open')),
   );
   return el('li', { class: 'cable-dev' }, head, tools);
 }
@@ -851,7 +885,7 @@ function renderDeviceRow(d, isOwner) {
     const tools = el('div', { class: 'dev-tools' });
     tools.append(el('button', { class: 'btn ghost sm', type: 'button', onclick: () => renameDevice(d) }, t('rename')));
     if (usb) {
-      tools.append(el('button', { class: 'btn sm', type: 'button', onclick: () => openCableFiles() }, t('cable_open')));
+      tools.append(el('button', { class: 'btn sm', type: 'button', onclick: () => openCableFiles(cableDeviceFSPath(d.platform)) }, t('cable_open')));
     }
     if (!d.me) {
       const sel = el('select', { class: 'select', onchange: (e) => setDeviceRole(d.id, e.target.value) });
@@ -893,6 +927,7 @@ function renderDeviceList() {
 }
 
 const cableFS = { path: '', seq: 0, preview: null, previewSeq: 0, view: 'preview', layout: 'list', entries: [], selected: new Set() };
+const cableClip = { kind: '', count: 0, names: [], source: '', sourceName: '', targets: [] };
 
 function setupCableFS() {
   if (setupCableFS.done) return;
@@ -907,6 +942,21 @@ function setupCableFS() {
     if (cableFS.preview) saveCableFiles([cableFS.preview]);
   });
   $('cable-fs-select-all').addEventListener('click', toggleCableSelectAll);
+  $('cable-fs-copy').addEventListener('click', copyCableItems);
+  $('cable-fs-paste').addEventListener('click', pasteCableClip);
+  $('cable-fs-mkdir').addEventListener('click', mkdirCableFolder);
+  $('cable-mkdir-form').addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const name = $('cable-mkdir-name').value.trim();
+    if (!name) {
+      $('cable-mkdir-name').focus();
+      return;
+    }
+    $('cable-mkdir-dlg').close();
+    submitCableMkdir(name);
+  });
+  $('cable-mkdir-cancel').addEventListener('click', () => $('cable-mkdir-dlg').close());
+  $('cable-fs-clip-clear').addEventListener('click', clearCableClip);
   $('cable-fs-save').addEventListener('click', () => {
     saveCableFiles(cableFS.entries.filter((f) => cableFS.selected.has(f.path)));
   });
@@ -947,8 +997,208 @@ function setCableLayout(layout) {
   }
 }
 
-function openCableFiles() {
-  cableFS.path = '';
+function cableDeviceFSPath(device) {
+  const d = String(device || '').toLowerCase();
+  if (d.startsWith('android:')) return d;
+  if (d === 'iphone' || d === 'ipad' || d === 'ios') return d === 'ipad' ? 'ipad' : 'iphone';
+  if (d === 'android') return 'android';
+  return '';
+}
+
+function openCablePhone(phone) {
+  const path = (phone && phone.path) || '';
+  if (path) {
+    openCableFiles(path);
+    return;
+  }
+  const fallback = cableDeviceFSPath(phone && phone.device);
+  if (fallback && fallback !== 'android') {
+    openCableFiles(fallback);
+    return;
+  }
+  toast(t('cable_fs_need_adb'));
+}
+
+function isCablePhonePath(path) {
+  const p = String(path || '');
+  return p === 'android' || p === 'iphone' || p === 'ipad' || /^android:[^/]+$/.test(p);
+}
+
+function isCableAppPath(path) {
+  const parts = String(path || '').split('/').filter(Boolean);
+  const i = parts.findIndex((p) => p === 'apps');
+  return i >= 1 && parts.length >= i + 2;
+}
+
+function isCableAppsRoot(path) {
+  const parts = String(path || '').split('/').filter(Boolean);
+  const i = parts.findIndex((p) => p === 'apps');
+  return i >= 1 && parts.length === i + 1;
+}
+
+function cableCopyable(entries) {
+  return (entries || []).filter((f) => f && f.path && f.path.includes('/') && !isCableAppsRoot(f.path));
+}
+
+function applyCableClip(r) {
+  cableClip.kind = (r && r.kind) || '';
+  cableClip.count = (r && r.count) || 0;
+  cableClip.names = (r && r.names) || [];
+  cableClip.source = (r && r.source) || '';
+  cableClip.sourceName = (r && r.sourceName) || '';
+  cableClip.targets = (r && r.targets) || [];
+}
+
+function cablePasteDest() {
+  if (!cableClip.count) return { dest: '', reason: 'empty' };
+  const loc = String(cableFS.path || '');
+  const parts = loc.split('/').filter(Boolean);
+  const device = parts[0] || '';
+  if (!device.startsWith('android')) return { dest: '', reason: 'need' };
+  if (device === cableClip.source) return { dest: '', reason: 'need' };
+  if (!cableClip.targets.some((t) => t.id === device)) return { dest: '', reason: 'device' };
+  if (cableClip.kind === 'apps') return { dest: device, reason: '' };
+  if (!parts[1] || parts[1] === 'apps') return { dest: '', reason: 'folder' };
+  return { dest: loc, reason: '' };
+}
+
+async function refreshCableClip() {
+  try {
+    applyCableClip(await api('/api/admin/cable/fs/clipboard'));
+  } catch {
+    applyCableClip(null);
+  }
+  renderCableClip();
+}
+
+function renderCableClip() {
+  const bar = $('cable-fs-clipbar');
+  if (!bar) return;
+  bar.hidden = cableClip.count === 0;
+  if (!cableClip.count) return;
+  $('cable-fs-clip-count').textContent = t('cable_fs_clip_count').replace('{n}', String(cableClip.count));
+  $('cable-fs-clip-from').textContent = cableClip.sourceName
+    ? t('cable_fs_clip_from').replace('{name}', cableClip.sourceName)
+    : '';
+  const mkdir = $('cable-fs-mkdir');
+  if (mkdir) mkdir.hidden = cableClip.kind === 'apps';
+}
+
+async function copyCableItems() {
+  const items = cableCopyable(cableFS.entries.filter((f) => cableFS.selected.has(f.path)));
+  if (!items.length) {
+    toast(t('cable_fs_copy_need'));
+    return;
+  }
+  const apps = items.filter((f) => isCableAppPath(f.path));
+  const files = items.filter((f) => !isCableAppPath(f.path));
+  if (apps.length && files.length) {
+    toast(t('cable_fs_copy_mixed'));
+    return;
+  }
+  let payload = items;
+  if (apps.length) {
+    const pkgs = [...new Set(apps.map((f) => f.path.split('/').filter(Boolean).slice(0, 3).join('/')))];
+    if (pkgs.length > 8) {
+      toast(t('cable_fs_copy_limit'));
+      return;
+    }
+    payload = pkgs.map((p) => ({ path: p, dir: true }));
+  } else if (items.length > 200) {
+    toast(t('cable_fs_save_limit'));
+    return;
+  }
+  const btn = $('cable-fs-copy');
+  if (btn) btn.disabled = true;
+  try {
+    const q = payload.map((f) => ((f.dir ? 'folder=' : 'path=') + encodeURIComponent(f.path))).join('&');
+    const r = await api('/api/admin/cable/fs/copy?' + q, { method: 'POST' });
+    applyCableClip(r);
+    renderCableClip();
+    toast(t('cable_fs_copy_ok').replace('{n}', String(cableClip.count)));
+    if (!cableClip.targets.length) toast(t('cable_fs_paste_need_device'));
+  } catch (err) {
+    toast(t('cable_open_fail') + ': ' + err.message);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+let cableMkdirParent = '';
+
+function mkdirCableFolder() {
+  if (!cableClip.count || cableClip.kind === 'apps') {
+    toast(t('cable_fs_copy_need'));
+    return;
+  }
+  const { dest, reason } = cablePasteDest();
+  if (!dest) {
+    toast(t(reason === 'folder' ? 'cable_fs_paste_need_folder' : reason === 'device' ? 'cable_fs_paste_need_device' : 'cable_fs_paste_need'));
+    return;
+  }
+  cableMkdirParent = dest;
+  const dlg = $('cable-mkdir-dlg');
+  const input = $('cable-mkdir-name');
+  input.value = '';
+  if (typeof dlg.showModal === 'function') dlg.showModal();
+  else dlg.setAttribute('open', '');
+  input.focus();
+}
+
+async function submitCableMkdir(name) {
+  const parent = cableMkdirParent;
+  if (!parent || !name) return;
+  const btn = $('cable-fs-mkdir');
+  if (btn) btn.disabled = true;
+  try {
+    const r = await api('/api/admin/cable/fs/mkdir?path=' + encodeURIComponent(parent) + '&name=' + encodeURIComponent(name), { method: 'POST' });
+    toast(t('cable_fs_mkdir_ok'));
+    await loadCableFS((r && r.path) || parent + '/' + name);
+  } catch (err) {
+    if (err.status === 415) toast(t('cable_fs_mkdir_ios'));
+    else toast(t('cable_open_fail') + ': ' + err.message);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function pasteCableClip() {
+  await refreshCableClip();
+  if (!cableClip.count) {
+    toast(t('cable_fs_copy_need'));
+    return;
+  }
+  const { dest, reason } = cablePasteDest();
+  if (!dest) {
+    toast(t(reason === 'folder' ? 'cable_fs_paste_need_folder' : reason === 'device' ? 'cable_fs_paste_need_device' : 'cable_fs_paste_need'));
+    return;
+  }
+  const files = cableClip.kind !== 'apps';
+  const btn = $('cable-fs-paste');
+  if (btn) btn.disabled = true;
+  try {
+    const r = await api('/api/admin/cable/fs/paste?dest=' + encodeURIComponent(dest), { method: 'POST' });
+    const n = (r && (r.count || r.installed)) || 0;
+    toast(t(files ? 'cable_fs_pasted_files' : 'cable_fs_pasted').replace('{n}', String(n)));
+    await loadCableFS(cableFS.path);
+  } catch (err) {
+    if (err.status === 400) toast(t('cable_fs_paste_need'));
+    else toast(t('cable_open_fail') + ': ' + err.message);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function clearCableClip() {
+  try {
+    await api('/api/admin/cable/fs/clipboard', { method: 'DELETE' });
+  } catch { /* ignore */ }
+  applyCableClip(null);
+  renderCableClip();
+}
+
+function openCableFiles(path) {
+  cableFS.path = path || '';
   setView('files');
   setFilesSrc('device');
 }
@@ -978,12 +1228,15 @@ async function loadCableFS(path) {
     const entries = r.entries || [];
     cableFS.entries = entries;
     if (!entries.length) {
-      list.replaceChildren(el('li', { class: 'mut' }, r.hint || t('cable_fs_empty')));
+      if (r.hint) list.replaceChildren();
+      else list.replaceChildren(el('li', { class: 'mut' }, t('cable_fs_empty')));
       renderCableSelection();
+      refreshCableClip();
       return;
     }
     list.replaceChildren(...entries.map((e) => cableFSRow(e, () => loadCableFS(e.path), importOrOpenCableFS)));
     renderCableSelection();
+    refreshCableClip();
   } catch (e) {
     if (seq !== cableFS.seq) return;
     title.textContent = t('cable_fs_title');
@@ -1017,7 +1270,9 @@ function cableFSParent(path) {
 
 function cableFSRow(e, enter, act) {
   const ext = fileExt(e.name);
-  const ic = e.dir ? '📁' : (KIND_ICON[e.kind] || '📄');
+  const ic = isCablePhonePath(e.path)
+    ? cablePhoneIcon(e.path)
+    : (e.kind === 'app' ? '📦' : (e.dir ? '📁' : (KIND_ICON[e.kind] || '📄')));
   const meta = e.dir ? '' : formatBytes(e.size);
   let icon = el('span', { class: 'dev-ic' }, ic);
   if (!e.dir && SHOW_IMAGE.has(ext)) {
@@ -1083,6 +1338,10 @@ function renderCableSelection() {
     allBtn.textContent = n > 0 && n === cableFS.entries.length ? t('cable_fs_select_none') : t('cable_fs_select_all');
   }
   if (bar) bar.hidden = n === 0;
+  const copyBtn = $('cable-fs-copy');
+  if (copyBtn) {
+    copyBtn.hidden = cableCopyable(cableFS.entries.filter((f) => cableFS.selected.has(f.path))).length === 0;
+  }
   if (!n) return;
   const total = cableFS.entries.filter((f) => cableFS.selected.has(f.path)).reduce((s, f) => s + (f.size || 0), 0);
   $('cable-fs-sel-count').textContent = t('cable_fs_picked').replace('{n}', String(n));

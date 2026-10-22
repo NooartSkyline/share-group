@@ -70,31 +70,54 @@ func (s *Service) ListCableFS(ctx context.Context, actor domain.Device, loc stri
 	if err != nil {
 		return CableFSList{}, err
 	}
-	kind := s.cableFSKind(ctx, st)
-	if kind == "" {
+	devs := s.cableFSDevices(ctx, st)
+	if len(devs) == 0 {
 		return CableFSList{}, domain.ErrNotFound
 	}
-	rootID, rel, err := splitCablePath(loc)
+	device, rootID, rel, err := splitCablePath(loc)
 	if err != nil {
 		return CableFSList{}, err
 	}
 	out := CableFSList{
-		Device:  kind,
-		Name:    cableFSName(st),
 		Path:    loc,
 		Entries: []CableFSEntry{},
 	}
-	if rootID == "" {
+	if device == "" {
 		out.Title = "ไฟล์"
-		out.Entries = cableFSRoots(kind)
+		out.Name = cableFSName(st)
+		for _, d := range devs {
+			out.Entries = append(out.Entries, CableFSEntry{Name: d.Name, Path: d.ID, Dir: true, Kind: "folder"})
+		}
 		return out, nil
 	}
+	if !s.cableDeviceReady(ctx, device) {
+		return CableFSList{}, domain.ErrNotFound
+	}
+	out.Device = device
+	out.Name = cableFSDeviceName(st, device)
+	for _, d := range devs {
+		if d.ID == device && d.Name != "" {
+			out.Name = d.Name
+			break
+		}
+	}
 	out.Parent = cableParent(loc)
-	out.Title = cableFSTitle(kind, rootID, rel)
-	if kind == domain.CableiPhone || kind == domain.CableiPad {
+	if rootID == "" {
+		out.Title = out.Name
+		if device == domain.CableiPhone || device == domain.CableiPad {
+			return s.listIOSApps(ctx, out)
+		}
+		out.Entries = cableFSRoots(device)
+		return out, nil
+	}
+	out.Title = cableFSTitle(device, rootID, rel)
+	if device == domain.CableiPhone || device == domain.CableiPad {
 		return s.listIOS(ctx, out, rootID, rel)
 	}
-	return s.listAndroid(ctx, out, rootID, rel)
+	if _, ok := parseAndroidDevice(device); ok {
+		return s.listAndroid(ctx, out, rootID, rel)
+	}
+	return CableFSList{}, domain.ErrInvalidInput
 }
 
 // CableZipFile is one file to store in a zip pulled from the phone.
@@ -115,8 +138,8 @@ func SanitizeCableZipPaths(paths []string) ([]string, error) {
 		if _, dup := seen[loc]; dup {
 			continue
 		}
-		rootID, _, err := splitCablePath(loc)
-		if err != nil || rootID == "" {
+		device, _, _, err := splitCablePath(loc)
+		if err != nil || device == "" {
 			return nil, domain.ErrInvalidInput
 		}
 		seen[loc] = struct{}{}
@@ -227,21 +250,17 @@ func appendCableZip(out *[]CableZipFile, seen map[string]struct{}, loc, name str
 }
 
 func zipFolderPrefix(loc string) string {
-	loc = strings.Trim(strings.ReplaceAll(loc, "\\", "/"), "/")
-	for _, r := range androidRoots {
-		if r.ID == loc {
-			return r.Label
-		}
+	device, rootID, rel, err := splitCablePath(loc)
+	if err != nil {
+		return path.Base(loc)
 	}
-	for _, r := range iosRoots {
-		if r.ID == loc {
-			return r.Label
-		}
+	if rel != "" {
+		return path.Base(rel)
 	}
-	if i := strings.LastIndex(loc, "/"); i >= 0 {
-		return loc[i+1:]
+	if rootID != "" {
+		return cableFSTitle(device, rootID, "")
 	}
-	return loc
+	return cableFSDeviceName(CableStatus{}, device)
 }
 
 // DeleteCableItems removes files or folders on the plugged phone. Shortcut
@@ -258,18 +277,27 @@ func (s *Service) DeleteCableItems(ctx context.Context, actor domain.Device, pat
 	if err != nil {
 		return 0, err
 	}
-	kind := s.cableFSKind(ctx, st)
-	if kind == "" {
+	if len(s.cableFSDevices(ctx, st)) == 0 {
 		return 0, domain.ErrNotFound
-	}
-	if kind == domain.CableiPhone || kind == domain.CableiPad {
-		return 0, domain.ErrUnsupported
 	}
 	n := 0
 	var first error
 	for _, loc := range clean {
 		if ctx.Err() != nil {
 			return n, ctx.Err()
+		}
+		device, _, _, err := splitCablePath(loc)
+		if err != nil {
+			if first == nil {
+				first = err
+			}
+			continue
+		}
+		if device == domain.CableiPhone || device == domain.CableiPad {
+			if first == nil {
+				first = domain.ErrUnsupported
+			}
+			continue
 		}
 		if err := s.deleteAndroid(ctx, loc); err != nil {
 			if first == nil {
@@ -296,7 +324,7 @@ func (s *Service) OpenCableFile(ctx context.Context, actor domain.Device, loc st
 	if kind == domain.CableiPhone || kind == domain.CableiPad {
 		return s.pullIOS(ctx, rootID, rel)
 	}
-	return s.pullAndroid(ctx, rootID, rel)
+	return s.pullAndroid(ctx, kind, rootID, rel)
 }
 
 // PeekCableFile returns the first bytes of a file on the phone so every
@@ -312,7 +340,7 @@ func (s *Service) PeekCableFile(ctx context.Context, actor domain.Device, loc st
 	}
 	name := pathBase(rel)
 	if kind != domain.CableiPhone && kind != domain.CableiPad {
-		if b, err := s.peekAndroid(ctx, rootID, rel, n); err == nil {
+		if b, err := s.peekAndroid(ctx, kind, rootID, rel, n); err == nil {
 			return CablePeek{Name: name, Data: b}, nil
 		}
 	}
@@ -336,37 +364,84 @@ func (s *Service) cableFileLoc(ctx context.Context, actor domain.Device, loc str
 	if err != nil {
 		return "", "", "", err
 	}
-	kind = s.cableFSKind(ctx, st)
-	if kind == "" {
+	if len(s.cableFSDevices(ctx, st)) == 0 {
 		return "", "", "", domain.ErrNotFound
 	}
-	rootID, rel, err = splitCablePath(loc)
-	if err != nil || rootID == "" || rel == "" {
+	kind, rootID, rel, err = splitCablePath(loc)
+	if err != nil || kind == "" || rootID == "" || rel == "" {
 		return "", "", "", domain.ErrInvalidInput
+	}
+	if !s.cableDeviceReady(ctx, kind) {
+		return "", "", "", domain.ErrNotFound
 	}
 	return kind, rootID, rel, nil
 }
 
 func (s *Service) cableFSKind(ctx context.Context, st CableStatus) string {
-	if st.State == CableIdle && !s.androidReady(ctx) {
+	devs := s.cableFSDevices(ctx, st)
+	if len(devs) == 0 {
 		return ""
 	}
-	dev := cableOpenDevice(st)
-	if dev == domain.CableiPhone || dev == domain.CableiPad {
-		return dev
+	return devs[0].ID
+}
+
+type cableFSDevice struct {
+	ID   string
+	Name string
+}
+
+func (s *Service) cableFSDevices(ctx context.Context, st CableStatus) []cableFSDevice {
+	out := make([]cableFSDevice, 0, 2)
+	serials := s.adbSerials(ctx)
+	switch len(serials) {
+	case 0:
+	case 1:
+		out = append(out, cableFSDevice{ID: domain.CableAndroid, Name: cableFSDeviceName(st, domain.CableAndroid)})
+	default:
+		for _, ser := range serials {
+			name := s.androidModel(ctx, ser)
+			if name == "" {
+				name = ser
+			}
+			out = append(out, cableFSDevice{ID: androidDevicePath(serials, ser), Name: name})
+		}
 	}
-	if s.androidReady(ctx) {
-		return domain.CableAndroid
+	if s.iosConnectedUDID(ctx) != "" {
+		id := domain.CableiPhone
+		for _, p := range st.Phones {
+			if p.Device == domain.CableiPad {
+				id = domain.CableiPad
+				break
+			}
+		}
+		out = append(out, cableFSDevice{ID: id, Name: cableFSDeviceName(st, id)})
 	}
-	if st.State != CableIdle {
-		return dev
+	return out
+}
+
+func (s *Service) cableDeviceReady(ctx context.Context, device string) bool {
+	if serial, ok := parseAndroidDevice(device); ok {
+		serials := s.adbSerials(ctx)
+		if serial == "" {
+			return len(serials) == 1
+		}
+		for _, id := range serials {
+			if id == serial {
+				return true
+			}
+		}
+		return false
 	}
-	return ""
+	switch device {
+	case domain.CableiPhone, domain.CableiPad:
+		return s.iosConnectedUDID(ctx) != ""
+	default:
+		return false
+	}
 }
 
 func (s *Service) androidReady(ctx context.Context) bool {
-	adb := s.findADB(ctx)
-	return adb != "" && adbHasDevice(s.runShort(ctx, adb, "devices"))
+	return len(s.adbSerials(ctx)) > 0
 }
 
 func cableFSName(st CableStatus) string {
@@ -383,28 +458,38 @@ func cableFSName(st CableStatus) string {
 	return "สาย USB"
 }
 
-func cableFSRoots(kind string) []CableFSEntry {
-	roots := androidRoots
-	if kind == domain.CableiPhone || kind == domain.CableiPad {
-		roots = iosRoots
+func cableFSDeviceName(st CableStatus, id string) string {
+	for _, p := range st.Phones {
+		if p.Device == id && p.Name != "" {
+			return p.Name
+		}
 	}
-	out := make([]CableFSEntry, 0, len(roots))
-	for _, r := range roots {
-		out = append(out, CableFSEntry{Name: r.Label, Path: r.ID, Dir: true, Kind: "folder"})
+	switch id {
+	case domain.CableiPad:
+		return "iPad"
+	case domain.CableiPhone:
+		return "iPhone"
+	default:
+		return "Android"
+	}
+}
+
+func cableFSRoots(device string) []CableFSEntry {
+	out := make([]CableFSEntry, 0, len(androidRoots))
+	for _, r := range androidRoots {
+		out = append(out, CableFSEntry{Name: r.Label, Path: childCablePath(device, r.ID), Dir: true, Kind: "folder"})
 	}
 	return out
 }
 
 func cableFSTitle(kind, rootID, rel string) string {
-	roots := androidRoots
-	if kind == domain.CableiPhone || kind == domain.CableiPad {
-		roots = iosRoots
-	}
 	label := rootID
-	for _, r := range roots {
-		if r.ID == rootID {
-			label = r.Label
-			break
+	if _, ok := parseAndroidDevice(kind); ok {
+		for _, r := range androidRoots {
+			if r.ID == rootID {
+				label = r.Label
+				break
+			}
 		}
 	}
 	if rel == "" {
@@ -413,21 +498,36 @@ func cableFSTitle(kind, rootID, rel string) string {
 	return path.Base(rel)
 }
 
-func splitCablePath(loc string) (rootID, rel string, err error) {
+func splitCablePath(loc string) (device, rootID, rel string, err error) {
 	loc = strings.Trim(strings.ReplaceAll(loc, "\\", "/"), "/")
 	if loc == "" {
-		return "", "", nil
+		return "", "", "", nil
 	}
 	parts := strings.Split(loc, "/")
 	for _, p := range parts {
 		if p == "" || p == "." || p == ".." {
-			return "", "", domain.ErrInvalidInput
+			return "", "", "", domain.ErrInvalidInput
 		}
 	}
-	if len(parts) == 1 {
-		return parts[0], "", nil
+	if !isCableDevice(parts[0]) {
+		return "", "", "", domain.ErrInvalidInput
 	}
-	return parts[0], strings.Join(parts[1:], "/"), nil
+	device = parts[0]
+	if len(parts) == 1 {
+		return device, "", "", nil
+	}
+	rootID = parts[1]
+	if len(parts) == 2 {
+		return device, rootID, "", nil
+	}
+	return device, rootID, strings.Join(parts[2:], "/"), nil
+}
+
+func isCableDevice(s string) bool {
+	if _, ok := parseAndroidDevice(s); ok {
+		return true
+	}
+	return s == domain.CableiPhone || s == domain.CableiPad
 }
 
 func cableParent(loc string) string {
@@ -442,15 +542,16 @@ func cableParent(loc string) string {
 	return loc[:i]
 }
 
-func joinCablePath(rootID, rel, name string) string {
-	p := rootID
-	if rel != "" {
-		p += "/" + rel
+func childCablePath(parent, name string) string {
+	parent = strings.Trim(parent, "/")
+	name = strings.Trim(name, "/")
+	if parent == "" {
+		return name
 	}
-	if name != "" {
-		p += "/" + name
+	if name == "" {
+		return parent
 	}
-	return p
+	return parent + "/" + name
 }
 
 func underRoot(abs, root string) bool {

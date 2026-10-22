@@ -24,6 +24,9 @@ type Service struct {
 	adb            string // cached adb binary, if found
 	androidKernel  string
 	androidRelease string
+
+	clipMu sync.Mutex
+	clip   *cableAppClip
 }
 
 // NewService builds the service. preferred may be empty (automatic choice).

@@ -5,25 +5,59 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 
 	"lanshare/internal/domain"
 )
 
-var iosRoots = []cableRoot{
-	{ID: "downloads", Label: "ดาวน์โหลด"},
-	{ID: "documents", Label: "เอกสาร"},
-	{ID: "photos", Label: "รูปภาพ"},
-	{ID: "ondevice", Label: "บนเครื่องนี้"},
+const (
+	iosHintNeedTrust   = "เสียบ iPhone แล้วกด Trust คอมพิวเตอร์นี้ จึงจะดูไฟล์ได้"
+	iosHintNeedDev     = "เปิด Developer Mode บน iPhone แล้วเชื่อถือคอมพิวเตอร์นี้ จึงจะดูไฟล์ในแอปที่ติดตั้งจาก Xcode ได้"
+	iosHintNoApps      = "ดูไฟล์ได้เฉพาะแอปที่ติดตั้งจาก Xcode บน iPhone นี้ แอป Files ของระบบเรียกดูผ่าน USB ไม่ได้"
+	iosHintDevAppsOnly = "เรียกดูได้เฉพาะแอปที่ติดตั้งจาก Xcode ไม่ใช่แอป Files ของระบบ"
+	iosHintNoAccess    = "แอปนี้ไม่ให้เรียกดูไฟล์ผ่าน USB"
+)
+
+type iosApp struct {
+	ID   string
+	Name string
 }
 
-const (
-	iosFilesAppID    = "com.apple.DocumentsApp"
-	iosFilesGroupID  = "group.com.apple.FileProvider.LocalStorage"
-	iosHintNeedTrust = "เสียบ iPhone แล้วกด Trust คอมพิวเตอร์นี้ จึงจะดูไฟล์ในแอป Files ได้"
-	iosHintNeedDev   = "เปิด Developer Mode บน iPhone แล้วเชื่อถือคอมพิวเตอร์นี้ เพื่อเรียกดูไฟล์ในแอป Files"
-)
+func (s *Service) listIOSApps(ctx context.Context, out CableFSList) (CableFSList, error) {
+	udid := s.iosConnectedUDID(ctx)
+	if udid == "" {
+		out.Hint = iosHintNeedTrust
+		return out, nil
+	}
+	raw, err := s.runTimed(ctx, cableListTimeout, "xcrun", "devicectl", "device", "info", "apps",
+		"--device", udid, "--require-container-access", "--json-output", "-")
+	if err != nil || looksLikeDevicectlError(raw) {
+		if looksLikeDeveloperMode(raw) || looksLikeDeveloperModeErr(err) {
+			out.Hint = iosHintNeedDev
+			return out, nil
+		}
+		out.Hint = iosHintNoApps
+		return out, nil
+	}
+	apps, err := parseDevicectlApps(raw)
+	if err != nil {
+		out.Hint = iosHintNoApps
+		return out, nil
+	}
+	for _, a := range apps {
+		out.Entries = append(out.Entries, CableFSEntry{
+			Name: a.Name, Path: childCablePath(out.Path, a.ID), Dir: true, Kind: "folder",
+		})
+	}
+	if len(apps) == 0 {
+		out.Hint = iosHintNoApps
+	} else {
+		out.Hint = iosHintDevAppsOnly
+	}
+	return out, nil
+}
 
 func (s *Service) listIOS(ctx context.Context, out CableFSList, rootID, rel string) (CableFSList, error) {
 	udid := s.iosConnectedUDID(ctx)
@@ -33,7 +67,13 @@ func (s *Service) listIOS(ctx context.Context, out CableFSList, rootID, rel stri
 	}
 	domainType, ident, sub, ok := iosDomain(rootID, rel)
 	if !ok {
-		return CableFSList{}, domain.ErrInvalidInput
+		out.Hint = iosHintNoAccess
+		return out, nil
+	}
+	if rel == "" {
+		if name := s.iosAppName(ctx, udid, rootID); name != "" {
+			out.Title = name
+		}
 	}
 	args := []string{"devicectl", "device", "info", "files",
 		"--device", udid,
@@ -47,12 +87,12 @@ func (s *Service) listIOS(ctx context.Context, out CableFSList, rootID, rel stri
 	}
 	raw, err := s.runTimed(ctx, cableListTimeout, "xcrun", args...)
 	if err != nil || looksLikeDevicectlError(raw) {
-		out.Hint = iosHintNeedDev
+		out.Hint = iosHintNoAccess
 		return out, nil
 	}
-	entries, err := parseDevicectlFiles(raw, rootID, rel)
+	entries, err := parseDevicectlFiles(raw, out.Path)
 	if err != nil {
-		out.Hint = iosHintNeedDev
+		out.Hint = iosHintNoAccess
 		return out, nil
 	}
 	if len(entries) > maxCableFSEntries {
@@ -103,24 +143,42 @@ func (s *Service) pullIOS(ctx context.Context, rootID, rel string) (CableFile, e
 	return CableFile{Name: name, Size: st.Size(), Content: &removeOnClose{File: f, dir: dir}}, nil
 }
 
-func iosDomain(rootID, rel string) (domainType, ident, sub string, ok bool) {
-	switch rootID {
-	case "downloads":
-		return "appGroupDataContainer", iosFilesGroupID, rel, true
-	case "documents", "ondevice":
-		return "appDataContainer", iosFilesAppID, rel, true
-	case "photos":
-		return "appDataContainer", iosFilesAppID, joinRel("Photos", rel), true
-	default:
-		return "", "", "", false
+func (s *Service) iosAppName(ctx context.Context, udid, bundleID string) string {
+	raw, err := s.runTimed(ctx, cableListTimeout, "xcrun", "devicectl", "device", "info", "apps",
+		"--device", udid, "--require-container-access", "--json-output", "-")
+	if err != nil {
+		return ""
 	}
+	apps, err := parseDevicectlApps(raw)
+	if err != nil {
+		return ""
+	}
+	for _, a := range apps {
+		if a.ID == bundleID {
+			return a.Name
+		}
+	}
+	return ""
 }
 
-func joinRel(base, rel string) string {
-	if rel == "" {
-		return base
+func iosDomain(rootID, rel string) (domainType, ident, sub string, ok bool) {
+	if !isIOSBundleID(rootID) {
+		return "", "", "", false
 	}
-	return base + "/" + rel
+	return "appDataContainer", rootID, rel, true
+}
+
+func isIOSBundleID(id string) bool {
+	if id == "" || len(id) > 210 {
+		return false
+	}
+	for _, r := range id {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '.' || r == '-' {
+			continue
+		}
+		return false
+	}
+	return true
 }
 
 func (s *Service) iosConnectedUDID(ctx context.Context) string {
@@ -186,7 +244,57 @@ func looksLikeDevicectlError(raw []byte) bool {
 		strings.Contains(s, "not supported") || strings.Contains(s, "ERROR:")
 }
 
-func parseDevicectlFiles(raw []byte, rootID, rel string) ([]CableFSEntry, error) {
+func looksLikeDeveloperMode(raw []byte) bool {
+	s := strings.ToLower(string(raw))
+	return strings.Contains(s, "developer mode") || strings.Contains(s, "developermode")
+}
+
+func looksLikeDeveloperModeErr(err error) bool {
+	return err != nil && looksLikeDeveloperMode([]byte(err.Error()))
+}
+
+func parseDevicectlApps(raw []byte) ([]iosApp, error) {
+	if looksLikeDevicectlError(raw) {
+		return nil, domain.ErrUnsupported
+	}
+	var doc map[string]any
+	if err := json.Unmarshal(raw, &doc); err != nil {
+		return nil, err
+	}
+	result, _ := doc["result"].(map[string]any)
+	if result == nil {
+		return nil, domain.ErrUnsupported
+	}
+	list := firstSlice(result, "apps")
+	out := make([]iosApp, 0, len(list))
+	for _, item := range list {
+		m, _ := item.(map[string]any)
+		if m == nil {
+			continue
+		}
+		if accessible, ok := m["containerAccessible"].(bool); ok && !accessible {
+			continue
+		}
+		id := jsonString(m, "bundleIdentifier", "bundleID")
+		if !isIOSBundleID(id) {
+			continue
+		}
+		name := jsonString(m, "name")
+		if name == "" {
+			name = id
+		}
+		out = append(out, iosApp{ID: id, Name: name})
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Name == out[j].Name {
+			return out[i].ID < out[j].ID
+		}
+		return out[i].Name < out[j].Name
+	})
+	return out, nil
+}
+
+func parseDevicectlFiles(raw []byte, parent string) ([]CableFSEntry, error) {
 	var doc map[string]any
 	if err := json.Unmarshal(raw, &doc); err != nil {
 		return nil, err
@@ -206,8 +314,17 @@ func parseDevicectlFiles(raw []byte, rootID, rel string) ([]CableFSEntry, error)
 		if name == "" || strings.HasPrefix(name, ".") {
 			continue
 		}
-		dir := jsonBool(m, "isDirectory", "directory") || strings.EqualFold(jsonString(m, "type", "kind"), "directory")
-		size, _ := jsonInt(m, "size", "fileSize")
+		res, _ := m["resources"].(map[string]any)
+		meta, _ := m["metadata"].(map[string]any)
+		if jsonBool(m, "isHidden") || jsonBool(res, "isHidden") {
+			continue
+		}
+		dir := jsonBool(m, "isDirectory", "directory") || jsonBool(res, "isDirectory") ||
+			strings.EqualFold(jsonString(m, "type", "kind"), "directory")
+		size, ok := jsonInt(m, "size", "fileSize")
+		if !ok {
+			size, _ = jsonInt(meta, "size", "fileSize")
+		}
 		if dir {
 			size = 0
 		}
@@ -216,7 +333,7 @@ func parseDevicectlFiles(raw []byte, rootID, rel string) ([]CableFSEntry, error)
 			kind = string(domain.KindOf(name))
 		}
 		out = append(out, CableFSEntry{
-			Name: name, Path: joinCablePath(rootID, rel, name), Dir: dir, Size: size, Kind: kind,
+			Name: name, Path: childCablePath(parent, name), Dir: dir, Size: size, Kind: kind,
 		})
 	}
 	return out, nil
@@ -232,6 +349,9 @@ func firstSlice(m map[string]any, keys ...string) []any {
 }
 
 func jsonString(m map[string]any, keys ...string) string {
+	if m == nil {
+		return ""
+	}
 	for _, k := range keys {
 		if s, ok := m[k].(string); ok && s != "" {
 			return s
@@ -241,6 +361,9 @@ func jsonString(m map[string]any, keys ...string) string {
 }
 
 func jsonBool(m map[string]any, keys ...string) bool {
+	if m == nil {
+		return false
+	}
 	for _, k := range keys {
 		if b, ok := m[k].(bool); ok {
 			return b
@@ -250,6 +373,9 @@ func jsonBool(m map[string]any, keys ...string) bool {
 }
 
 func jsonInt(m map[string]any, keys ...string) (int64, bool) {
+	if m == nil {
+		return 0, false
+	}
 	for _, k := range keys {
 		switch v := m[k].(type) {
 		case float64:

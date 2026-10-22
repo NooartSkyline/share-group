@@ -254,6 +254,66 @@ func TestCableReadyFromADBReverse(t *testing.T) {
 	if len(st.Phones) != 1 || st.Phones[0].Kernel != "5.15.189-android13-8" || st.Phones[0].Android != "16" {
 		t.Errorf("phones = %+v", st.Phones)
 	}
+	if st.Phones[0].Path != domain.CableAndroid || st.Phones[0].Serial != "R58M123" {
+		t.Errorf("path = %+v", st.Phones[0])
+	}
+}
+
+func TestCableTwoAndroidPhonesHaveOwnPaths(t *testing.T) {
+	run := fake.NewRunner()
+	run.On("/usr/sbin/networksetup -listallhardwareports", fake.RunResult{Out: []byte("Hardware Port: Wi-Fi\nDevice: en0\n")})
+	run.On("/usr/sbin/ioreg -r -c IOUSBHostDevice -l -d 1 -w 0", fake.RunResult{Out: []byte(ioregPixel)})
+	run.On("adb version", fake.RunResult{Out: []byte("Android Debug Bridge version 1.0.41")})
+	run.On("adb devices", fake.RunResult{Out: []byte("List of devices attached\nRFCWA19V99W\tdevice\nc3782355\tdevice\n")})
+	run.On("adb -s RFCWA19V99W reverse tcp:8080 tcp:8080", fake.RunResult{})
+	run.On("adb -s c3782355 reverse tcp:8080 tcp:8080", fake.RunResult{})
+	run.On("adb -s RFCWA19V99W shell getprop ro.product.model", fake.RunResult{Out: []byte("SM-S911B\n")})
+	run.On("adb -s RFCWA19V99W shell getprop ro.build.version.release", fake.RunResult{Out: []byte("16\n")})
+	run.On("adb -s RFCWA19V99W shell uname -r", fake.RunResult{Out: []byte("5.15.189-samsung\n")})
+	run.On("adb -s c3782355 shell getprop ro.product.model", fake.RunResult{Out: []byte("CPH1613\n")})
+	run.On("adb -s c3782355 shell getprop ro.build.version.release", fake.RunResult{Out: []byte("12\n")})
+	run.On("adb -s c3782355 shell uname -r", fake.RunResult{Out: []byte("4.14.oppo\n")})
+	svc := NewService(netList{{Name: "en0", IP: "192.168.1.23", Kind: domain.NetPhysical}}, 8080, "")
+	svc.SetRunner(run)
+	st, err := svc.Cable(context.Background(), owner())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(st.Phones) != 2 {
+		t.Fatalf("phones = %+v", st.Phones)
+	}
+	if st.Phones[0].Name != "SM-S911B" || st.Phones[0].Path != "android:RFCWA19V99W" || st.Phones[0].Kernel != "5.15.189-samsung" {
+		t.Fatalf("first = %+v", st.Phones[0])
+	}
+	if st.Phones[1].Name != "CPH1613" || st.Phones[1].Path != "android:c3782355" || st.Phones[1].Android != "12" {
+		t.Fatalf("second = %+v", st.Phones[1])
+	}
+}
+
+func TestCableKeepsUSBAndroidWithoutAdb(t *testing.T) {
+	run := fake.NewRunner()
+	run.On("/usr/sbin/networksetup -listallhardwareports", fake.RunResult{Out: []byte("Hardware Port: Wi-Fi\nDevice: en0\n")})
+	run.On("/usr/sbin/ioreg -r -c IOUSBHostDevice -l -d 1 -w 0", fake.RunResult{Out: []byte(ioregPixel + ioregGenericAndroid)})
+	run.On("adb version", fake.RunResult{Out: []byte("Android Debug Bridge version 1.0.41")})
+	run.On("adb devices", fake.RunResult{Out: []byte("List of devices attached\nR58M123\tdevice\n")})
+	run.On("adb reverse tcp:8080 tcp:8080", fake.RunResult{})
+	run.On("adb shell uname -r", fake.RunResult{Out: []byte("5.15.189-android13-8\n")})
+	run.On("adb shell getprop ro.build.version.release", fake.RunResult{Out: []byte("16\n")})
+	svc := NewService(netList{{Name: "en0", IP: "192.168.1.23", Kind: domain.NetPhysical}}, 8080, "")
+	svc.SetRunner(run)
+	st, err := svc.Cable(context.Background(), owner())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(st.Phones) != 2 {
+		t.Fatalf("phones = %+v", st.Phones)
+	}
+	if st.Phones[0].Path != domain.CableAndroid || st.Phones[0].Serial != "R58M123" {
+		t.Fatalf("adb phone = %+v", st.Phones[0])
+	}
+	if st.Phones[1].Name != "Android" || st.Phones[1].Path != "" || st.Phones[1].Serial != "" {
+		t.Fatalf("extra = %+v", st.Phones[1])
+	}
 }
 
 func TestKeepCableStopsOnCancel(t *testing.T) {
@@ -409,6 +469,14 @@ const ioregPixel = `
     {
       "USB Product Name" = "Pixel 8"
       "USB Vendor Name" = "Google"
+    }
+`
+
+const ioregGenericAndroid = `
++-o Android@00300000  <class IOUSBHostDevice, id 0x4, registered, matched, active, busy 0 (0 ms), retain 12>
+    {
+      "USB Product Name" = "Android"
+      "USB Vendor Name" = "Android"
     }
 `
 

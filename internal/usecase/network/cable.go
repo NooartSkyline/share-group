@@ -36,6 +36,8 @@ type CablePhone struct {
 	Name    string
 	Kernel  string // Android: `uname -r`, empty on iOS
 	Android string // Android release, e.g. "16"
+	Serial  string // adb serial; empty on iOS
+	Path    string // cable FS path: android, android:SERIAL, iphone, ipad
 }
 
 // CableStatus is what the Owner panel shows for USB transfers.
@@ -58,7 +60,7 @@ func (s *Service) Cable(ctx context.Context, actor domain.Device) (CableStatus, 
 	st := CableStatus{
 		State:  CableIdle,
 		Links:  make([]CableLink, 0),
-		Phones: s.fillAndroidKernel(ctx, s.usbPhones(ctx)),
+		Phones: s.mergeCablePhones(ctx, s.usbPhones(ctx)),
 	}
 	for _, n := range all {
 		if n.Kind != domain.NetUSB {
