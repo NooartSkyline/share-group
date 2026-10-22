@@ -91,6 +91,47 @@ func (s *Service) peekAndroid(ctx context.Context, rootID, rel string, n int) ([
 	return raw, nil
 }
 
+func (s *Service) deleteAndroid(ctx context.Context, loc string) error {
+	rootID, rel, err := splitCablePath(loc)
+	if err != nil || rootID == "" || rel == "" {
+		return domain.ErrInvalidInput
+	}
+	abs, err := androidAbs(rootID, rel)
+	if err != nil {
+		return err
+	}
+	rootAbs := ""
+	for _, r := range androidRoots {
+		if r.ID == rootID {
+			rootAbs = r.Abs
+			break
+		}
+	}
+	if rootAbs == "" || abs == rootAbs || !underRoot(abs, rootAbs) {
+		return domain.ErrInvalidInput
+	}
+	if strings.ContainsAny(abs, "\x00\n\r") {
+		return domain.ErrInvalidInput
+	}
+	adb := s.findADB(ctx)
+	if adb == "" || !s.androidReady(ctx) {
+		return domain.ErrUnsupported
+	}
+	raw, err := s.runTimed(ctx, cableDeleteTimeout, adb, "shell", "rm -rf -- "+androidShellQuote(abs))
+	if err != nil {
+		return domain.ErrNotFound
+	}
+	text := string(raw)
+	if strings.Contains(text, "No such file") || strings.Contains(text, "Permission denied") || strings.Contains(text, "Read-only") {
+		return domain.ErrNotFound
+	}
+	return nil
+}
+
+func androidShellQuote(p string) string {
+	return "'" + strings.ReplaceAll(p, "'", `'\''`) + "'"
+}
+
 func (s *Service) pullAndroid(ctx context.Context, rootID, rel string) (CableFile, error) {
 	abs, err := androidAbs(rootID, rel)
 	if err != nil {

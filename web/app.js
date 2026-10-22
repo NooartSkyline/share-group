@@ -121,6 +121,11 @@ const I18N = {
     cable_fs_save: '⬇ บันทึกลงเครื่อง', cable_fs_clear: 'ล้าง',
     cable_fs_picked: 'เลือก {n} รายการ',
     cable_fs_save_need: 'เลือกไฟล์ก่อน', cable_fs_save_limit: 'เลือกได้ไม่เกิน 200 ไฟล์',
+    cable_fs_del: '🗑 ลบ',
+    cable_fs_del_confirm: 'ลบ {n} รายการออกจากเครื่องที่เสียบสาย?\nลบแล้วกู้คืนไม่ได้',
+    cable_fs_deleted: 'ลบแล้ว',
+    cable_fs_del_root: 'ลบโฟลเดอร์หลักไม่ได้',
+    cable_fs_del_ios: 'ลบไฟล์บน iPhone ผ่านสายยังไม่ได้ ให้ลบในแอป Files',
     copy: 'คัดลอก', rotate_pin: '🔄 สร้างใหม่', network_used: 'เครือข่ายที่ใช้:',
     require_approval: 'อนุมัติอุปกรณ์ใหม่ก่อนเข้าใช้ห้อง',
     guest_title: 'ลิงก์แขก (อัปโหลดอย่างเดียว)', guest_clear: 'ปิดลิงก์', guest_make: 'สร้างลิงก์แขก 1 ชั่วโมง',
@@ -166,6 +171,11 @@ const I18N = {
     cable_fs_save: '⬇ Save to this Mac', cable_fs_clear: 'Clear',
     cable_fs_picked: 'Selected {n} items',
     cable_fs_save_need: 'Select files first', cable_fs_save_limit: 'Choose up to 200 files',
+    cable_fs_del: '🗑 Delete',
+    cable_fs_del_confirm: 'Delete {n} items from the plugged-in device?\nThis cannot be undone',
+    cable_fs_deleted: 'Deleted',
+    cable_fs_del_root: 'The top folders cannot be deleted',
+    cable_fs_del_ios: 'USB delete is not available on iPhone. Delete in the Files app',
     copy: 'Copy', rotate_pin: '🔄 New PIN', network_used: 'Network:',
     require_approval: 'Approve new devices before they can use the room',
     guest_title: 'Guest link (upload only)', guest_clear: 'Turn off', guest_make: 'Create 1-hour guest link',
@@ -900,6 +910,12 @@ function setupCableFS() {
   $('cable-fs-save').addEventListener('click', () => {
     saveCableFiles(cableFS.entries.filter((f) => cableFS.selected.has(f.path)));
   });
+  $('cable-fs-delete').addEventListener('click', () => {
+    deleteCableItems(cableFS.entries.filter((f) => cableFS.selected.has(f.path)));
+  });
+  $('cable-fs-preview-delete').addEventListener('click', () => {
+    if (cableFS.preview) deleteCableItems([cableFS.preview]);
+  });
   $('cable-fs-sel-clear').addEventListener('click', () => {
     cableFS.selected.clear();
     syncCablePicks();
@@ -1071,6 +1087,33 @@ function renderCableSelection() {
   const total = cableFS.entries.filter((f) => cableFS.selected.has(f.path)).reduce((s, f) => s + (f.size || 0), 0);
   $('cable-fs-sel-count').textContent = t('cable_fs_picked').replace('{n}', String(n));
   $('cable-fs-sel-size').textContent = total ? '• ' + formatBytes(total) : '';
+}
+
+function cableDeletable(items) {
+  return (items || []).filter((e) => e && e.path && e.path.includes('/'));
+}
+
+async function deleteCableItems(items) {
+  const list = cableDeletable(items);
+  if (!list.length) {
+    toast(t('cable_fs_del_root'));
+    return;
+  }
+  if (!confirm(t('cable_fs_del_confirm').replace('{n}', String(list.length)))) return;
+  const q = list.map((f) => 'path=' + encodeURIComponent(f.path)).join('&');
+  const btns = [$('cable-fs-delete'), $('cable-fs-preview-delete')].filter(Boolean);
+  btns.forEach((b) => { b.disabled = true; });
+  try {
+    const r = await api('/api/admin/cable/fs?' + q, { method: 'DELETE' });
+    toast(t('cable_fs_deleted') + (r && r.deleted ? ' · ' + r.deleted : ''));
+    closeCablePreview();
+    await loadCableFS(cableFS.path);
+  } catch (err) {
+    if (err.status === 415) toast(t('cable_fs_del_ios'));
+    else toast(t('cable_open_fail') + ': ' + err.message);
+  } finally {
+    btns.forEach((b) => { b.disabled = false; });
+  }
 }
 
 function saveCableFiles(files) {

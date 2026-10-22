@@ -135,6 +135,37 @@ func TestCheckCableFilesForbiddenAndIdle(t *testing.T) {
 	}
 }
 
+func TestDeleteCableItems(t *testing.T) {
+	run := fake.NewRunner()
+	run.On("/usr/sbin/networksetup -listallhardwareports", fake.RunResult{Out: []byte("Hardware Port: Wi-Fi\nDevice: en0\n")})
+	run.On("/usr/sbin/ioreg -r -c IOUSBHostDevice -l -d 1 -w 0", fake.RunResult{Out: []byte(ioregPixel)})
+	run.On("adb version", fake.RunResult{Out: []byte("Android Debug Bridge version 1.0.41")})
+	run.On("adb devices", fake.RunResult{Out: []byte("List of devices attached\nR58M123\tdevice\n")})
+	run.On("adb reverse tcp:8080 tcp:8080", fake.RunResult{})
+	run.On("adb shell rm -rf -- '/sdcard/Download/note.txt'", fake.RunResult{})
+	run.On("adb shell rm -rf -- '/sdcard/Download/แบบบ้าน'", fake.RunResult{})
+	svc := NewService(netList{{Name: "en0", IP: "192.168.1.23", Kind: domain.NetPhysical}}, 8080, "")
+	svc.SetRunner(run)
+
+	member := domain.Device{Role: domain.RoleMember, RoomID: "main"}
+	if _, err := svc.DeleteCableItems(context.Background(), member, []string{"download/note.txt"}); err != domain.ErrForbidden {
+		t.Errorf("member = %v", err)
+	}
+	if _, err := svc.DeleteCableItems(context.Background(), owner(), []string{"download"}); err != domain.ErrInvalidInput {
+		t.Errorf("root = %v", err)
+	}
+	n, err := svc.DeleteCableItems(context.Background(), owner(), []string{"download/note.txt", "download/แบบบ้าน"})
+	if err != nil || n != 2 {
+		t.Fatalf("delete = %d %v", n, err)
+	}
+}
+
+func TestAndroidShellQuote(t *testing.T) {
+	if got := androidShellQuote(`/sdcard/Download/a'b.jpg`); got != `'/sdcard/Download/a'\''b.jpg'` {
+		t.Fatalf("%q", got)
+	}
+}
+
 func TestPlanCableZipFolderWalk(t *testing.T) {
 	run := fake.NewRunner()
 	run.On("/usr/sbin/networksetup -listallhardwareports", fake.RunResult{Out: []byte("Hardware Port: Wi-Fi\nDevice: en0\n")})

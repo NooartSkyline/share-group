@@ -115,6 +115,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/admin/cable/fs/thumb", s.authed(s.cableFSThumb))
 	mux.HandleFunc("GET /api/admin/cable/fs/zip", s.authed(s.cableFSZip))
 	mux.HandleFunc("POST /api/admin/cable/fs/import", s.authed(s.cableFSImport))
+	mux.HandleFunc("DELETE /api/admin/cable/fs", s.authed(s.cableFSDelete))
 	mux.HandleFunc("GET /api/admin/cable/qr.png", s.authed(s.cableQR))
 	mux.HandleFunc("GET /api/admin/qr.png", s.authed(s.qrPNG))
 	mux.HandleFunc("GET /api/admin/power", s.authed(s.powerStatus))

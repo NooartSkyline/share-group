@@ -700,6 +700,15 @@ func zipEntryName(name string, used map[string]int) string {
 	return out
 }
 
+func (s *Server) cableFSDelete(w http.ResponseWriter, r *http.Request, actor domain.Device) {
+	n, err := s.Network.DeleteCableItems(r.Context(), actor, r.URL.Query()["path"])
+	if err != nil {
+		s.fail(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"deleted": n})
+}
+
 func (s *Server) cableFSImport(w http.ResponseWriter, r *http.Request, actor domain.Device) {
 	cf, err := s.Network.OpenCableFile(r.Context(), actor, r.URL.Query().Get("path"))
 	if err != nil {

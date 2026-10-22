@@ -11,13 +11,14 @@ import (
 )
 
 const (
-	cableListTimeout  = 8 * time.Second
-	cablePeekTimeout  = 8 * time.Second
-	cablePullTimeout  = 3 * time.Minute
-	maxCableFSEntries = 400
-	maxCableZipFiles  = 200
-	maxCableZipDepth  = 24
-	cablePeekLimit    = 16 << 10
+	cableListTimeout   = 8 * time.Second
+	cablePeekTimeout   = 8 * time.Second
+	cablePullTimeout   = 3 * time.Minute
+	cableDeleteTimeout = 1 * time.Minute
+	maxCableFSEntries  = 400
+	maxCableZipFiles   = 200
+	maxCableZipDepth   = 24
+	cablePeekLimit     = 16 << 10
 )
 
 // CablePeek is the start of a file on the plugged-in phone, for hex preview
@@ -241,6 +242,50 @@ func zipFolderPrefix(loc string) string {
 		return loc[i+1:]
 	}
 	return loc
+}
+
+// DeleteCableItems removes files or folders on the plugged phone. Shortcut
+// roots such as ดาวน์โหลด are refused. iPhone is unsupported over USB.
+func (s *Service) DeleteCableItems(ctx context.Context, actor domain.Device, paths []string) (int, error) {
+	if !actor.CanManage() {
+		return 0, domain.ErrForbidden
+	}
+	clean, err := SanitizeCableZipPaths(paths)
+	if err != nil || len(clean) == 0 {
+		return 0, domain.ErrInvalidInput
+	}
+	st, err := s.Cable(ctx, actor)
+	if err != nil {
+		return 0, err
+	}
+	kind := s.cableFSKind(ctx, st)
+	if kind == "" {
+		return 0, domain.ErrNotFound
+	}
+	if kind == domain.CableiPhone || kind == domain.CableiPad {
+		return 0, domain.ErrUnsupported
+	}
+	n := 0
+	var first error
+	for _, loc := range clean {
+		if ctx.Err() != nil {
+			return n, ctx.Err()
+		}
+		if err := s.deleteAndroid(ctx, loc); err != nil {
+			if first == nil {
+				first = err
+			}
+			continue
+		}
+		n++
+	}
+	if n == 0 {
+		if first != nil {
+			return 0, first
+		}
+		return 0, domain.ErrNotFound
+	}
+	return n, nil
 }
 
 func (s *Service) OpenCableFile(ctx context.Context, actor domain.Device, loc string) (CableFile, error) {
