@@ -4,6 +4,7 @@ package transfer
 
 import (
 	"archive/zip"
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -76,6 +77,14 @@ type Service struct {
 	interval time.Duration
 	jobs     chan struct{}
 
+	// sys draws previews of formats the Go decoders cannot read; nil = none.
+	// Set by SetSystemPreviewer before the service is shared.
+	sys port.SystemPreviewer
+	// noPreview remembers files the system could not draw, so a slow or failing
+	// tool is not asked again for the same file until the process restarts.
+	noPreviewMu sync.Mutex
+	noPreview   map[domain.FileID]struct{}
+
 	// Resumable upload state. Set up by ConfigureUploads before the service
 	// is shared between goroutines, read-only afterwards.
 	upDeps UploadDeps
@@ -111,6 +120,7 @@ func NewService(
 		files: files, store: store, thumbs: thumbs, render: render,
 		events: events, ids: ids, clock: clock, interval: interval,
 		jobs:        make(chan struct{}, maxThumbJobs),
+		noPreview:   make(map[domain.FileID]struct{}),
 		sessions:    make(map[domain.SessionID]*sessionRT),
 		perDevice:   make(map[domain.DeviceID]int),
 		perRoom:     make(map[domain.RoomID]int),
@@ -204,7 +214,27 @@ func (s *Service) Delete(ctx context.Context, actor domain.Device, id domain.Fil
 	return nil
 }
 
+// SetSystemPreviewer enables previews of formats beyond JPEG, PNG, GIF and
+// WebP. Call it before the service is shared between goroutines.
+func (s *Service) SetSystemPreviewer(p port.SystemPreviewer) { s.sys = p }
+
+// CanPreview reports whether Thumbnail can be expected to draw a picture for
+// name: always for the formats the Go decoders know, and for the others only
+// when a system previewer is set.
+func (s *Service) CanPreview(name string) bool {
+	switch domain.PreviewOf(name) {
+	case domain.PreviewNone:
+		return false
+	case domain.PreviewNative:
+		return true
+	}
+	return s.sys != nil
+}
+
 // Thumbnail returns a JPEG preview, rendering and caching it on first use.
+// Formats the Go decoders know are drawn in-process; others go to the system
+// previewer, and the result is normalized to a small JPEG by the same renderer.
+// A file that cannot be previewed is domain.ErrUnsupported.
 func (s *Service) Thumbnail(ctx context.Context, actor domain.Device, id domain.FileID) ([]byte, error) {
 	if !actor.Role.CanDownload() {
 		return nil, domain.ErrForbidden
@@ -213,13 +243,17 @@ func (s *Service) Thumbnail(ctx context.Context, actor domain.Device, id domain.
 	if err != nil {
 		return nil, err
 	}
-	if !domain.CanThumbnail(f.Name) {
+	kind := domain.PreviewOf(f.Name)
+	if kind == domain.PreviewNone || (kind != domain.PreviewNative && s.sys == nil) {
 		return nil, domain.ErrUnsupported
 	}
 	if b, err := s.thumbs.GetThumb(ctx, actor.RoomID, id); err == nil {
 		return b, nil
 	} else if !errors.Is(err, domain.ErrNotFound) {
 		return nil, err
+	}
+	if s.previewFailed(id) {
+		return nil, domain.ErrUnsupported
 	}
 
 	select { // bound concurrent renders
@@ -238,12 +272,43 @@ func (s *Service) Thumbnail(ctx context.Context, actor domain.Device, id domain.
 		return nil, err
 	}
 	defer src.Close()
-	b, err := s.render.Render(src, ThumbSize)
+
+	var b []byte
+	if kind == domain.PreviewNative {
+		b, err = s.render.Render(src, ThumbSize)
+	} else {
+		b, err = s.systemPreview(ctx, f.Name, kind, src)
+	}
 	if err != nil {
+		if errors.Is(err, domain.ErrUnsupported) && kind != domain.PreviewNative {
+			s.markPreviewFailed(id)
+		}
 		return nil, err
 	}
 	_ = s.thumbs.PutThumb(ctx, actor.RoomID, id, b) // caching is best effort
 	return b, nil
+}
+
+// systemPreview asks the host for a picture and shrinks it to a thumbnail JPEG.
+func (s *Service) systemPreview(ctx context.Context, name string, kind domain.PreviewKind, src io.Reader) ([]byte, error) {
+	img, err := s.sys.Preview(ctx, name, kind, src, ThumbSize)
+	if err != nil {
+		return nil, err
+	}
+	return s.render.Render(bytes.NewReader(img), ThumbSize)
+}
+
+func (s *Service) previewFailed(id domain.FileID) bool {
+	s.noPreviewMu.Lock()
+	defer s.noPreviewMu.Unlock()
+	_, bad := s.noPreview[id]
+	return bad
+}
+
+func (s *Service) markPreviewFailed(id domain.FileID) {
+	s.noPreviewMu.Lock()
+	defer s.noPreviewMu.Unlock()
+	s.noPreview[id] = struct{}{}
 }
 
 // Archive is a validated zip download. Validation happens in PlanArchive so

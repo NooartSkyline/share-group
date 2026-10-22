@@ -103,6 +103,16 @@ type ThumbRenderer interface {
 	Render(r io.Reader, maxDim int) ([]byte, error)
 }
 
+// SystemPreviewer draws a preview picture of formats the in-process decoders
+// cannot read (HEIC, camera RAW, PDF, Office, text ...), using the host
+// operating system. It is optional: without one those files get an icon.
+type SystemPreviewer interface {
+	// Preview returns a PNG or JPEG whose longest side is about maxDim, or an
+	// error wrapping domain.ErrUnsupported when the system cannot draw one
+	// (unknown format, damaged file, too large, tool missing, timeout).
+	Preview(ctx context.Context, name string, kind domain.PreviewKind, src io.Reader, maxDim int) ([]byte, error)
+}
+
 // MessageRepository keeps recent chat messages and the shared clipboard.
 type MessageRepository interface {
 	AppendMessage(ctx context.Context, m domain.Message) error

@@ -99,6 +99,7 @@ textarea.text-input{resize:vertical;line-height:1.5}
 .bar{height:6px;background:var(--input);border-radius:4px;overflow:hidden;margin-top:6px}
 .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:4px;transition:width .15s}
 .bar i.done{background:var(--ok)}.bar i.failed{background:var(--bad)}
+.xfer-no{flex-shrink:0;min-width:2.4em;font-size:11px;font-variant-numeric:tabular-nums;color:var(--mut)}
 .xfer-meta{font-size:11px;color:var(--mut);margin-top:3px}
 .xfer-meta.bad{color:var(--bad)}
 .xfer-actions{display:flex;gap:6px;flex-shrink:0}
@@ -115,7 +116,9 @@ textarea.text-input{resize:vertical;line-height:1.5}
 .th.k-document{background:linear-gradient(135deg,#555b7a,#2a2f4a)}
 .th.k-archive{background:linear-gradient(135deg,#a8741d,#e29a2d)}
 .th img,.th video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000}
+.th.pg img{object-position:top center;background:#fff}
 .th .play{position:absolute;width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.th .ext{position:absolute;left:8px;bottom:8px;max-width:calc(100% - 16px);padding:2px 8px;border-radius:99px;background:rgba(0,0,0,.4);color:#fff;font-size:11px;font-weight:700;letter-spacing:.04em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .th .ck{position:absolute;top:8px;left:8px;width:20px;height:20px;border-radius:50%;border:2px solid rgba(255,255,255,.85);background:rgba(0,0,0,.3);color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;z-index:2}
 .fc.chk .th .ck{background:var(--accent);border-color:var(--accent)}
 .fc .bd{padding:9px 10px;display:flex;flex-direction:column;gap:3px;min-width:0}
@@ -174,6 +177,9 @@ textarea.text-input{resize:vertical;line-height:1.5}
 .fd-dlg{width:min(520px,94vw);max-height:92vh;overflow:auto}
 .fd-dlg[open]{display:flex;flex-direction:column;gap:8px}
 .fd-dlg .fd-h{margin:10px 0 0;text-transform:none;letter-spacing:0;font-size:12px}
+.fd-preview{display:flex;justify-content:center;align-items:center;background:var(--input);border:1px solid var(--line);border-radius:10px;overflow:hidden;min-height:60px}
+.fd-preview img,.fd-preview video{display:block;max-width:100%;max-height:50vh;object-fit:contain}
+.fd-preview audio{width:100%;margin:10px}
 .fd-name{font-size:14px;font-weight:600;word-break:break-all}
 .fd-hex{display:block;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;line-height:1.5;word-break:break-all;user-select:all;-webkit-user-select:all;background:var(--input);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
 .fd-hex.none{font-family:inherit;color:var(--mut);user-select:text;-webkit-user-select:text}

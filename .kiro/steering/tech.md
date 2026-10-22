@@ -14,6 +14,7 @@
   - `cmdrunner` รันคำสั่งภายนอกแบบมี context/timeout (ใช้โดย `caffeinate`)
   - `diskspace` อ่านพื้นที่ว่างของดิสก์ (statfs) สำหรับ `-min-free`
   - `sessionstore` เก็บเซสชันอัปโหลดที่ต่อได้ (`sessions/`)
+  - `syspreview` วาดภาพพรีวิวของ HEIC, RAW ของกล้อง, PDF, Office, ข้อความ ฯลฯ ด้วย `sips` และ Quick Look ของ macOS (ผ่าน `cmdrunner`, ไม่เจอเครื่องมือ/ล้มเหลว = `ErrUnsupported` แล้ว UI แสดงไอคอน)
   - `peerlog` บันทึกเหตุการณ์การเชื่อมต่อของอุปกรณ์เพื่อใช้วินิจฉัย
 - Use case ใหม่ใน Phase C (`internal/usecase/`): `power` (Power_Guard), `storage` (โควตา/พื้นที่ว่าง), `diagnostics` (หน้าตรวจปัญหาการเชื่อมต่อ)
 - Frontend: HTML/CSS/JS ล้วนใน `web/` ฝังเข้า binary ด้วย `//go:embed` (`web/embed.go`) ไม่มี build step ไม่ใช้ npm ไม่มี `package.json` ไม่ใช้ framework ไฟล์ใน `web/`:
@@ -39,12 +40,13 @@ go vet ./...
 gofmt -l .                          # แสดงรายการไฟล์ที่ยังไม่ได้ format
 ```
 
-Config flag (`internal/infra/config`): `-port`, `-data`, `-iface`, `-room-name`, `-max-pin-failures`, `-lockout`, `-min-free`, `-upload-ttl`, `-stall-timeout`, `-keep-awake`
+Config flag (`internal/infra/config`): `-port`, `-data`, `-iface`, `-room-name`, `-max-pin-failures`, `-lockout`, `-min-free`, `-upload-ttl`, `-stall-timeout`, `-keep-awake`, `-system-preview`
 
 flag ของ Phase C (ตรวจค่าตอน parse ถ้าค่าผิดช่วงจะล้มก่อนเปิดพอร์ตและก่อนสร้างโฟลเดอร์ข้อมูล):
 - `-min-free` ขนาดพื้นที่ดิสก์ที่เก็บสำรองไว้ เขียนเป็น `<ตัวเลข><B|KiB|MiB|GiB>` เช่น `1GiB` ช่วง `0B` ถึง `9223372036854775807B` ค่าเริ่มต้น `1GiB` (`0B` = ไม่สำรอง)
 - `-upload-ttl` เวลาที่เก็บอัปโหลดค้างไว้รอต่อ เป็น Go duration ขั้นต่ำ `1m` ค่าเริ่มต้น `24h`
 - `-stall-timeout` ตัดคำขออัปโหลดที่ไม่ได้รับข้อมูลนานเกินกำหนด เป็น Go duration ขั้นต่ำ `5s` ค่าเริ่มต้น `30s`
+- `-system-preview` เปิด/ปิดการพรีวิวด้วยเครื่องมือของ macOS รับเฉพาะ `true` หรือ `false` ค่าเริ่มต้น `true` เครื่องมือเหล่านี้อ่านไฟล์จากอุปกรณ์อื่น ถ้าไม่ไว้ใจผู้ใช้ให้ปิดด้วย `-system-preview=false`
 - `-keep-awake` กัน Mac หลับระหว่างมีการโอน รับเฉพาะ `true` หรือ `false` ค่าเริ่มต้น `true` flag แบบ bool ต้องเขียนเป็น `-keep-awake=false` (ห้ามเขียน `-keep-awake false`)
 
 ```bash

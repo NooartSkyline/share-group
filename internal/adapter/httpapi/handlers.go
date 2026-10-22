@@ -30,7 +30,7 @@ type fileDTO struct {
 	Name         string    `json:"name"`
 	Size         int64     `json:"size"`
 	Kind         string    `json:"kind"`
-	Thumb        bool      `json:"thumb"` // the server can render a preview image
+	Thumb        bool      `json:"thumb"` // the server can draw a preview image (the client falls back to an icon if it cannot)
 	UploaderName string    `json:"uploaderName"`
 	Mine         bool      `json:"mine"`
 	CreatedAt    time.Time `json:"createdAt"`
@@ -42,7 +42,7 @@ func toDeviceDTO(d domain.Device, me domain.DeviceID) deviceDTO {
 	return deviceDTO{string(d.ID), d.Name, d.Platform, string(d.Role), d.Online, d.ID == me}
 }
 
-func toFileDTO(f domain.File, me domain.DeviceID) fileDTO {
+func (s *Server) toFileDTO(f domain.File, me domain.DeviceID) fileDTO {
 	integrity := f.IntegrityOrUnknown()
 	sum := f.SHA256
 	if integrity == domain.IntegrityUnknown {
@@ -50,7 +50,7 @@ func toFileDTO(f domain.File, me domain.DeviceID) fileDTO {
 	}
 	return fileDTO{
 		ID: string(f.ID), Dir: f.Dir, Name: f.Name, Size: f.Size,
-		Kind: string(domain.KindOf(f.Name)), Thumb: domain.CanThumbnail(f.Name),
+		Kind: string(domain.KindOf(f.Name)), Thumb: s.Transfer.CanPreview(f.Name),
 		UploaderName: f.UploaderName, Mine: f.UploaderID == me, CreatedAt: f.CreatedAt,
 		SHA256: sum, Integrity: string(integrity),
 	}
@@ -159,7 +159,7 @@ func (s *Server) listFiles(w http.ResponseWriter, r *http.Request, actor domain.
 	}
 	out := make([]fileDTO, 0, len(list))
 	for _, f := range list {
-		out = append(out, toFileDTO(f, actor.ID))
+		out = append(out, s.toFileDTO(f, actor.ID))
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -198,7 +198,7 @@ func (s *Server) upload(w http.ResponseWriter, r *http.Request, actor domain.Dev
 		s.fail(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusCreated, toFileDTO(f, actor.ID))
+	writeJSON(w, http.StatusCreated, s.toFileDTO(f, actor.ID))
 }
 
 // fileChecksum answers with the SHA-256 of a stored file, computing it on the

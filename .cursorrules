@@ -1,0 +1,6 @@
+# Git Commit Message Rules
+
+Write commit messages in Thai. Describe changes in detail based on the actual diff.
+Keep technical terms in English as they appear in the code. Do not translate them into Thai.
+Do not write the full message in English.
+Explain what changed, why, and the impact — not vague summaries or file lists only.

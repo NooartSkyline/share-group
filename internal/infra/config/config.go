@@ -37,6 +37,9 @@ type Config struct {
 	UploadTTL    time.Duration // how long an idle resumable upload is kept; >= 1m
 	StallTimeout time.Duration // no-data time after which an upload request is cut; >= 5s
 	KeepAwake    bool          // hold a caffeinate assertion while transfers are active
+	// SystemPreview lets macOS tools (sips, Quick Look) draw previews of HEIC, camera RAW,
+	// PDF, Office files and the like. They parse files from other devices, so the Owner can turn it off.
+	SystemPreview bool
 }
 
 // flagDoc is one line of the usage text. The usage is written by hand because
@@ -56,10 +59,11 @@ type flagDoc struct {
 func Load(args []string, out io.Writer) (Config, error) {
 	home, _ := os.UserHomeDir()
 	cfg := Config{
-		MinFree:      defaultMinFree,
-		UploadTTL:    defaultUploadTTL,
-		StallTimeout: defaultStallTimeout,
-		KeepAwake:    true,
+		MinFree:       defaultMinFree,
+		UploadTTL:     defaultUploadTTL,
+		StallTimeout:  defaultStallTimeout,
+		KeepAwake:     true,
+		SystemPreview: true,
 	}
 	var docs []flagDoc
 
@@ -97,6 +101,10 @@ func Load(args []string, out io.Writer) (Config, error) {
 	keepAwakeDesc := "keep the Mac awake while transfers are active; true or false"
 	fs.Var((*strictBoolValue)(&cfg.KeepAwake), "keep-awake", keepAwakeDesc)
 	docs = append(docs, flagDoc{"keep-awake", "bool", "true", keepAwakeDesc})
+
+	sysPreviewDesc := "draw previews of HEIC, camera RAW, PDF, Office and text files with macOS sips and Quick Look; true or false"
+	fs.Var((*strictBoolValue)(&cfg.SystemPreview), "system-preview", sysPreviewDesc)
+	docs = append(docs, flagDoc{"system-preview", "bool", "true", sysPreviewDesc})
 
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) || isUsageError(err) {

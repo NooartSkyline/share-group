@@ -30,6 +30,7 @@ import (
 	"lanshare/internal/adapter/peerlog"
 	"lanshare/internal/adapter/qr"
 	"lanshare/internal/adapter/sessionstore"
+	"lanshare/internal/adapter/syspreview"
 	"lanshare/internal/adapter/thumb"
 	"lanshare/internal/adapter/ws"
 	"lanshare/internal/domain"
@@ -96,6 +97,11 @@ func run() error {
 	chatSvc := chat.NewService(memory.NewChatRepository(), hub, ids, clock)
 	networkSvc := network.NewService(netinfo.New(), cfg.Port, cfg.Interface)
 
+	// Previews of HEIC, camera RAW, PDF, Office files and the like come from macOS itself.
+	if cfg.SystemPreview && syspreview.Available() {
+		transferSvc.SetSystemPreviewer(syspreview.New(cmdrunner.New()))
+	}
+
 	// Keeps the Mac awake while any transfer (upload, append, download, zip)
 	// is running; it is the Activity of every transfer kind below.
 	powerGuard := power.NewGuard(clock, caffeinate.NewLauncher(), os.Getpid(), power.DefaultGrace, cfg.KeepAwake)
@@ -140,7 +146,8 @@ func run() error {
 		"min-free", config.FormatSize(cfg.MinFree),
 		"upload-ttl", cfg.UploadTTL.String(),
 		"stall-timeout", cfg.StallTimeout.String(),
-		"keep-awake", cfg.KeepAwake)
+		"keep-awake", cfg.KeepAwake,
+		"system-preview", cfg.SystemPreview)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()

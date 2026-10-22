@@ -229,6 +229,26 @@
     return m;
   }
 
+  // ---------- ลำดับในรายการถ่ายโอน ----------
+
+  // transferRank จัดกลุ่มการถ่ายโอนเพื่อเรียง: 0 = กำลังทำงาน (อยู่บนสุด), 1 = รอคิว,
+  // 2 = หยุด/ไม่สำเร็จ (ยังต้องการให้ผู้ใช้สนใจ), 3 = เสร็จแล้ว (คงไว้ท้ายรายการ)
+  // state ที่ไม่รู้จักถือเป็นกลุ่ม 2 เพื่อไม่ให้แทรกขึ้นไปเหนือรายการที่กำลังทำงาน
+  function transferRank(state) {
+    switch (state) {
+      case 'running': case 'reconnecting': case 'completing': return 0;
+      case 'queued': return 1;
+      case 'done': return 3;
+      default: return 2;
+    }
+  }
+
+  // compareTransfers: เรียงตามกลุ่มก่อน แล้วตาม order (ลำดับที่เพิ่มเข้ามา) จากน้อยไปมาก
+  // a และ b เป็น {state, order}
+  function compareTransfers(a, b) {
+    return transferRank(a.state) - transferRank(b.state) || a.order - b.order;
+  }
+
   // ---------- จับคู่ไฟล์ที่ค้าง ----------
 
   // matchPendingUpload: รับไฟล์ที่ผู้ใช้เลือกก็ต่อเมื่อ name และ size ตรงกับรายการที่เก็บไว้ (ไม่เทียบ lastModified)
@@ -431,6 +451,8 @@
     formatBytes,
     insufficientStorageMessage,
     nextProgress,
+    transferRank,
+    compareTransfers,
     matchPendingUpload,
     integrityBadge,
     // แจ้งเตือน

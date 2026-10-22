@@ -275,7 +275,7 @@ func (s *Server) completeUpload(w http.ResponseWriter, r *http.Request, actor do
 	if res.Repeated {
 		status = http.StatusOK
 	}
-	writeJSON(w, status, toFileDTO(res.File, actor.ID))
+	writeJSON(w, status, s.toFileDTO(res.File, actor.ID))
 }
 
 // ---- DELETE /api/uploads/{id} ----

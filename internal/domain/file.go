@@ -135,17 +135,32 @@ const (
 
 var kindByExt = map[string]FileKind{}
 
+// rawExts are camera RAW formats. They are images even though browsers cannot show them.
+var rawExts = []string{
+	"cr2", "cr3", "crw", "nef", "nrw", "arw", "srf", "sr2", "dng", "orf", "rw2", "raf", "pef", "srw",
+	"raw", "3fr", "erf", "kdc", "mrw", "mef", "rwl", "iiq",
+}
+
+// codeExts are source and config files; Quick Look draws them as text pages.
+var codeExts = []string{
+	"css", "js", "ts", "py", "go", "c", "h", "cpp", "java", "swift", "sh", "rb", "sql", "php", "rs", "kt", "toml", "ini",
+}
+
 func init() {
 	add := func(k FileKind, exts ...string) {
 		for _, e := range exts {
 			kindByExt[e] = k
 		}
 	}
-	add(KindImage, "jpg", "jpeg", "png", "gif", "webp", "heic", "heif", "bmp", "tif", "tiff", "svg")
-	add(KindVideo, "mp4", "mov", "m4v", "webm", "mkv", "avi", "3gp")
-	add(KindAudio, "mp3", "wav", "m4a", "flac", "aac", "ogg", "opus")
-	add(KindDocument, "pdf", "doc", "docx", "txt", "md", "rtf", "xls", "xlsx", "csv", "ppt", "pptx", "key", "pages", "numbers")
-	add(KindArchive, "zip", "rar", "7z", "tar", "gz", "tgz", "dmg")
+	add(KindImage, "jpg", "jpeg", "png", "gif", "webp", "heic", "heif", "avif", "jxl", "bmp", "tif", "tiff", "svg",
+		"ico", "icns", "psd", "jp2", "tga", "dds")
+	add(KindImage, rawExts...)
+	add(KindVideo, "mp4", "mov", "m4v", "webm", "mkv", "avi", "3gp", "wmv", "flv", "mpg", "mpeg", "mts", "m2ts")
+	add(KindAudio, "mp3", "wav", "m4a", "flac", "aac", "ogg", "opus", "aif", "aiff", "wma", "caf", "mid", "midi")
+	add(KindDocument, "pdf", "doc", "docx", "txt", "md", "rtf", "xls", "xlsx", "csv", "tsv", "ppt", "pptx", "key", "pages", "numbers",
+		"odt", "ods", "odp", "epub", "json", "xml", "yaml", "yml", "log")
+	add(KindDocument, codeExts...)
+	add(KindArchive, "zip", "rar", "7z", "tar", "gz", "tgz", "bz2", "xz", "zst", "dmg", "iso", "pkg")
 }
 
 // KindOf classifies a file by its extension.
@@ -157,12 +172,48 @@ func KindOf(name string) FileKind {
 	return KindOther
 }
 
-// CanThumbnail reports whether the server can render a thumbnail for name.
-// Only formats decoded by memory-safe Go decoders are supported.
+// CanThumbnail reports whether name is decoded by the memory-safe Go decoders
+// alone. PreviewOf also covers formats that need the host operating system.
 func CanThumbnail(name string) bool {
 	switch strings.ToLower(strings.TrimPrefix(path.Ext(name), ".")) {
 	case "jpg", "jpeg", "png", "gif", "webp":
 		return true
 	}
 	return false
+}
+
+// PreviewKind says how the server can turn a file into a preview image.
+type PreviewKind string
+
+const (
+	// PreviewNone: no preview image; the client shows an icon.
+	PreviewNone PreviewKind = ""
+	// PreviewNative: JPEG, PNG, GIF and WebP, decoded in-process.
+	PreviewNative PreviewKind = "native"
+	// PreviewImage: other pictures (HEIC, camera RAW, TIFF, PDF ...) converted by the host OS.
+	PreviewImage PreviewKind = "image"
+	// PreviewDocument: files the host OS draws a first page of (Office, text, code, fonts, SVG ...).
+	PreviewDocument PreviewKind = "document"
+)
+
+var previewByExt = map[string]PreviewKind{}
+
+func init() {
+	add := func(k PreviewKind, exts ...string) {
+		for _, e := range exts {
+			previewByExt[e] = k
+		}
+	}
+	add(PreviewNative, "jpg", "jpeg", "png", "gif", "webp")
+	add(PreviewImage, "heic", "heif", "avif", "jxl", "bmp", "tif", "tiff", "ico", "icns", "psd", "jp2", "tga", "dds", "pdf")
+	add(PreviewImage, rawExts...)
+	add(PreviewDocument, "doc", "docx", "xls", "xlsx", "ppt", "pptx", "pages", "numbers", "key", "rtf", "txt", "md", "csv", "tsv",
+		"json", "xml", "yaml", "yml", "log", "svg", "ttf", "otf", "eps", "ai", "epub")
+	add(PreviewDocument, codeExts...)
+}
+
+// PreviewOf says how a preview image of name can be made. Videos are not
+// listed: browsers draw their first frame themselves.
+func PreviewOf(name string) PreviewKind {
+	return previewByExt[strings.ToLower(strings.TrimPrefix(path.Ext(name), "."))]
 }

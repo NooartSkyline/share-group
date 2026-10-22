@@ -86,7 +86,7 @@ function formatTime(iso) {
   } catch { return iso; }
 }
 
-const KIND_ICON = { image: '🖼️', video: '🎬', audio: '🎵', document: '📄', archive: '📦', other: '📁' };
+const KIND_ICON = { image: '🖼️', video: '🎬', audio: '🎵', document: '📄', archive: '📦', other: '📄' };
 const PLATFORM_ICON = { iOS: '📱', Android: '🤖', Windows: '🖥️', macOS: '💻', Linux: '🐧', Web: '🌐' };
 const ROLE_LABEL = { owner: 'Owner', member: 'Member', viewer: 'Viewer', uploader: 'Uploader' };
 
@@ -605,10 +605,20 @@ function lazyVideo(video, src) {
   videoObserver.observe(video);
 }
 
+// fileExt is the extension shown on a card that has no picture ("ZIP", "CR2"), or ''.
+function fileExt(name) {
+  const i = name.lastIndexOf('.');
+  return i > 0 && i < name.length - 1 ? name.slice(i + 1, i + 7).toUpperCase() : '';
+}
+
 function thumbFor(f) {
   const kind = KIND_ICON[f.kind] ? f.kind : 'other';
   const th = el('div', { class: 'th k-' + kind, title: filePath(f) }, KIND_ICON[kind]);
-  const fallback = () => { th.querySelectorAll('img,video,.play').forEach((n) => n.remove()); };
+  const ext = fileExt(f.name);
+  if (kind === 'document') th.classList.add('pg'); // pages: show the top of the page, not the middle
+  const addExt = () => { if (ext && !th.querySelector('.ext')) th.append(el('span', { class: 'ext' }, ext)); };
+  // When no picture can be made (or loading it fails) the card keeps its icon and shows the extension.
+  const fallback = () => { th.querySelectorAll('img,video,.play').forEach((n) => n.remove()); addExt(); };
   if (f.thumb) {
     th.append(el('img', {
       src: '/api/files/' + encodeURIComponent(f.id) + '/thumb', alt: '', loading: 'lazy', onerror: fallback,
@@ -618,8 +628,37 @@ function thumbFor(f) {
     v.muted = true;
     lazyVideo(v, '/api/files/' + encodeURIComponent(f.id) + '#t=0.1');
     th.append(v, el('span', { class: 'play' }, '▶'));
+  } else {
+    addExt();
   }
   return th;
+}
+
+// Browsers can show these themselves; the original file is used as the preview.
+const PLAY_VIDEO = new Set(['mp4', 'm4v', 'mov', 'webm']);
+const PLAY_AUDIO = new Set(['mp3', 'm4a', 'wav', 'aac', 'ogg', 'opus', 'flac']);
+const SHOW_IMAGE = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'bmp']);
+
+// previewNode is the large preview of the details dialog, or null when there is nothing to show:
+// the picture itself, a player for video and audio, or the server's preview picture for other
+// formats (HEIC, camera RAW, PDF, Office, text ...). The file is loaded only when the dialog opens.
+function previewNode(f) {
+  const url = '/api/files/' + encodeURIComponent(f.id);
+  const ext = f.name.includes('.') ? f.name.slice(f.name.lastIndexOf('.') + 1).toLowerCase() : '';
+  const thumbImg = () => el('img', { src: url + '/thumb', alt: '' });
+  if (SHOW_IMAGE.has(ext)) {
+    const img = el('img', { src: url, alt: '', loading: 'lazy' });
+    img.addEventListener('error', () => { if (f.thumb) img.replaceWith(thumbImg()); else img.remove(); }, { once: true });
+    return img;
+  }
+  if (PLAY_VIDEO.has(ext)) return el('video', { src: url, controls: true, preload: 'metadata', playsInline: true });
+  if (PLAY_AUDIO.has(ext)) return el('audio', { src: url, controls: true, preload: 'metadata' });
+  if (f.thumb) {
+    const img = thumbImg();
+    img.addEventListener('error', () => img.remove(), { once: true });
+    return img;
+  }
+  return null;
 }
 
 function renderFiles() {
@@ -762,6 +801,7 @@ function openFileDetails(id) {
   const fname = el('p', { class: 'fd-name' });
   const fmeta = el('p', { class: 'mut small' });
   const badgeBox = el('div', { class: 'fd-badge' });
+  const previewBox = el('div', { class: 'fd-preview' });
   const hex = el('code', { class: 'fd-hex', tabIndex: 0 });
   const copyBtn = el('button', { class: 'btn ghost sm', type: 'button', onclick: () => copy() }, 'คัดลอก');
   const calcBtn = el('button', { class: 'btn sm', type: 'button', onclick: () => calc() }, 'คำนวณ');
@@ -776,7 +816,7 @@ function openFileDetails(id) {
 
   dlg.append(
     el('h3', { id: 'fd-title' }, 'รายละเอียดไฟล์'),
-    fname, fmeta, badgeBox,
+    fname, fmeta, badgeBox, previewBox,
     el('h4', { class: 'fd-h' }, 'SHA-256'),
     hex,
     el('div', { class: 'fd-row' }, copyBtn, calcBtn),
@@ -788,6 +828,9 @@ function openFileDetails(id) {
   );
 
   const current = () => state.files.find((f) => f.id === id);
+  const first = current();
+  const pv = first && previewNode(first);
+  if (pv) previewBox.append(pv); else previewBox.hidden = true;
   function setNote(text, kind) { note.textContent = text; noteKind = kind || ''; }
 
   function sync() {
@@ -939,6 +982,10 @@ function openFileDetails(id) {
 // ---------- uploads ----------
 
 let uploadSeq = 0;
+// orderSeq numbers every transfer shown in the list (ours and other devices') in the order it
+// first appeared. The number stays the same while the row moves around as states change.
+let orderSeq = 0;
+const MAX_DONE_KEPT = 50; // finished transfers stay in the list; only the oldest ones beyond this go
 const queue = [];
 let active = 0;
 
@@ -1123,7 +1170,7 @@ function enqueue(items) {
 
 function makeUploadItem(file, dir, conflict) {
   return {
-    id: ++uploadSeq, file, dir, conflict, loaded: 0, total: file.size, speed: 0, state: 'queued', xhr: null, error: '',
+    id: ++uploadSeq, order: ++orderSeq, file, dir, conflict, loaded: 0, total: file.size, speed: 0, state: 'queued', xhr: null, error: '',
     // resumable engine state (see "resumable uploader" below)
     session: null, // {id, key}: the key lives only here and in localStorage, never in the DOM or a URL
     offset: 0, // last Confirmed_Offset returned by the server
@@ -1193,10 +1240,6 @@ function startLegacyUpload(item) {
       if (stateName === 'done') item.loaded = item.total;
       renderTransfers();
       if (stateName === 'done') refreshFiles();
-      setTimeout(() => {
-        const i = state.uploads.indexOf(item);
-        if (i >= 0 && item.state === 'done') { state.uploads.splice(i, 1); renderTransfers(); }
-      }, 6000);
       resolve();
     };
     xhr.onload = () => {
@@ -1232,7 +1275,6 @@ const PENDING_KEY = 'lanshare.uploads.v1';
 const VERIFY_KEY = 'lanshare.verify';
 const VERIFY_DEFAULT = true; // no phone measurements yet (docs/project-scope.md); the check is on unless the user turns it off
 const HASH_JOB = 1; // each item owns its worker, so one job id is enough
-const DONE_LINGER_MS = 6000;
 const uploadBySession = new Map(); // session id -> item, to attribute our own `transfer` events
 
 const verifyEnabled = () => {
@@ -1910,12 +1952,7 @@ function settle(item, stateName, error) {
   item.resumable = false; // failUpload sets it again for 507
   if (stateName === 'done') item.loaded = item.total;
   renderTransfers();
-  if (stateName !== 'done') return;
-  refreshFiles();
-  setTimeout(() => {
-    const i = state.uploads.indexOf(item);
-    if (i >= 0 && item.state === 'done') { state.uploads.splice(i, 1); renderTransfers(); }
-  }, DONE_LINGER_MS);
+  if (stateName === 'done') refreshFiles();
 }
 
 // cancelUpload stops an item for good: aborts the running request, ends any retry wait, stops
@@ -2075,13 +2112,15 @@ function onRemoteTransfer(p) {
     return;
   }
   const key = p.direction + ':' + p.id + ':' + p.deviceId;
+  const prev = state.remote.get(key);
+  p.order = prev ? prev.order : ++orderSeq; // later events of the same transfer keep their number
   state.remote.set(key, p);
   clearTimeout(remoteTimers.get(key));
   remoteTimers.delete(key);
-  // `interrupted` stays on screen until the next event with the same id replaces this entry (same
-  // key), so it gets no removal timer; every other state except `running` still clears itself.
-  if (p.state !== 'running' && p.state !== 'interrupted') {
-    remoteTimers.set(key, setTimeout(() => { state.remote.delete(key); renderTransfers(); }, p.state === 'done' ? 4000 : 8000));
+  // `running`, `interrupted` and `done` stay on screen (`interrupted` until the next event with
+  // the same key replaces it, `done` as history); a failed transfer clears itself.
+  if (p.state !== 'running' && p.state !== 'interrupted' && p.state !== 'done') {
+    remoteTimers.set(key, setTimeout(() => { state.remote.delete(key); renderTransfers(); }, 8000));
   }
   renderTransfersSoon();
 }
@@ -2105,10 +2144,23 @@ function renderTransfersSoon() {
   raf = requestAnimationFrame(() => { raf = 0; renderTransfers(); });
 }
 
-function transferRow({ icon, name, detail, pct, barClass, action }) {
+// pruneFinished drops the oldest finished transfers beyond MAX_DONE_KEPT so a long session does
+// not grow the list (and the memory behind it) without limit. Running ones are never touched.
+function pruneFinished() {
+  const done = [
+    ...state.uploads.filter((it) => it.state === 'done').map((it) => ({ order: it.order, drop: () => state.uploads.splice(state.uploads.indexOf(it), 1) })),
+    ...[...state.remote].filter(([, p]) => p.state === 'done').map(([key, p]) => ({ order: p.order, drop: () => state.remote.delete(key) })),
+  ];
+  if (done.length <= MAX_DONE_KEPT) return;
+  done.sort((a, b) => a.order - b.order);
+  for (const d of done.slice(0, done.length - MAX_DONE_KEPT)) d.drop();
+}
+
+function transferRow({ order, icon, name, detail, pct, barClass, action }) {
   const fill = el('i', { class: barClass || '' });
   fill.style.width = Math.max(0, Math.min(100, pct)) + '%'; // CSSOM is allowed by our CSP
   return el('li', {},
+    el('span', { class: 'xfer-no', title: 'ลำดับที่ ' + order }, '#' + order),
     el('span', {}, icon),
     el('div', { class: 'grow' },
       el('div', { class: 'ellipsis' }, name),
@@ -2120,7 +2172,8 @@ function transferRow({ icon, name, detail, pct, barClass, action }) {
 }
 
 function renderTransfers() {
-  const rows = [];
+  pruneFinished();
+  const entries = []; // {state, order, row}: sorted below so running transfers come first
 
   for (const it of state.uploads) {
     if (it.state === 'cancelled') continue;
@@ -2162,9 +2215,13 @@ function renderTransfers() {
       buttons.push(el('button', { class: 'btn ghost sm', type: 'button', onclick: () => resendUpload(it) }, 'ส่งใหม่'));
     }
     const action = buttons.length > 1 ? el('span', {}, ...buttons) : (buttons[0] || null);
-    rows.push(transferRow({
-      icon: '⬆️', name: (it.dir ? it.dir + '/' : '') + it.file.name, detail, pct, barClass, action,
-    }));
+    entries.push({
+      state: it.state,
+      order: it.order,
+      row: transferRow({
+        order: it.order, icon: '⬆️', name: (it.dir ? it.dir + '/' : '') + it.file.name, detail, pct, barClass, action,
+      }),
+    });
   }
 
   for (const p of state.remote.values()) {
@@ -2176,9 +2233,17 @@ function renderTransfers() {
     else if (p.state === 'interrupted') detail += ' • หยุดชั่วคราว';
     else if (p.state === 'done') { detail += ' • เสร็จแล้ว ✓'; barClass = 'done'; }
     else { detail += ' • ไม่สำเร็จ'; barClass = 'failed'; }
-    rows.push(transferRow({ icon: p.direction === 'upload' ? '📥' : '📤', name: p.name, detail, pct: p.state === 'done' ? 100 : pct, barClass }));
+    entries.push({
+      state: p.state,
+      order: p.order,
+      row: transferRow({
+        order: p.order, icon: p.direction === 'upload' ? '📥' : '📤', name: p.name, detail, pct: p.state === 'done' ? 100 : pct, barClass,
+      }),
+    });
   }
 
+  entries.sort(Logic.compareTransfers);
+  const rows = entries.map((e) => e.row);
   $('transfers-card').hidden = rows.length === 0;
   $('transfers').replaceChildren(...rows);
   renderPending(); // entries move between the two lists as uploads start, finish or are cancelled
