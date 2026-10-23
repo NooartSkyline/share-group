@@ -82,6 +82,10 @@ func usbDeviceFromIP(ip string) (device, label string) {
 	}
 	switch {
 	case appleUSBNet.Contains(parsed):
+		// 172.20.10.1 is the phone hosting Personal Hotspot, not a USB client.
+		if v4 := parsed.To4(); v4 != nil && v4[3] == 1 {
+			return "", ""
+		}
 		return domain.CableiPhone, "iPhone USB"
 	case androidUSBNet.Contains(parsed):
 		return domain.CableAndroid, "Android USB"

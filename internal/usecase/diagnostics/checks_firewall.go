@@ -3,6 +3,7 @@ package diagnostics
 import (
 	"context"
 	"fmt"
+	"runtime"
 
 	"lanshare/internal/domain"
 )
@@ -20,6 +21,11 @@ func (s *Service) checkFirewall(ctx context.Context, _ runEnv) domain.CheckResul
 	m := metaFirewall
 	const source = "socketfilterfw"
 	const manual = "ดูสถานะที่ System Settings > Network > Firewall ด้วยตนเอง"
+	if runtime.GOOS != "darwin" {
+		return m.unknown(ReasonCommandMissing,
+			"ตรวจไฟร์วอลล์อัตโนมัติรองรับบน macOS เท่านั้น",
+			"อนุญาตให้ Share Group รับการเชื่อมต่อขาเข้าใน Windows Defender Firewall (หรือไฟร์วอลล์ของระบบ) จากนั้นกด \"ตรวจใหม่\"")
+	}
 
 	out, err := s.runCommand(ctx, s.limits.Command, CommandSocketFilterFW, "--getglobalstate")
 	if err != nil {

@@ -1,3 +1,5 @@
+//go:build darwin
+
 // Package caffeinate implements port.CaffeinateLauncher with the macOS
 // /usr/bin/caffeinate tool.
 //

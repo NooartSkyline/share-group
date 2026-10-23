@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Share Group</string>
+    <string name="notify_title">Share Group กำลังแชร์ไฟล์</string>
+    <string name="notify_text">แตะเพื่อเปิดแดชบอร์ดโฮสต์</string>
+    <string name="notify_stop">หยุด</string>
+    <string name="notify_folder">โฟลเดอร์</string>
+    <string name="notify_hotspot">Hotspot</string>
+    <string name="pick_folder">เลือกโฟลเดอร์บนเครื่องหรือ USB</string>
+    <string name="folder_ok">เพิ่มโฟลเดอร์แล้ว — เปิดแท็บไฟล์บนเครื่องอีกครั้ง</string>
+    <string name="folder_fail">เพิ่มโฟลเดอร์ไม่สำเร็จ</string>
+    <string name="hotspot_fail">เปิดหน้าตั้งค่า Hotspot ไม่ได้</string>
+    <string name="host_missing">ยังไม่ได้ผูกไลบรารี Go — รัน sh mobile/android/bind.sh แล้ว build แอปอีกครั้ง</string>
+    <string name="pick_files">เลือกไฟล์</string>
+    <string name="share_sending">กำลังส่งไฟล์เข้าห้อง…</string>
+    <string name="share_ok">ส่งไฟล์เข้าห้องแล้ว</string>
+    <string name="share_fail">ส่งไฟล์ไม่สำเร็จ</string>
+    <string name="download_started">กำลังบันทึก %1$s</string>
+    <string name="storage_need">อนุญาตให้เข้าถึงไฟล์ทั้งหมด จึงจะดูไฟล์บนเครื่องและ USB OTG ได้</string>
+</resources>

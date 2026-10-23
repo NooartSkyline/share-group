@@ -8,7 +8,9 @@ cmd (composition root) -> adapter -> usecase -> domain
 ```
 
 ```
-cmd/lanshare/main.go        Composition root: สร้าง adapter และ use case ทุกตัวแล้วเชื่อมเข้าด้วยกัน เป็นที่เดียวที่รู้จัก concrete type
+cmd/lanshare/main.go        CLI: โหลด flag แล้วเรียก internal/app (composition root ที่ mobile ใช้ร่วม)
+internal/app/               Composition root ที่ใช้ร่วม: ประกอบ adapter แล้วเปิด HTTP
+mobilehost/                 API ที่ gomobile bind ได้: Start/Stop/URL ไม่มีกฎห้อง
 internal/
   domain/                   เฉพาะ entity และกฎทางธุรกิจ: Room, Device, File, Chat/Message/Clip, Network, errors ห้ามมี HTTP, JSON, SQL หรือ disk
   usecase/
@@ -30,15 +32,16 @@ internal/
     caffeinate/ cmdrunner/  กัน Mac หลับด้วยคำสั่ง caffeinate / รันคำสั่งภายนอกแบบมี context+timeout
     diskspace/ peerlog/     พื้นที่ว่างของดิสก์ (statfs) / บันทึกเหตุการณ์การเชื่อมต่อเพื่อวินิจฉัย
     netinfo/ qr/ thumb/     Network interface, QR PNG/terminal, thumbnail ของรูปภาพ
+    hostfs/                 ไฟล์บนเครื่องโฮสต์ Android และ USB OTG (HostBrowser)
   infra/
     config/                 CLI flag -> Config (config.go, size.go)
     system/                 Clock และ IDGenerator ตัวจริง
 web/                        UI บนเบราว์เซอร์ ฝังด้วย embed.go (ดูรายการไฟล์ใน tech.md) web/test/ ห้ามฝัง
 tools/genicons/             เครื่องมือสร้างไอคอน PWA และไอคอนแอป Mac (โลโก้ไฟล์กลางวงกลุ่ม)
 desktop/LanShareMenu/       เปลือก menu bar บน Mac (Swift AppKit) เปิด/ปิดเซิร์ฟเวอร์ Go ไม่ใส่กฎห้อง
-desktop/windows/            เปลือกถาดระบบ Windows เป็น Go (Phase I ยังไม่ทำ)
-mobile/android/             เปลือกแอป Android เป็น Kotlin ห่อไลบรารี Go (Phase I ยังไม่ทำ)
-mobile/ios/                 เปลือกแอป iOS เป็น Swift ห่อไลบรารี Go (Phase I ยังไม่ทำ)
+desktop/windows/            เปลือกถาดระบบ Windows เป็น Go เปิด/ปิด lanshare.exe แดชบอร์ดในเบราว์เซอร์ คลิกขวา Explorer เรียก share send (Phase I)
+mobile/android/             เปลือกแอป Android เป็น Kotlin + WebView + foreground service ห่อ mobilehost (Phase I)
+mobile/ios/                 เปลือกแอป iOS เป็น Swift + WKWebView ห่อ mobilehost (Phase I ใช้ได้ตอนแอปเปิดอยู่)
 docs/project-scope.md       ขอบเขต การตัดสินใจ เฟส สถานะ ระบบ นักพัฒนา และ Mock UI (ภาษาไทย หัวข้อ 12–15)
 mock/                       ต้นแบบ UI แบบ HTML (ui-mock-v3.html คือตัวปัจจุบัน; v2 เก็บเทียบ; ui-mock-hosts.html คือโฮสต์ Phase I; ui-mock.html เลิกใช้แล้ว)
 ```
@@ -50,7 +53,7 @@ mock/                       ต้นแบบ UI แบบ HTML (ui-mock-v3.htm
 - การแปลงจาก/ไปเป็น JSON/DTO ทำใน `adapter` เท่านั้น ให้ type ใน `domain` ปลอดจากเรื่อง JSON/SQL
 - Port ที่เกี่ยวกับเนื้อหาไฟล์รับ `io.Reader` / `io.ReadSeeker` ห้ามใช้ `[]byte` กับทั้งไฟล์
 - ทุกเมธอดของ repository/store ที่แตะไฟล์หรือข้อความต้องรับ `RoomID` เพื่อให้การค้นหาอยู่ในขอบเขตของห้อง
-- พฤติกรรมภายนอกใหม่: เพิ่ม port ใน `usecase/port`, implement ใน `adapter` หรือ `infra`, เพิ่ม fake ใน `usecase/fake`, แล้วเชื่อมใน `main.go`
+- พฤติกรรมภายนอกใหม่: เพิ่ม port ใน `usecase/port`, implement ใน `adapter` หรือ `infra`, เพิ่ม fake ใน `usecase/fake`, แล้วเชื่อมใน `internal/app`
 - อย่าสร้าง interface ล่วงหน้าก่อนจะมีผู้ใช้งานจริง
 - โฮสต์ Phase I (Windows / Android / iOS) ใช้แกน `internal/` ก้อนเดียวกับ Mac เปลือก Kotlin / Swift / ถาด Windows เป็นชั้นนอกสุดเทียบเท่า `cmd`: เปิด-ปิดเซิร์ฟเวอร์, การแจ้งเตือน, Hotspot, ที่เก็บเครื่อง, OTG ห้ามใส่กฎห้อง PIN สิทธิ์ หรือการโอนในแอปเนทีฟ ห้าม copy `domain`/`usecase` ออกจาก Go แดชบอร์ดยังเป็น `web/` บน `127.0.0.1`
 - ความสามารถของ OS เครื่องใหม่ implement เป็น adapter ของ port ที่มีอยู่ (`NetworkProvider`, `FileStore`, `CaffeinateLauncher`, `ActivityTracker`, `HEICConverter`, `SystemPreviewer`) หรือ port ใหม่เมื่อมีผู้ใช้จริง เครื่องที่ไม่มีฟีเจอร์นั้นคืน `domain.ErrUnsupported`

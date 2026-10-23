@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"log/slog"
 	"net/http"
+	"runtime"
 	"time"
 
 	"lanshare/internal/adapter/ws"
@@ -24,8 +25,21 @@ const (
 	maxJSONBody   = 4 << 10
 	maxTextBody   = 128 << 10 // messages and clipboard: 20k characters of Thai is ~60 KB
 	cookieMaxAge  = 7 * 24 * time.Hour
-	ownerDeviceNm = "MacBook (เครื่องนี้)"
+	ownerDeviceNm = "เครื่องนี้"
 )
+
+func ownerPlatform() string {
+	switch runtime.GOOS {
+	case "android":
+		return "Android"
+	case "windows":
+		return "Windows"
+	case "ios":
+		return "iOS"
+	default:
+		return "macOS"
+	}
+}
 
 // Deps are the collaborators of the HTTP server.
 type Deps struct {

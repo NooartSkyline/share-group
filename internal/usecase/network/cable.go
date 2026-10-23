@@ -2,6 +2,7 @@ package network
 
 import (
 	"context"
+	"runtime"
 	"time"
 
 	"lanshare/internal/domain"
@@ -114,6 +115,9 @@ func (s *Service) KeepCable(ctx context.Context, room domain.RoomID) {
 }
 
 func (s *Service) hardwarePorts(ctx context.Context) map[string]string {
+	if runtime.GOOS != "darwin" {
+		return map[string]string{}
+	}
 	out := s.runShort(ctx, commandNetworkSetup, "-listallhardwareports")
 	if out == nil {
 		return map[string]string{}
@@ -122,6 +126,9 @@ func (s *Service) hardwarePorts(ctx context.Context) map[string]string {
 }
 
 func (s *Service) usbPhones(ctx context.Context) []CablePhone {
+	if runtime.GOOS != "darwin" {
+		return nil
+	}
 	out := s.runShort(ctx, commandIOReg, "-r", "-c", "IOUSBHostDevice", "-l", "-d", "1", "-w", "0")
 	if out == nil {
 		return nil

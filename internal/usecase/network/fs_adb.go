@@ -187,6 +187,12 @@ func (s *Service) MkdirCableFolder(ctx context.Context, actor domain.Device, par
 	if device == domain.CableiPhone || device == domain.CableiPad {
 		return "", domain.ErrUnsupported
 	}
+	if device == domain.CableHost {
+		if !s.cableDeviceReady(ctx, device) {
+			return "", domain.ErrNotFound
+		}
+		return s.mkdirHost(ctx, rootID, rel, name)
+	}
 	if _, ok := parseAndroidDevice(device); !ok {
 		return "", domain.ErrInvalidInput
 	}
@@ -847,7 +853,7 @@ func (s *Service) PasteCableApps(ctx context.Context, actor domain.Device, dest 
 		return 0, domain.ErrInvalidInput
 	}
 	if len(clip.pkgs) > 0 {
-		if clip.cut {
+		if clip.cut || device == domain.CableHost {
 			return 0, domain.ErrInvalidInput
 		}
 		return s.installClipApps(ctx, device, clip.pkgs)
@@ -957,6 +963,9 @@ func uniquifyClipFiles(files []cableClipFile, taken map[string]struct{}) []cable
 }
 
 func (s *Service) pushCableFiles(ctx context.Context, device, rootID, rel string, files []cableClipFile) (int, error) {
+	if device == domain.CableHost {
+		return s.pushHostFiles(ctx, rootID, rel, files)
+	}
 	if len(files) == 0 {
 		return 0, domain.ErrNotFound
 	}
@@ -1068,7 +1077,7 @@ func (s *Service) androidPasteTargets(ctx context.Context, st CableStatus, sourc
 	out := make([]CablePasteTarget, 0)
 	serials := s.adbSerials(ctx)
 	for _, d := range s.cableFSDevices(ctx, st) {
-		if _, ok := parseAndroidDevice(d.ID); !ok {
+		if d.ID == domain.CableHost && !sameDevice {
 			continue
 		}
 		if !cablePasteAllowed(source, d.ID, serials, sameDevice) {
@@ -1084,6 +1093,17 @@ func pasteAcrossDevices(source, dest string, serials []string) bool {
 }
 
 func cablePasteAllowed(source, dest string, serials []string, sameDevice bool) bool {
+	if dest == domain.CableHost {
+		if source == domain.CableHost {
+			return sameDevice
+		}
+		_, ok := parseAndroidDevice(source)
+		return ok
+	}
+	if source == domain.CableHost {
+		_, ok := parseAndroidDevice(dest)
+		return ok
+	}
 	if _, ok := parseAndroidDevice(dest); !ok {
 		return false
 	}

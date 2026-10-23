@@ -155,7 +155,7 @@ func (s *Service) remembered(ctx context.Context, room domain.RoomID, name, plat
 // OwnerSession starts (or resumes) the owner's session for a room.
 // The transport layer is responsible for proving the caller is the owner
 // (the HTTP adapter only allows loopback requests).
-func (s *Service) OwnerSession(ctx context.Context, roomID domain.RoomID, name string) (Session, error) {
+func (s *Service) OwnerSession(ctx context.Context, roomID domain.RoomID, name, platform string) (Session, error) {
 	room, err := s.rooms.Get(ctx, roomID)
 	if err != nil {
 		return Session{}, err
@@ -167,12 +167,15 @@ func (s *Service) OwnerSession(ctx context.Context, roomID domain.RoomID, name s
 			ID:       id,
 			RoomID:   room.ID,
 			Name:     domain.NormalizeDeviceName(name),
-			Platform: "macOS",
+			Platform: domain.NormalizePlatform(platform),
 			Role:     domain.RoleOwner,
 			JoinedAt: s.clock.Now(),
 		}
 	} else if err != nil {
 		return Session{}, err
+	} else {
+		d.Name = domain.NormalizeDeviceName(name)
+		d.Platform = domain.NormalizePlatform(platform)
 	}
 	return s.start(ctx, d)
 }

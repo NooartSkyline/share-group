@@ -131,11 +131,11 @@ func TestUnknownRoom(t *testing.T) {
 
 func TestOwnerSessionIsStableAndOwner(t *testing.T) {
 	e := newEnv(t)
-	a, err := e.svc.OwnerSession(context.Background(), "main", "Mac")
+	a, err := e.svc.OwnerSession(context.Background(), "main", "Mac", "macOS")
 	if err != nil {
 		t.Fatal(err)
 	}
-	b, _ := e.svc.OwnerSession(context.Background(), "main", "Mac")
+	b, _ := e.svc.OwnerSession(context.Background(), "main", "Mac", "macOS")
 	if a.Device.ID != b.Device.ID || a.Device.Role != domain.RoleOwner || a.Token == b.Token {
 		t.Fatalf("owner session: %+v vs %+v", a, b)
 	}

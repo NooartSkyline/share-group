@@ -28,7 +28,7 @@ Share Group คือเซิร์ฟเวอร์แชร์ไฟล์�
 ## สถานะ (ดู `docs/project-scope.md` หัวข้อ 11 และ 12)
 - Phase A–G เสร็จฝั่งโค้ดแล้ว
 - Phase H (สาย USB และไฟล์บนเครื่อง) เสร็จฝั่งโค้ดแล้ว
-- Phase I (โฮสต์ Windows / Android / iOS) เป็นแผนยังไม่ทำ สแตกที่ล็อก: แกน Go + แดชบอร์ด `web/` เดิม เปลือก Windows เป็น Go, Android เป็น Kotlin ห่อ Go, iOS เป็น Swift ห่อ Go ชั้น `domain`/`usecase` อยู่ที่ Go อย่างเดียว
+- Phase I (โฮสต์ Windows / Android / iOS) โค้ดครบ สแตก: แกน Go + แดชบอร์ด `web/` เดิม เปลือก Windows เป็น Go, Android เป็น Kotlin ห่อ Go, iOS เป็น Swift ห่อ Go ชั้น `domain`/`usecase` อยู่ที่ Go อย่างเดียว Android เทสเส้นหลักบน Samsung SM-S911B แล้ว (ยังไม่ครบ OTG / ฮอตสปอตเป็น NIC / ไฟล์ใหญ่) Windows ไม่มีเครื่องเทส iOS ยังไม่เทสเป็นโฮสต์
 - ค่าเริ่มต้นยังเป็น HTTP ธรรมดา เปิด `-tls` และเปิดอนุมัติอุปกรณ์ในหน้า Owner ก่อนให้คนอื่นที่ยังไม่ไว้ใจเชื่อมต่อ
 
 ## กฎของผลิตภัณฑ์

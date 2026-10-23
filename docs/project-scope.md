@@ -1,6 +1,6 @@
 # Share Group: ขอบข่ายโครงการ (Project Scope)
 
-เอกสารนี้สรุปขอบเขตของโปรแกรมแชร์ไฟล์ในวงแลนเดียวกัน ของที่รันได้วันนี้ใช้ Mac เป็นเครื่องโฮสต์ (หน้าเว็บ Owner + โปรแกรม menu bar) แผนโฮสต์เพิ่มดู Phase I สิ่งที่โปรแกรมทำได้วันนี้ดูหัวข้อ 12
+เอกสารนี้สรุปขอบเขตของโปรแกรมแชร์ไฟล์ในวงแลนเดียวกัน ของที่รันได้วันนี้ใช้ Mac เป็นเครื่องโฮสต์ (หน้าเว็บ Owner + โปรแกรม menu bar) โฮสต์ Windows / Android / iOS ดู Phase I: โค้ดครบทั้งสามเครื่อง Android เทสเส้นหลักบน Samsung SM-S911B แล้ว Windows และ iOS ยังไม่เทสโฮสต์บนเครื่องจริง สิ่งที่โปรแกรมทำได้วันนี้ดูหัวข้อ 12
 
 - สถานะ: เอกสารขอบเขต + สรุปฟีเจอร์ที่มีอยู่จริง (หัวข้อ 12) + ภาพรวมระบบ (13) + ข้อมูลนักพัฒนา (14) + ต้นแบบ UI (15)
 - วันที่: 23 ตุลาคม 2026
@@ -96,7 +96,7 @@
 ```
 share-group/
 ├── cmd/
-│   └── lanshare/              # main: ประกอบ dependency แล้วรันเซิร์ฟเวอร์
+│   └── lanshare/              # CLI: โหลด flag แล้วเรียก internal/app
 ├── internal/
 │   ├── domain/                # room.go device.go file.go transfer.go pin.go role.go errors.go
 │   ├── usecase/
@@ -116,10 +116,10 @@ share-group/
 ├── web/                       # หน้าเว็บ (ฝังด้วย embed)
 ├── desktop/
 │   ├── LanShareMenu/          # เปลือก menu bar บน Mac (Swift AppKit, Phase G)
-│   └── windows/               # เปลือกถาดระบบ Windows (Go, Phase I ยังไม่ทำ)
+│   └── windows/               # เปลือกถาดระบบ Windows (Go) เปิด/ปิด lanshare.exe แดชบอร์ดในเบราว์เซอร์ คลิกขวา Explorer
 ├── mobile/
-│   ├── android/               # เปลือกแอป Android (Kotlin ห่อ Go, Phase I ยังไม่ทำ)
-│   └── ios/                   # เปลือกแอป iOS (Swift ห่อ Go, Phase I ยังไม่ทำ)
+│   ├── android/               # เปลือก Kotlin + WebView + foreground service (Phase I)
+│   └── ios/                   # เปลือก Swift + WKWebView ห่อ xcframework (Phase I ใช้ได้ตอนแอปเปิดอยู่)
 ├── docs/
 └── mock/
 ```
@@ -221,7 +221,7 @@ share-group/
 - Android ที่เปิด USB debugging: คัดลอก ตัด วางบนเครื่องเดียวกันหรือข้ามสาย, สร้างโฟลเดอร์แล้วเปิดให้วาง, ลบ, สำเนาแอป (APK ข้ามเครื่อง)
 - iPhone: เรียกดูได้เฉพาะคอนเทนเนอร์ของแอปที่ติดตั้งจาก Xcode ไม่ลบหรือสร้างโฟลเดอร์ผ่านสาย
 
-### Phase I: โฮสต์ Windows / Android / iOS (แผน ยังไม่ทำ)
+### Phase I: โฮสต์ Windows / Android / iOS (โค้ดครบ — Android เทสเส้นหลักแล้ว Windows/iOS ยังไม่เทสโฮสต์บนเครื่องจริง)
 
 ของเดิมยังอยู่: หน้าเว็บ Owner + โปรแกรม Mac เป็นโฮสต์ ลูกข่ายทุกเครื่องใช้เบราว์เซอร์
 
@@ -232,7 +232,7 @@ share-group/
 | โฮสต์ | ได้ | ไม่ได้ |
 |---|---|---|
 | Windows | ชุดเดียวกับ Mac: ห้อง, PIN, QR, อนุมัติ, ไฟล์ในห้อง, ไฟล์บนเครื่องผ่าน ADB, ข้อความ, ตรวจปัญหา, ถาดระบบ (เทียบ menu bar), Explorer (เทียบ Finder), CLI | แปลง HEIC/`sips` และพรีวิว `qlmanage` ยังเป็นของ macOS; iPhone เรียกดูผ่าน USB ได้จำกัดถ้าไม่มีแอป Xcode |
-| Android | แดชบอร์ดเดียวกับ Mac เลือกเครือข่าย Hotspot หรือ Wi-Fi, ไฟล์บนเครื่องโฮสต์และ USB OTG อยู่ในแท็บไฟล์บนเครื่อง, การแจ้งเตือนค้าง, Web Share Target | ไม่เรียกดู iPhone ผ่านสาย, ไม่มี CLI/Explorer/`sips` |
+| Android | แดชบอร์ดเดียวกับ Mac เลือกเครือข่าย Hotspot หรือ Wi-Fi, ไฟล์บนเครื่องโฮสต์และ USB OTG อยู่ในแท็บไฟล์บนเครื่อง (คัดลอก/วางได้, เพิ่มโฟลเดอร์ผ่าน SAF), การแจ้งเตือนค้างมีปุ่มโฟลเดอร์/Hotspot, Web Share Target | ไม่เรียกดู iPhone ผ่านสาย, ไม่มี CLI/Explorer/`sips` |
 | iOS | แดชบอร์ดเดียวกับ Mac เลือกเครือข่าย Personal Hotspot หรือ Wi-Fi ในวงเดียวกัน | ไม่มีที่เก็บในเครื่องโฮสต์และไม่มี OTG — แท็บไฟล์บนเครื่องและกลุ่มสาย USB ว่างเหมือน Mac ที่ยังไม่เสียบสาย |
 
 ลูกข่ายยังไม่ต้องลงแอป ยังไม่ทำ WebRTC, คลาวด์, หรือโฮสต์ข้ามอินเทอร์เน็ต
@@ -276,7 +276,7 @@ domain
 - `ActivityTracker` + `CaffeinateLauncher` — กันเครื่องหลับระหว่างโอน (Mac ใช้ `caffeinate`; Windows / Android / iOS ใส่ adapter คนละตัวที่ implement port เดิม)
 - `HEICConverter` / `SystemPreviewer` — บน macOS เป็น `sips`/`qlmanage`; เครื่องอื่นคืน `ErrUnsupported` ไม่ copy กฎไป Kotlin/Swift
 
-พอร์ตที่เพิ่มเมื่อมีผู้ใช้จริง (ห้ามสร้างว่าง ๆ ล่วงหน้า ตามกฎใน `structure.md`): ที่เก็บในเครื่องโฮสต์ Android, USB OTG, สถานะ Hotspot ให้ประกาศใน `usecase/port` ใส่ fake ใน `usecase/fake` เชื่อมใน `cmd` ของเครื่องนั้น
+พอร์ตที่เพิ่มเมื่อมีผู้ใช้จริง (ห้ามสร้างว่าง ๆ ล่วงหน้า ตามกฎใน `structure.md`): ที่เก็บในเครื่องโฮสต์ Android และ USB OTG ใช้ `port.HostBrowser` (`internal/adapter/hostfs`) เชื่อมใน `internal/app` แล้วเรียกจากแท็บไฟล์บนเครื่อง รวมคัดลอก/วาง และโฟลเดอร์เพิ่มจาก SAF (`host-roots.json`) สถานะ Hotspot ยังไม่เพิ่ม port แยก — ติดป้ายที่ `NetworkProvider` เปลือก Android เปิดหน้าตั้งค่า Hotspot ของระบบจากปุ่มในแจ้งเตือน
 
 แอป Kotlin/Swift ห้าม import กฎห้อง ห้ามเก็บ PIN/token ใน UI state เป็นแหล่งความจริง แหล่งความจริงอยู่ที่ Go ผ่าน HTTP บน `127.0.0.1` เหมือน Owner บน Mac
 
@@ -334,7 +334,7 @@ domain
 | E. ประสบการณ์ใช้งาน | 1.5-2.5 | เท่าเดิม |
 | F. ฟีเจอร์ขั้นสูง | 3.5-5.5 | เดิม 5.5-8 หักห้องแชร์และโหมดแขกที่ย้ายไป D |
 | G. แอป Mac แบบ menu bar | 2.5-4 | ไม่ต้อง sign/notarize และ auto-update แล้ว ใช้ Swift AppKit แทน Wails |
-| I. โฮสต์ Windows / Android / iOS | ยังไม่รวม | แผน ยังไม่ทำ สแตกล็อกที่หัวข้อ 4 — ไม่นับใน 29-43 วันด้านล่าง |
+| I. โฮสต์ Windows / Android / iOS | ยังไม่รวม | โค้ดครบ สแตกล็อกที่หัวข้อ 4 Android เทสเส้นหลักบนเครื่องจริงแล้ว (ยังไม่ครบ OTG / ฮอตสปอตเป็น NIC / ไฟล์ใหญ่) Windows และ iOS ยังไม่เทสโฮสต์บนเครื่องจริง — ไม่นับใน 29-43 วันด้านล่าง |
 | รวม | 23-35 | |
 | เผื่อทดสอบบนอุปกรณ์จริงและแก้บั๊ก (~25%) | +6-8 | |
 | **รวมทั้งหมด** | **ประมาณ 29-43 วัน (6-8.5 สัปดาห์)** | เดิม 30-45 วัน |
@@ -378,7 +378,7 @@ domain
 | F. ฟีเจอร์ขั้นสูง | เสร็จฝั่งโค้ด | CLI `share send`, สตรีมวิดีโอ/เพลงด้วย HTTP Range, Web Share Target, ย่อรูปก่อนส่ง, แปลง HEIC เป็น JPG ด้วย `sips`, syntax highlight, HTTP API สำหรับ Shortcuts, Finder Quick Action, พรีวิวด้วย `sips`/`qlmanage` |
 | G. แอป Mac แบบ menu bar | เสร็จฝั่งโค้ด | Swift AppKit (`desktop/LanShareMenu`) ซ่อนจาก Dock, เปิดเมื่อเข้าสู่ระบบด้วย LaunchAgent, แพ็กเป็น `.dmg` ด้วย `desktop/LanShareMenu/dmg.sh` (ยังไม่ลงนาม) |
 | H. สาย USB และไฟล์บนเครื่อง | เสร็จฝั่งโค้ด | Android ผ่าน ADB: เปิดห้อง, เรียกดูเฉพาะเครื่องที่เสียบสาย, เลือกแบบ Finder, พรีวิว, บันทึก zip/ไฟล์, ดึงเข้าห้อง, คัดลอก/ตัด/วาง (รวมเครื่องเดียวกัน), สร้างโฟลเดอร์, ลบ; iPhone ผ่าน USB: เปิดลิงก์หรือ QR, เรียกดูเฉพาะแอปที่ติดตั้งจาก Xcode |
-| I. โฮสต์ Windows / Android / iOS | แผน ยังไม่ทำ | สแตกล็อกแล้ว: แกน Go + `web/` เดิม เปลือก Windows เป็น Go, Android เป็น Kotlin ห่อ Go, iOS เป็น Swift ห่อ Go ชั้น `domain`/`usecase` ไม่ย้ายออกจาก Go ดูหัวข้อ 4 |
+| I. โฮสต์ Windows / Android / iOS | โค้ดครบ Android เทสเส้นหลักบน Samsung SM-S911B แล้ว | แกน Go + `web/` เดิม เปลือก Windows เป็น Go (`desktop/windows`, ยังไม่มีเครื่องเทส), Android เป็น Kotlin ห่อ Go (`mobile/android`: ไฟล์บนเครื่อง / OTG / SAF / Hotspot ตั้งค่า — เทสแล้วยกเว้น OTG จริง, ฮอตสปอตเป็น NIC, ไฟล์ใหญ่, อัปโหลดจากตัวเลือกในแท็บถ่ายโอน), iOS เป็น Swift ห่อ Go (`mobile/ios` ใช้ได้ตอนแอปเปิดอยู่ ยังไม่เทสเป็นโฮสต์) ชั้น `domain`/`usecase` ไม่ย้ายออกจาก Go ดูหัวข้อ 4 |
 
 ### รายละเอียด Phase B ที่ทำจริง
 
@@ -662,13 +662,13 @@ Wi-Fi และสาย USB เข้าเซิร์ฟเวอร์ตั
 
 ยังนอกขอบเขตตามหัวข้อ 5 ได้แก่ ส่งตรงมือถือถึงมือถือด้วย WebRTC, เข้ารหัสไฟล์แบบ end-to-end, แอปเนทีฟฝั่งลูกข่าย, ใช้งานข้ามอินเทอร์เน็ต, บัญชีผู้ใช้/คลาวด์, และโฮสต์บน Linux
 
-โฮสต์ Windows / Android / iOS อยู่ใน Phase I ต้นแบบผิวมีแล้วใน [`mock/ui-mock-hosts.html`](../mock/ui-mock-hosts.html) ยังไม่มีในโปรแกรมที่รัน หน้าตาที่ผู้ใช้เห็นยึดแดชบอร์ด Mac รวมเมนูเชิญ (Owner) และถ่ายโอน (โฮสต์และผู้ใช้ที่อัปโหลดได้) ไม่สร้างชุดจอใหม่ สแตกที่ล็อก: แกน Go + `web/` เปลือก Windows เป็น Go ทั้งก้อน, Android เป็น Kotlin ห่อ Go, iOS เป็น Swift ห่อ Go (ดูหัวข้อ 4)
+โฮสต์ Windows / Android / iOS อยู่ใน Phase I โค้ดอยู่ใน `desktop/windows`, `mobile/android`, `mobile/ios` Android เทสเส้นหลักบนเครื่องจริงแล้ว Windows และ iOS ยังไม่เทสโฮสต์บนเครื่องจริง ต้นแบบผิวมีใน [`mock/ui-mock-hosts.html`](../mock/ui-mock-hosts.html) หน้าตาที่ผู้ใช้เห็นยึดแดชบอร์ด Mac รวมเมนูเชิญ (Owner) และถ่ายโอน (โฮสต์และผู้ใช้ที่อัปโหลดได้) ไม่สร้างชุดจอใหม่ สแตก: แกน Go + `web/` เปลือก Windows เป็น Go ทั้งก้อน, Android เป็น Kotlin ห่อ Go, iOS เป็น Swift ห่อ Go (ดูหัวข้อ 4)
 
 ข้อจำกัดที่ยังมีผล: router ต้องไม่เปิด AP Isolation, iOS Safari เลือกโฟลเดอร์ปลายทางเองไม่ได้, ฝั่งมือถือต้องกดดาวน์โหลดเอง, PWA/การแจ้งเตือนของระบบต้องใช้ Secure_Context, เรียกดูไฟล์ในแอป Files ของ iPhone ผ่าน USB ยังไม่ได้, และยังไม่ได้ยืนยันครบบน Android/Windows จริง (ดูหัวข้อ 6 และ 11)
 
 ## 13. ภาพรวมระบบ
 
-Share Group ไม่ใช่เว็บบนคลาวด์ และไม่ใช่แอปลูกข่าย ระบบที่รันวันนี้มีสองชั้นบน Mac ของเจ้าของเครื่อง แผนโฮสต์ Windows / Android / iOS อยู่ Phase I แกนยังเป็น Go + `web/` เปลือกเนทีฟบาง ๆ ตามหัวข้อ 4
+Share Group ไม่ใช่เว็บบนคลาวด์ และไม่ใช่แอปลูกข่าย ระบบที่รันวันนี้มีสองชั้นบน Mac ของเจ้าของเครื่อง โฮสต์ Windows / Android / iOS อยู่ Phase I โค้ดครบ Android เทสเส้นหลักบนเครื่องจริงแล้ว Windows และ iOS ยังไม่เทสโฮสต์บนเครื่องจริง แกนยังเป็น Go + `web/` เปลือกเนทีฟบาง ๆ ตามหัวข้อ 4
 
 | ชั้น | คืออะไร | อยู่ที่ไหน |
 |---|---|---|
@@ -740,7 +740,10 @@ gofmt -l .
 ### โครงสร้างที่ใช้อยู่
 
 ```
-cmd/lanshare/           ประกอบ dependency แล้วเปิดเซิร์ฟเวอร์
+cmd/lanshare/           CLI เรียก internal/app
+internal/app/           composition root ที่ใช้ร่วมกับโฮสต์มือถือ
+mobilehost/             Start/Stop/URL สำหรับ gomobile
+mobile/android/         เปลือก Kotlin ห่อ Go (WebView, FGS, bind.sh)
 cmd/share/              CLI อัปโหลดผ่าน localhost
 internal/domain/        entity และกฎ ห้ามรู้จัก HTTP/SQL/ดิสก์
 internal/usecase/       กรณีใช้งาน + port
@@ -748,9 +751,8 @@ internal/adapter/       HTTP, WebSocket, ดิสก์, ADB, QR, diagnostics
 internal/infra/         config, clock, TLS
 web/                    หน้าจริง (index.html, app.js, style.css, logic.js)
 desktop/LanShareMenu/   เปลือก menu bar บน Mac (Swift)
-desktop/windows/        เปลือกถาดระบบ Windows (Phase I ยังไม่ทำ)
-mobile/android/         เปลือก Kotlin ห่อ Go (Phase I ยังไม่ทำ)
-mobile/ios/             เปลือก Swift ห่อ Go (Phase I ยังไม่ทำ)
+desktop/windows/        เปลือกถาดระบบ Windows (ถาด + คลิกขวา Explorer)
+mobile/ios/             เปลือก Swift ห่อ Go (WKWebView, bind.sh, ใช้ได้ตอนแอปเปิดอยู่)
 mock/                   ต้นแบบ UI (หัวข้อ 15)
 docs/project-scope.md   เอกสารขอบเขตหลัก (ภาษาไทย)
 scripts/run-local.sh    รันพัฒนา + USB
@@ -773,7 +775,7 @@ scripts/run-local.sh    รันพัฒนา + USB
 | ไฟล์ | สถานะ |
 |---|---|
 | [`mock/ui-mock-v3.html`](../mock/ui-mock-v3.html) | ตัวปัจจุบันให้ตรงหน้า `web/`: Owner เห็นเชิญ+ถ่ายโอน, สลับบทบาทในตั้งค่าเพื่อดูเมนูลูกข่าย |
-| [`mock/ui-mock-hosts.html`](../mock/ui-mock-hosts.html) | ต้นแบบโฮสต์เพิ่มตาม Phase I หน้าตายึดแดชบอร์ด Mac: Windows เท่า Mac, Android (Hotspot / Wi-Fi / ไฟล์บนเครื่อง / OTG), iOS (Hotspot / Wi-Fi) — ยังไม่มีในโปรแกรมที่รัน |
+| [`mock/ui-mock-hosts.html`](../mock/ui-mock-hosts.html) | ต้นแบบโฮสต์เพิ่มตาม Phase I หน้าตายึดแดชบอร์ด Mac: Windows เท่า Mac, Android (Hotspot / Wi-Fi / ไฟล์บนเครื่อง / OTG), iOS (Hotspot / Wi-Fi) — โค้ดโฮสต์อยู่ใน repo แล้ว Android เทสเส้นหลักบนเครื่องจริง Windows/iOS ยังไม่เทสโฮสต์ |
 | [`mock/ui-mock-v2.html`](../mock/ui-mock-v2.html) | รุ่นก่อน เก็บไว้เทียบ |
 | [`mock/ui-mock.html`](../mock/ui-mock.html) | รุ่นแรก ไม่ใช้แล้ว |
 
@@ -812,7 +814,7 @@ scripts/run-local.sh    รันพัฒนา + USB
 
 ### วิธีทดลองในต้นแบบโฮสต์ Windows / Android / iOS
 
-ไฟล์ [`mock/ui-mock-hosts.html`](../mock/ui-mock-hosts.html) คือต้นแบบผิว Phase I ของเดิมยังเป็นเว็บ Owner + โปรแกรม Mac ลูกข่ายยังใช้เบราว์เซอร์ ไม่ทำ WebRTC / คลาวด์ / โฮสต์ข้ามอินเทอร์เน็ต สแตกที่ล็อก: แกน Go + `web/` เปลือก Windows เป็น Go, Android เป็น Kotlin ห่อ Go, iOS เป็น Swift ห่อ Go (ดูหัวข้อ 4) ยังไม่มีโฟลเดอร์แอปใน repo
+ไฟล์ [`mock/ui-mock-hosts.html`](../mock/ui-mock-hosts.html) คือต้นแบบผิว Phase I ของเดิมยังเป็นเว็บ Owner + โปรแกรม Mac ลูกข่ายยังใช้เบราว์เซอร์ ไม่ทำ WebRTC / คลาวด์ / โฮสต์ข้ามอินเทอร์เน็ต สแตก: แกน Go + `web/` เปลือก Windows เป็น Go (`desktop/windows`), Android เป็น Kotlin ห่อ Go (`mobile/android`), iOS เป็น Swift ห่อ Go (`mobile/ios`) (ดูหัวข้อ 4) โค้ดครบ Android เทสเส้นหลักบนเครื่องจริงแล้ว Windows และ iOS ยังไม่เทสโฮสต์บนเครื่องจริง
 
 เมนูเดียวกับ `web/`: เชิญ (Owner), ถ่ายโอน (โฮสต์และผู้ใช้ที่อัปโหลดได้), ไฟล์, ข้อความ, ตรวจปัญหา (Owner), ตั้งค่า, เกี่ยวกับระบบ
 

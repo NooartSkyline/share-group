@@ -287,3 +287,27 @@ type LocalAddrProvider interface {
 	// LocalAddrs returns every IPv4 and IPv6 address of every interface.
 	LocalAddrs(ctx context.Context) ([]netip.Addr, error)
 }
+
+// HostVolume is a storage root on this machine (internal memory or USB OTG).
+type HostVolume struct {
+	ID    string
+	Label string
+}
+
+// HostEntry is one file or folder under a host volume.
+type HostEntry struct {
+	Name string
+	Dir  bool
+	Size int64
+}
+
+// HostBrowser lists files on this host for the Owner "files on device" tab.
+// Optional: no volumes means this machine only shows USB-plugged phones.
+type HostBrowser interface {
+	Volumes(ctx context.Context) ([]HostVolume, error)
+	List(ctx context.Context, volumeID, rel string) ([]HostEntry, error)
+	Open(ctx context.Context, volumeID, rel string) (ReadSeekCloser, int64, error)
+	Put(ctx context.Context, volumeID, rel string, r io.Reader) (int64, error)
+	Mkdir(ctx context.Context, volumeID, rel, name string) error
+	Remove(ctx context.Context, volumeID, rel string) error
+}

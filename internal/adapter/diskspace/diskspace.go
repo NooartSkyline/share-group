@@ -1,8 +1,8 @@
 // Package diskspace implements port.DiskSpace by asking the operating system
 // how much room is left on the drive that holds the data directory.
 //
-// Only macOS and Linux are supported; on other systems Free always fails so
-// callers report the free space as unknown instead of guessing.
+// macOS, Linux, Android, iOS, and Windows are supported; on other systems Free
+// always fails so callers report the free space as unknown instead of guessing.
 package diskspace
 
 import (

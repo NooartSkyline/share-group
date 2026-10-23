@@ -87,6 +87,7 @@ body.in-app .shell{max-width:1360px;padding:0;border:1px solid var(--line);borde
 .side .select,.side .btn{max-width:100%}
 .side-nav{display:flex;flex-direction:column;gap:2px}
 .nav{display:flex;gap:9px;align-items:center;background:transparent;color:var(--text);border:0;border-radius:10px;padding:9px 10px;font-size:13px;cursor:pointer;text-align:left;width:100%}
+.nav > span:first-child{flex:none;font-size:16px;line-height:1;width:1.25em;text-align:center}
 .nav:hover{background:var(--chip)}
 .nav[aria-current="page"]{background:var(--chip);font-weight:600}
 .main{display:flex;flex-direction:column;gap:12px;min-width:0;min-height:0;padding:20px;overflow-x:hidden;overflow-y:auto}
@@ -271,7 +272,7 @@ body.in-app .shell{max-width:1360px;padding:0;border:1px solid var(--line);borde
 .fd-res.warn .ig-ic{color:var(--warn)}
 .tabbar{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:space-around;background:var(--panel);border-top:1px solid var(--line);padding:6px 0 calc(8px + env(safe-area-inset-bottom));z-index:20}
 .tabbar button{flex:1;background:transparent;border:0;color:var(--faint);font-size:11px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 0;cursor:pointer;position:relative}
-.tabbar button span{font-size:18px}
+.tabbar button > span:first-child{font-size:18px;line-height:1;height:18px;display:flex;align-items:center;justify-content:center}
 .tabbar button[aria-current="page"]{color:var(--accent);font-weight:700}
 
 /* ---------- owner: connectivity check and status panel ---------- */
@@ -383,7 +384,10 @@ html.app-frame .shell,html.app-frame body.in-app .shell{max-width:none;margin:0;
 .about-meta dt{color:var(--mut)}
 .about-meta dd{margin:0;font-weight:600}
 @media (max-width:820px){
-  .dev-tools{display:none}
+  .dev-tools{display:flex;padding:0;gap:4px;flex:none;align-items:center}
+  .dev-tools .select,
+  .dev-tools .btn:not(.dev-kick){display:none}
+  .dev-kick{padding:4px 8px;font-size:12px;line-height:1.2;border-radius:99px}
   #room-switch{padding:4px}
 }
 

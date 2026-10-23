@@ -22,6 +22,25 @@ const (
 	minStallTimeout           = 5 * time.Second
 )
 
+// Defaults is the configuration used when no CLI flags are parsed (mobile host).
+func Defaults() Config {
+	home, _ := os.UserHomeDir()
+	return Config{
+		Port:          8080,
+		DataDir:       filepath.Join(home, "LANShare"),
+		RoomID:        "main",
+		RoomName:      "ห้องหลัก",
+		MaxFailures:   5,
+		Lockout:       5 * time.Minute,
+		SessionTTL:    7 * 24 * time.Hour,
+		MinFree:       defaultMinFree,
+		UploadTTL:     defaultUploadTTL,
+		StallTimeout:  defaultStallTimeout,
+		KeepAwake:     true,
+		SystemPreview: true,
+	}
+}
+
 // Config holds the effective settings after Load has validated them.
 type Config struct {
 	Port        int

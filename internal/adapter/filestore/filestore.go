@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"syscall"
 	"time"
 
 	"lanshare/internal/domain"
@@ -46,7 +45,7 @@ func mapDiskFull(err error) error {
 	if err == nil {
 		return nil
 	}
-	if errors.Is(err, syscall.ENOSPC) || errors.Is(err, syscall.EDQUOT) {
+	if isDiskFull(err) {
 		return fmt.Errorf("%w: %w", domain.ErrDiskFull, err)
 	}
 	return err

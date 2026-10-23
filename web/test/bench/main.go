@@ -112,7 +112,7 @@ func printBanner(port int) {
 	fmt.Println("==================================================================")
 	fmt.Printf("\nเปิดบนมือถือที่อยู่ใน Wi-Fi เดียวกัน:\n")
 
-	ifaces, err := netinfo.New().Interfaces(context.Background())
+	ifaces, err := netinfo.New("").Interfaces(context.Background())
 	if err != nil || len(ifaces) == 0 {
 		fmt.Printf("  (หา IP ของเครื่องไม่ได้) http://<IP ของ Mac>:%d%s\n", port, benchPage)
 	}

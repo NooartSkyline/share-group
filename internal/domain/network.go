@@ -16,6 +16,7 @@ const (
 	CableiPad    = "ipad"
 	CableAndroid = "android"
 	CableGeneric = "usb"
+	CableHost    = "host" // files on this host (Android internal storage / OTG)
 )
 
 // NetInterface is a usable IPv4 address on this machine.

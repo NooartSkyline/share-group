@@ -74,6 +74,22 @@ func TestUSBEthernetOnLANIsPhysical(t *testing.T) {
 	}
 }
 
+func TestHostPersonalHotspotIsNotUSB(t *testing.T) {
+	svc := NewService(netList{
+		{Name: "bridge100", IP: "172.20.10.1", Kind: domain.NetPhysical, Label: "Hotspot"},
+		{Name: "en0", IP: "192.168.1.23", Kind: domain.NetPhysical},
+	}, 8080, "")
+	opts, err := svc.List(context.Background(), owner())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, o := range opts {
+		if o.Name == "bridge100" && o.Kind == domain.NetUSB {
+			t.Fatalf("host Personal Hotspot must stay pickable, not USB: %+v", o)
+		}
+	}
+}
+
 func TestUSBIsLastResortWhenAlone(t *testing.T) {
 	svc := NewService(netList{
 		{Name: "en5", IP: "172.20.10.2", Kind: domain.NetPhysical},

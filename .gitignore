@@ -1,0 +1,16 @@
+# Android host build
+mobile/android/.gradle/
+mobile/android/build/
+mobile/android/app/build/
+mobile/android/local.properties
+mobile/android/app/libs/*.aar
+mobile/android/app/libs/*.jar
+mobile/android/.idea/
+
+# iOS host build
+mobile/ios/Mobilehost.xcframework/
+mobile/ios/Mobilehost.framework/
+mobile/ios/build/
+mobile/ios/*.xcuserstate
+mobile/ios/ShareGroupHost.xcodeproj/xcuserdata/
+mobile/ios/ShareGroupHost.xcodeproj/project.xcworkspace/xcuserdata/

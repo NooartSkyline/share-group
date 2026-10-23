@@ -142,7 +142,7 @@ func (s *Server) ownerSession(w http.ResponseWriter, r *http.Request) {
 			roomID = domain.RoomID(body.RoomID)
 		}
 	}
-	sess, err := s.Auth.OwnerSession(r.Context(), roomID, ownerDeviceNm)
+	sess, err := s.Auth.OwnerSession(r.Context(), roomID, ownerDeviceNm, ownerPlatform())
 	if err != nil {
 		s.fail(w, r, err)
 		return

@@ -996,7 +996,7 @@ function renderDeviceRow(d, isOwner) {
         sel.append(el('option', { value: r, selected: d.role === r }, ROLE_LABEL[r]));
       }
       tools.append(sel);
-      tools.append(el('button', { class: 'btn ghost sm', type: 'button', onclick: () => kickDevice(d) }, t('kick')));
+      tools.append(el('button', { class: 'btn ghost sm dev-kick', type: 'button', onclick: () => kickDevice(d) }, t('kick')));
     }
     row.append(tools);
   }
@@ -4525,7 +4525,7 @@ function setupOwnerTools() {
 
   function renderNets() {
     nic.replaceChildren(...d.nets.map((n) => el('option', { value: n.name, selected: !!n.selected },
-      `${n.name} • ${n.ip} (${KIND_LABEL[n.kind] || n.kind})${n.recommended ? ' — แนะนำ' : ''}`)));
+      `${n.label || n.name} • ${n.ip} (${KIND_LABEL[n.kind] || n.kind})${n.recommended ? ' — แนะนำ' : ''}`)));
     netRow.hidden = d.nets.length === 0;
     sync();
   }

@@ -110,6 +110,9 @@ func (s *Service) loadCableFS(ctx context.Context, actor domain.Device, loc stri
 	out.Parent = cableParent(loc)
 	if rootID == "" {
 		out.Title = out.Name
+		if device == domain.CableHost {
+			return s.listHost(ctx, out, "", "")
+		}
 		if device == domain.CableiPhone || device == domain.CableiPad {
 			return s.listIOSApps(ctx, out)
 		}
@@ -117,6 +120,9 @@ func (s *Service) loadCableFS(ctx context.Context, actor domain.Device, loc stri
 		return out, nil
 	}
 	out.Title = cableFSTitle(device, rootID, rel)
+	if device == domain.CableHost {
+		return s.listHost(ctx, out, rootID, rel)
+	}
 	if device == domain.CableiPhone || device == domain.CableiPad {
 		return s.listIOS(ctx, out, rootID, rel)
 	}
@@ -317,6 +323,23 @@ func (s *Service) DeleteCableItems(ctx context.Context, actor domain.Device, pat
 			}
 			continue
 		}
+		if device == domain.CableHost {
+			_, rootID, rel, err := splitCablePath(loc)
+			if err != nil {
+				if first == nil {
+					first = err
+				}
+				continue
+			}
+			if err := s.deleteHost(ctx, rootID, rel); err != nil {
+				if first == nil {
+					first = err
+				}
+				continue
+			}
+			n++
+			continue
+		}
 		if err := s.deleteAndroid(ctx, loc); err != nil {
 			if first == nil {
 				first = err
@@ -339,6 +362,9 @@ func (s *Service) OpenCableFile(ctx context.Context, actor domain.Device, loc st
 	if err != nil {
 		return CableFile{}, err
 	}
+	if kind == domain.CableHost {
+		return s.openHost(ctx, rootID, rel)
+	}
 	if kind == domain.CableiPhone || kind == domain.CableiPad {
 		return s.pullIOS(ctx, rootID, rel)
 	}
@@ -357,7 +383,7 @@ func (s *Service) PeekCableFile(ctx context.Context, actor domain.Device, loc st
 		return CablePeek{}, err
 	}
 	name := pathBase(rel)
-	if kind != domain.CableiPhone && kind != domain.CableiPad {
+	if kind != domain.CableiPhone && kind != domain.CableiPad && kind != domain.CableHost {
 		if b, err := s.peekAndroid(ctx, kind, rootID, rel, n); err == nil {
 			return CablePeek{Name: name, Data: b}, nil
 		}
@@ -424,6 +450,9 @@ func (s *Service) cableFSDevices(ctx context.Context, st CableStatus) []cableFSD
 			out = append(out, cableFSDevice{ID: androidDevicePath(serials, ser), Name: name})
 		}
 	}
+	if s.hostHasVolumes(ctx) {
+		out = append(out, cableFSDevice{ID: domain.CableHost, Name: cableFSDeviceName(st, domain.CableHost)})
+	}
 	if s.iosConnectedUDID(ctx) != "" {
 		id := domain.CableiPhone
 		for _, p := range st.Phones {
@@ -451,6 +480,8 @@ func (s *Service) cableDeviceReady(ctx context.Context, device string) bool {
 		return false
 	}
 	switch device {
+	case domain.CableHost:
+		return s.hostHasVolumes(ctx)
 	case domain.CableiPhone, domain.CableiPad:
 		return s.iosConnectedUDID(ctx) != ""
 	default:
@@ -483,6 +514,8 @@ func cableFSDeviceName(st CableStatus, id string) string {
 		}
 	}
 	switch id {
+	case domain.CableHost:
+		return "เครื่องนี้"
 	case domain.CableiPad:
 		return "iPad"
 	case domain.CableiPhone:
@@ -545,7 +578,7 @@ func isCableDevice(s string) bool {
 	if _, ok := parseAndroidDevice(s); ok {
 		return true
 	}
-	return s == domain.CableiPhone || s == domain.CableiPad
+	return s == domain.CableiPhone || s == domain.CableiPad || s == domain.CableHost
 }
 
 func cableParent(loc string) string {

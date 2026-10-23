@@ -97,7 +97,7 @@ func (s *Server) deleteRoom(w http.ResponseWriter, r *http.Request, actor domain
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
-	sess, err := s.Auth.OwnerSession(r.Context(), next.ID, ownerDeviceNm)
+	sess, err := s.Auth.OwnerSession(r.Context(), next.ID, ownerDeviceNm, ownerPlatform())
 	if err != nil {
 		s.fail(w, r, err)
 		return

@@ -3,6 +3,7 @@ package diagnostics
 import (
 	"context"
 	"fmt"
+	"runtime"
 	"time"
 
 	"lanshare/internal/domain"
@@ -124,6 +125,11 @@ func (s *Service) checkReachability(ctx context.Context, _ runEnv) domain.CheckR
 // checkWifiBand reads the band of the Wi-Fi channel of the active interface.
 func (s *Service) checkWifiBand(ctx context.Context, _ runEnv) domain.CheckResult {
 	m := metaWifiBand
+	if runtime.GOOS != "darwin" {
+		return m.unknown(ReasonCommandMissing,
+			"ตรวจย่านความถี่ Wi-Fi อัตโนมัติรองรับบน macOS เท่านั้น",
+			"ดูย่านความถี่ได้จากการตั้งค่าเครือข่ายของระบบ")
+	}
 	active, err := s.activeInterface(ctx)
 	if err != nil {
 		return m.unknownFrom(err, "รายการการ์ดเครือข่าย", "ตรวจว่า Mac เชื่อมต่อ Wi-Fi อยู่")

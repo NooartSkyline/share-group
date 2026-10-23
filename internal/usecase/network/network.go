@@ -18,6 +18,7 @@ type Service struct {
 	port     int
 	secure   bool
 	runner   port.CommandRunner // optional; USB hardware ports and plugged phones
+	host     port.HostBrowser   // optional; files on this host (Android / OTG)
 
 	mu             sync.RWMutex
 	selected       string // interface name; empty means automatic
@@ -37,6 +38,9 @@ func NewService(provider port.NetworkProvider, port int, preferred string) *Serv
 // SetRunner lets the service read macOS hardware ports and USB devices so
 // USB tethering / iPhone USB can be labelled and shown in the cable panel.
 func (s *Service) SetRunner(r port.CommandRunner) { s.runner = r }
+
+// SetHostBrowser lets the Owner browse this machine in the files-on-device tab.
+func (s *Service) SetHostBrowser(h port.HostBrowser) { s.host = h }
 
 // Option is an interface the owner can pick.
 type Option struct {

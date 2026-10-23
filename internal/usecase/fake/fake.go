@@ -1197,3 +1197,112 @@ func (l *LocalAddrs) LocalAddrs(context.Context) ([]netip.Addr, error) {
 	}
 	return append([]netip.Addr(nil), l.addrs...), nil
 }
+
+// HostFS is an in-memory HostBrowser.
+type HostFS struct {
+	mu      sync.Mutex
+	Vols    []port.HostVolume
+	Entries map[string][]port.HostEntry // volumeID + "\x00" + rel
+	Files   map[string][]byte           // volumeID + "\x00" + rel
+}
+
+func (h *HostFS) key(volumeID, rel string) string {
+	return volumeID + "\x00" + strings.Trim(rel, "/")
+}
+
+func (h *HostFS) Volumes(context.Context) ([]port.HostVolume, error) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return append([]port.HostVolume(nil), h.Vols...), nil
+}
+
+func (h *HostFS) List(_ context.Context, volumeID, rel string) ([]port.HostEntry, error) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return append([]port.HostEntry(nil), h.Entries[h.key(volumeID, rel)]...), nil
+}
+
+func (h *HostFS) Open(_ context.Context, volumeID, rel string) (port.ReadSeekCloser, int64, error) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	b, ok := h.Files[h.key(volumeID, rel)]
+	if !ok {
+		return nil, 0, domain.ErrNotFound
+	}
+	return newBytesFile(b), int64(len(b)), nil
+}
+
+func (h *HostFS) Put(_ context.Context, volumeID, rel string, r io.Reader) (int64, error) {
+	if r == nil {
+		return 0, domain.ErrInvalidInput
+	}
+	b, err := io.ReadAll(r)
+	if err != nil {
+		return 0, err
+	}
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if h.Files == nil {
+		h.Files = map[string][]byte{}
+	}
+	if h.Entries == nil {
+		h.Entries = map[string][]port.HostEntry{}
+	}
+	rel = strings.Trim(rel, "/")
+	h.Files[h.key(volumeID, rel)] = b
+	parent, name := "", rel
+	if i := strings.LastIndex(rel, "/"); i >= 0 {
+		parent, name = rel[:i], rel[i+1:]
+	}
+	pk := h.key(volumeID, parent)
+	found := false
+	for i, e := range h.Entries[pk] {
+		if e.Name == name {
+			h.Entries[pk][i] = port.HostEntry{Name: name, Size: int64(len(b))}
+			found = true
+			break
+		}
+	}
+	if !found {
+		h.Entries[pk] = append(h.Entries[pk], port.HostEntry{Name: name, Size: int64(len(b))})
+	}
+	return int64(len(b)), nil
+}
+
+func (h *HostFS) Mkdir(_ context.Context, volumeID, rel, name string) error {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if h.Entries == nil {
+		h.Entries = map[string][]port.HostEntry{}
+	}
+	parent := h.key(volumeID, rel)
+	h.Entries[parent] = append(h.Entries[parent], port.HostEntry{Name: name, Dir: true})
+	childRel := name
+	if rel != "" {
+		childRel = rel + "/" + name
+	}
+	h.Entries[h.key(volumeID, childRel)] = []port.HostEntry{}
+	return nil
+}
+
+func (h *HostFS) Remove(_ context.Context, volumeID, rel string) error {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if h.Files != nil {
+		delete(h.Files, h.key(volumeID, rel))
+	}
+	if h.Entries != nil {
+		delete(h.Entries, h.key(volumeID, rel))
+	}
+	return nil
+}
+
+type bytesFile struct {
+	*bytes.Reader
+}
+
+func newBytesFile(b []byte) *bytesFile {
+	return &bytesFile{Reader: bytes.NewReader(append([]byte(nil), b...))}
+}
+
+func (*bytesFile) Close() error { return nil }

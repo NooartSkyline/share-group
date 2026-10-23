@@ -27,8 +27,13 @@ adb_bin() {
   return 1
 }
 
+# รุ่นที่ติดตั้งแล้วอาจยังไม่มี /api/shortcuts/info — ถือว่าขึ้นแล้วถ้ามี HTTP ตอบ
 server_up() {
-  curl -sf -o /dev/null --max-time 1 "http://127.0.0.1:$1/api/shortcuts/info"
+  curl -s -o /dev/null --max-time 1 "http://127.0.0.1:$1/"
+}
+
+port_busy() {
+  lsof -nP -iTCP:"$1" -sTCP:LISTEN >/dev/null 2>&1
 }
 
 attach_usb() {
@@ -53,6 +58,12 @@ for p in 8080 "$PORT"; do
     exit 0
   fi
 done
+
+if port_busy "$PORT"; then
+  echo "พอร์ต $PORT ถูกใช้อยู่แล้ว แต่เซิร์ฟเวอร์ไม่ตอบ HTTP — ปิด Share Group.app แล้วลองใหม่" >&2
+  lsof -nP -iTCP:"$PORT" -sTCP:LISTEN >&2 || true
+  exit 1
+fi
 
 mkdir -p "$DATA" "$(dirname "$BIN")"
 echo "build → $BIN"

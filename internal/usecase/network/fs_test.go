@@ -10,6 +10,7 @@ import (
 
 	"lanshare/internal/domain"
 	"lanshare/internal/usecase/fake"
+	"lanshare/internal/usecase/port"
 )
 
 func TestParseAndroidLsLine(t *testing.T) {
@@ -542,6 +543,21 @@ func TestPasteAcrossDevices(t *testing.T) {
 	if pasteAcrossDevices("android:RFCWA19V99W", "iphone", serials) {
 		t.Fatal("to ios")
 	}
+	if !cablePasteAllowed(domain.CableHost, domain.CableHost, serials, true) {
+		t.Fatal("host files")
+	}
+	if cablePasteAllowed(domain.CableHost, domain.CableHost, serials, false) {
+		t.Fatal("host apps")
+	}
+	if !cablePasteAllowed("android:RFCWA19V99W", domain.CableHost, serials, true) {
+		t.Fatal("android to host")
+	}
+	if !cablePasteAllowed(domain.CableHost, "android:RFCWA19V99W", serials, true) {
+		t.Fatal("host to android")
+	}
+	if pasteAcrossDevices(domain.CableHost, domain.CableiPhone, serials) {
+		t.Fatal("host to ios")
+	}
 }
 
 func TestCutPasteOverlap(t *testing.T) {
@@ -888,5 +904,102 @@ func TestListCableFSIOSApps(t *testing.T) {
 	}
 	if len(denied.Entries) != 0 {
 		t.Fatalf("denied entries = %+v", denied.Entries)
+	}
+}
+
+func TestListCableFSHostVolumesAndFile(t *testing.T) {
+	svc := NewService(netList{{Name: "en0", IP: "192.168.1.23", Kind: domain.NetPhysical}}, 8080, "")
+	host := &fake.HostFS{
+		Vols: []port.HostVolume{{ID: "download", Label: "ดาวน์โหลด"}},
+		Entries: map[string][]port.HostEntry{
+			"download\x00": {{Name: "note.txt", Size: 2}},
+		},
+		Files: map[string][]byte{"download\x00note.txt": []byte("hi")},
+	}
+	svc.SetHostBrowser(host)
+
+	root, err := svc.ListCableFS(context.Background(), owner(), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(root.Entries) != 1 || root.Entries[0].Path != domain.CableHost {
+		t.Fatalf("devices = %+v", root.Entries)
+	}
+
+	vols, err := svc.ListCableFS(context.Background(), owner(), domain.CableHost)
+	if err != nil || len(vols.Entries) != 1 || vols.Entries[0].Name != "ดาวน์โหลด" || vols.Entries[0].Path != "host/download" {
+		t.Fatalf("vols = %+v %v", vols.Entries, err)
+	}
+
+	list, err := svc.ListCableFS(context.Background(), owner(), "host/download")
+	if err != nil || len(list.Entries) != 1 || list.Entries[0].Name != "note.txt" {
+		t.Fatalf("list = %+v %v", list, err)
+	}
+
+	cf, err := svc.OpenCableFile(context.Background(), owner(), "host/download/note.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cf.Content.Close()
+	if cf.Name != "note.txt" || cf.Size != 2 {
+		t.Fatalf("file = %+v", cf)
+	}
+
+	made, err := svc.MkdirCableFolder(context.Background(), owner(), "host/download", "ใหม่")
+	if err != nil || made != "host/download/ใหม่" {
+		t.Fatalf("mkdir = %q %v", made, err)
+	}
+	if n, err := svc.DeleteCableItems(context.Background(), owner(), []string{"host/download/note.txt"}); err != nil || n != 1 {
+		t.Fatalf("delete = %d %v", n, err)
+	}
+}
+
+func TestPasteCableFilesOntoHost(t *testing.T) {
+	svc := NewService(netList{{Name: "en0", IP: "192.168.1.23", Kind: domain.NetPhysical}}, 8080, "")
+	host := &fake.HostFS{
+		Vols:    []port.HostVolume{{ID: "download", Label: "ดาวน์โหลด"}},
+		Entries: map[string][]port.HostEntry{"download\x00": {}},
+	}
+	svc.SetHostBrowser(host)
+	dir := t.TempDir()
+	local := filepath.Join(dir, "note.txt")
+	if err := os.WriteFile(local, []byte("hi"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	svc.clip = &cableAppClip{
+		kind:   cableClipFiles,
+		source: domain.CableHost,
+		names:  []string{"note.txt"},
+		files:  []cableClipFile{{Name: "note.txt", Path: local}},
+		dir:    dir,
+	}
+	n, err := svc.PasteCableApps(context.Background(), owner(), "host/download")
+	if err != nil || n != 1 {
+		t.Fatalf("host n=%d err=%v", n, err)
+	}
+	if got := string(host.Files["download\x00note.txt"]); got != "hi" {
+		t.Fatalf("wrote %q", got)
+	}
+
+	svc.clip = &cableAppClip{
+		kind:   cableClipFiles,
+		source: "android:RFCWA19V99W",
+		names:  []string{"from-phone.txt"},
+		files:  []cableClipFile{{Name: "from-phone.txt", Path: local}},
+		dir:    dir,
+	}
+	n, err = svc.PasteCableApps(context.Background(), owner(), "host/download")
+	if err != nil || n != 1 {
+		t.Fatalf("android to host n=%d err=%v", n, err)
+	}
+
+	svc.clip = &cableAppClip{
+		kind:   cableClipApps,
+		source: domain.CableAndroid,
+		names:  []string{"com.foo.app"},
+		pkgs:   []cableAppPkg{{ID: "com.foo.app", Name: "com.foo.app"}},
+	}
+	if _, err := svc.PasteCableApps(context.Background(), owner(), domain.CableHost); err != domain.ErrInvalidInput {
+		t.Fatalf("apps on host = %v", err)
 	}
 }

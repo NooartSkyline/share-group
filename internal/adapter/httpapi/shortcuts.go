@@ -23,7 +23,7 @@ func (s *Server) shortcuts(next authedHandler) http.HandlerFunc {
 			}
 			roomID = domain.RoomID(id)
 		}
-		sess, err := s.Auth.OwnerSession(r.Context(), roomID, ownerDeviceNm)
+		sess, err := s.Auth.OwnerSession(r.Context(), roomID, ownerDeviceNm, ownerPlatform())
 		if err != nil {
 			s.fail(w, r, err)
 			return

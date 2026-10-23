@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -174,12 +175,20 @@ func (s *Service) findADB(ctx context.Context) string {
 }
 
 func adbPaths() []string {
-	out := []string{"adb", "/opt/homebrew/bin/adb", "/usr/local/bin/adb"}
+	out := []string{"adb"}
+	if runtime.GOOS == "windows" {
+		out = []string{"adb.exe", "adb"}
+	} else {
+		out = append(out, "/opt/homebrew/bin/adb", "/usr/local/bin/adb")
+	}
 	if home, err := os.UserHomeDir(); err == nil {
 		out = append(out,
 			filepath.Join(home, "Library/Android/sdk/platform-tools/adb"),
 			filepath.Join(home, "Android/Sdk/platform-tools/adb"),
 		)
+	}
+	if local := os.Getenv("LOCALAPPDATA"); local != "" {
+		out = append(out, filepath.Join(local, "Android", "Sdk", "platform-tools", "adb.exe"))
 	}
 	return out
 }
