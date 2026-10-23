@@ -5,7 +5,8 @@ APP_SRC="$(CDPATH= cd -- "$(dirname "$0")" && pwd)"
 ROOT="$(CDPATH= cd -- "$APP_SRC/../.." && pwd)"
 VERSION="${VERSION:-0.1.0}"
 APP="$APP_SRC/build/Share Group.app"
-DMG="${1:-$ROOT/Share Group-$VERSION.dmg}"
+DIST="$ROOT/build"
+DMG="${1:-$DIST/Share Group-$VERSION.dmg}"
 VOL="Share Group"
 STAGE="$(mktemp -d "${TMPDIR:-/tmp}/share-group-dmg.XXXXXX")"
 
@@ -14,7 +15,7 @@ trap cleanup EXIT
 
 "$APP_SRC/build.sh" "$APP"
 
-mkdir -p "$STAGE"
+mkdir -p "$DIST" "$STAGE"
 cp -R "$APP" "$STAGE/Share Group.app"
 ln -s /Applications "$STAGE/Applications"
 cat > "$STAGE/วิธีติดตั้ง.txt" <<EOF
