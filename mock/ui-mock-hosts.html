@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Share Group — ต้นแบบโฮสต์ Windows / Android / iOS</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#0d1020;--panel:#171a2b;--panel2:#1c2038;--side:#141728;--line:#2a2f4a;
+    --text:#e8eaf3;--mut:#8b91ad;--faint:#6f7594;--accent:#5b7cff;--accent2:#8f6bff;
+    --ok:#3ddc97;--warn:#ffb84d;--bad:#ff6b6b;--input:#12152a;--chip:#252a4a;--shadow:rgba(0,0,0,.5);
+  }
+  html[data-theme="light"]{
+    --bg:#eceef6;--panel:#ffffff;--panel2:#f5f6fc;--side:#eef0f8;--line:#dcdfee;
+    --text:#1a1d33;--mut:#5f6585;--faint:#8b91ad;--input:#eceef7;--chip:#e6e9f8;--shadow:rgba(40,50,100,.18);
+  }
+  body{font-family:"Segoe UI",-apple-system,"Helvetica Neue","Sukhumvit Set",Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+  button,input,select{font:inherit}button{border:0;cursor:pointer}
+  .hidden{display:none!important}
+  .page{max-width:1480px;margin:0 auto;padding:20px 20px 48px}
+  .head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:14px}
+  .head h1{font-size:18px;display:flex;align-items:center;gap:10px}
+  .head p{color:var(--mut);font-size:12px;margin-top:4px;line-height:1.55;max-width:860px}
+  .ph{font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;background:#1aa3a3;color:#fff}
+  a{color:inherit}
+  .ctrl{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+  .seg{display:flex;gap:2px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:3px}
+  .seg button{padding:6px 12px;border-radius:8px;font-size:12px;color:var(--mut);background:transparent}
+  .seg button.on{background:var(--accent);color:#fff;font-weight:600}
+  .note{background:#5b7cff22;border:1px solid #5b7cff55;border-radius:12px;padding:10px 12px;font-size:13px;margin-bottom:16px;line-height:1.55}
+  .btn{display:inline-block;background:var(--accent);color:#fff;border-radius:9px;padding:8px 14px;font-size:13px;font-weight:600}
+  .btn.ghost{background:var(--chip);color:var(--text);font-weight:500}
+  .btn.bad{background:transparent;color:var(--bad);border:1px solid var(--bad)}
+  .btn.sm{padding:5px 10px;font-size:12px;border-radius:8px}
+  .pill{font-size:11px;padding:3px 9px;border-radius:99px;font-weight:600;white-space:nowrap}
+  .p-owner{background:#8f6bff26;color:#a68bff}
+  .p-ok{background:#3ddc9722;color:var(--ok)}
+  .p-usb{background:#3ddc9722;color:var(--ok)}
+  .p-warn{background:#ffb84d22;color:var(--warn)}
+  .card{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:14px}
+  small,.mut,.hint{color:var(--mut)}
+  .hint{font-size:12px}
+  .bar{height:6px;background:var(--line);border-radius:99px;overflow:hidden}
+  .bar i{display:block;height:100%;background:var(--accent);border-radius:99px}
+  .bar i.ok{background:var(--ok)}.bar i.warn{background:var(--warn)}
+  .stage{display:flex;flex-direction:column;gap:28px}
+  html[data-layout="compare"] .stage{display:grid;grid-template-columns:minmax(0,1fr) 390px 390px;gap:20px;align-items:start}
+  html[data-layout="compare"] .frame[data-plat]:not(.show-compare){display:flex}
+  html[data-layout="focus"] .frame[data-plat]{display:none}
+  html[data-layout="focus"] .frame[data-plat].focus{display:flex}
+  .frame{flex-direction:column;gap:8px}
+  .frame-cap{font-size:12px;color:var(--mut);display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .desk{width:100%;min-height:760px;border-radius:10px;overflow:hidden;background:var(--panel);border:1px solid var(--line);box-shadow:0 18px 40px var(--shadow);display:flex;flex-direction:column}
+  .phone{width:390px;height:844px;border-radius:36px;overflow:hidden;background:#111;border:10px solid #1a1a1e;box-shadow:0 18px 40px var(--shadow);display:flex;flex-direction:column;position:relative}
+  html[data-theme="light"] .phone{border-color:#c8ccd8;background:#ddd}
+  .win-title{height:36px;background:#1b1e2c;display:flex;align-items:center;padding:0 10px;gap:8px;color:#c8cce0;font-size:12px;border-bottom:1px solid var(--line)}
+  html[data-theme="light"] .win-title{background:#e8eaf0;color:#333}
+  .win-caption{margin-left:auto;display:flex;gap:2px}
+  .win-caption span{width:42px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:4px;color:var(--faint)}
+  .host-addr{height:32px;background:var(--side);border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 10px;gap:8px;font-size:11px;color:var(--mut)}
+  .addr{flex:1;background:var(--input);border:1px solid var(--line);border-radius:99px;padding:4px 12px;font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#8fb4ff;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  html[data-theme="light"] .addr{color:#3d5fe0}
+  .wb{display:flex;flex:1;min-height:0}
+  .side{width:228px;background:var(--side);border-right:1px solid var(--line);padding:12px 8px;flex:none;overflow:auto}
+  .it{display:flex;align-items:center;gap:8px;padding:8px;border-radius:10px;margin-bottom:3px;font-size:13px;width:100%;text-align:left;background:transparent;color:var(--text)}
+  .it:hover{background:var(--chip)}.it.act{background:var(--chip);font-weight:600}
+  .it .ic{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex:none}
+  .it small{display:block;font-size:11px;font-weight:400;color:var(--mut)}
+  .it .count{margin-left:auto;font-size:12px;color:var(--mut);font-weight:600}
+  .side h4{font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.08em;margin:10px 8px 6px}
+  .main{flex:1;padding:16px;display:flex;flex-direction:column;gap:10px;min-width:0;overflow:auto;background:var(--bg)}
+  .phone-status{height:28px;display:flex;justify-content:space-between;align-items:center;padding:0 18px;font-size:11px;font-weight:700;flex:none}
+  .and .phone-status{background:#0b1220;color:#fff}
+  html[data-theme="light"] .and .phone-status{background:#e8eaef;color:#111}
+  .ios .phone-status{background:var(--panel);color:var(--text);justify-content:center;position:relative}
+  .island{position:absolute;left:50%;top:8px;transform:translateX(-50%);width:92px;height:22px;background:#000;border-radius:12px}
+  .pwa-bar{height:48px;display:flex;align-items:center;gap:10px;padding:0 14px;background:var(--panel);border-bottom:1px solid var(--line);font-weight:700;flex:none}
+  .phone-body{flex:1;min-height:0;overflow:auto;background:var(--bg);padding:12px;display:flex;flex-direction:column;gap:10px}
+  .tabbar{display:flex;justify-content:space-around;background:var(--panel);border-top:1px solid var(--line);padding:6px 0 10px;flex:none}
+  .tabbar button{flex:1;background:transparent;color:var(--faint);font-size:9px;display:flex;flex-direction:column;align-items:center;gap:2px}
+  .tabbar button.on{color:var(--accent);font-weight:700}
+  .tabbar button span{font-size:15px}
+  .home-ind{height:18px;display:flex;align-items:center;justify-content:center;background:var(--panel);flex:none}
+  .home-ind i{width:110px;height:4px;border-radius:4px;background:#555}
+  html[data-theme="light"] .home-ind i{background:#bbb}
+  .drop{border:2px dashed var(--line);border-radius:14px;padding:12px;display:flex;align-items:center;gap:12px;background:var(--panel2);cursor:pointer}
+  .drop:hover{border-color:var(--accent)}
+  .drop .big{font-size:24px}
+  .drop .txt{flex:1;font-size:13px;line-height:1.45}
+  .xr{display:flex;align-items:center;gap:10px;padding:6px 0;font-size:13px}
+  .xr .fi{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex:none}
+  .xr .meta{flex:1;min-width:0}
+  .xr .st{font-size:12px;text-align:right}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+  .phone .grid{grid-template-columns:1fr 1fr}
+  .fc{background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden;font-size:12px;cursor:pointer}
+  .fc.chk{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset}
+  .th{height:78px;display:flex;align-items:center;justify-content:center;font-size:28px;position:relative}
+  .th .ext{position:absolute;left:8px;bottom:8px;padding:2px 7px;border-radius:99px;background:rgba(0,0,0,.4);color:#fff;font-size:10px;font-weight:700}
+  .fc .bd{padding:8px 10px;display:flex;flex-direction:column;gap:3px}
+  .fc .nm{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .selbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;background:var(--accent);color:#fff;border-radius:12px;padding:8px 12px;font-size:12px}
+  .selbar .btn{background:#fff;color:#2b3fae}
+  .selbar .btn.ghost{background:rgba(255,255,255,.2);color:#fff}
+  .clipbar{background:var(--panel2);color:var(--text);border:1px solid var(--line)}
+  .clipbar .btn{background:var(--accent);color:#fff}
+  .clipbar .btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
+  .msg{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:8px 10px;font-size:13px;max-width:80%}
+  .msg.me{align-self:flex-end;background:var(--chip);margin-left:auto}
+  .chat{display:flex;flex-direction:column;gap:8px}
+  .set-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 0;border-top:1px solid var(--line);font-size:13px}
+  .set-row:first-child{border-top:none}
+  .sel,.search,.input{background:var(--input);border:1px solid var(--line);border-radius:9px;padding:7px 10px;font-size:13px;color:var(--text)}
+  .search,.input{width:100%}
+  .tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .mask{position:fixed;inset:0;z-index:30;background:rgba(8,10,20,.55);display:flex;align-items:center;justify-content:center;padding:20px}
+  .dlg{width:min(380px,100%);background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:10px;font-size:13px}
+  .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:40;background:var(--panel);border:1px solid var(--line);border-radius:99px;padding:10px 18px;font-size:13px;font-weight:600}
+  .empty{padding:20px 8px;text-align:center;color:var(--mut);font-size:13px}
+  .scope{font-size:11px;color:var(--faint);line-height:1.5}
+  .pending{background:#ffb84d22;border:1px solid #ffb84d55}
+  .pend{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+  .owner{display:flex;gap:14px;align-items:start;flex-wrap:wrap}
+  .qrbox{width:104px;height:104px;background:#fff;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#333;font-size:12px;font-weight:700;text-align:center;padding:8px;flex:none}
+  .owner-info{flex:1;min-width:180px;display:flex;flex-direction:column;gap:8px;font-size:13px}
+  .pin-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .pin-d{font:700 16px ui-monospace,Menlo,monospace;letter-spacing:.18em}
+  .url{font:11px/1.4 ui-monospace,Menlo,monospace;background:var(--input);border:1px solid var(--line);border-radius:8px;padding:6px 8px;word-break:break-all;flex:1;min-width:0}
+  .phone .url{flex-basis:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;word-break:normal}
+  .limits{display:flex;gap:10px;flex-wrap:wrap}
+  .limits label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--mut)}
+  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line)}
+  .tabs button{padding:8px 12px;font-size:13px;color:var(--mut);border-bottom:2px solid transparent;background:transparent}
+  .tabs button.on{color:var(--text);border-color:var(--accent);font-weight:600}
+  .ck-row{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line);font-size:13px}
+  .ck-row:first-child{border-top:none}
+  .flist{list-style:none;display:flex;flex-direction:column;gap:4px}
+  .flist li{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:10px;background:var(--panel2);cursor:pointer}
+  .flist li.picked{box-shadow:0 0 0 2px var(--accent) inset}
+  .flist .ic{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;flex:none;background:var(--input)}
+  .flist .nm{flex:1;min-width:0;font-size:13px;font-weight:600}
+  .flist .nm small{display:block;font-size:11px;font-weight:400;color:var(--mut)}
+  .hostchip{display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:8px 10px;font-size:12px}
+  .tray{position:absolute;right:16px;top:78px;width:280px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;box-shadow:0 18px 40px var(--shadow);z-index:8;font-size:12px;display:flex;flex-direction:column;gap:6px}
+  .desk{position:relative}
+  .warnbox{background:#5b7cff22;border:1px solid #5b7cff55;border-radius:12px;padding:8px 10px;font-size:12px}
+  .banner{background:#ffb84d22;border:1px solid #ffb84d55;border-radius:12px;padding:8px 10px;font-size:12px}
+  .room-actions{display:flex;gap:6px;flex-wrap:wrap;padding:0 8px 8px}
+  .room-actions .btn{flex:1}
+  .quota .bar{margin-top:5px}
+  @media (max-width:1280px){
+    html[data-layout="compare"] .stage{grid-template-columns:1fr}
+    .phone{margin:0 auto}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="head">
+    <div>
+      <h1>
+        <svg width="28" height="28" viewBox="0 0 100 100" aria-hidden="true">
+          <defs><linearGradient id="sgh" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#5b7cff"/><stop offset="100%" stop-color="#8f6bff"/></linearGradient></defs>
+          <rect width="100" height="100" rx="22" fill="url(#sgh)"/>
+          <circle cx="50" cy="14" r="7.5" fill="#fff"/><circle cx="16" cy="82" r="7.5" fill="#fff"/><circle cx="84" cy="82" r="7.5" fill="#fff"/>
+          <rect x="49" y="21" width="2" height="12" fill="#fff"/>
+          <line x1="22" y1="76" x2="40" y2="68" stroke="#fff" stroke-width="5" stroke-linecap="round"/>
+          <line x1="78" y1="76" x2="60" y2="68" stroke="#fff" stroke-width="5" stroke-linecap="round"/>
+          <path fill="#fff" d="M36 34q0-4 4-4h13l11 11v25q0 4-4 4H40q-4 0-4-4z"/>
+        </svg>
+        Share Group <span class="ph">โฮสต์</span>
+      </h1>
+      <p>หน้าตาที่ผู้ใช้เห็นยึดแดชบอร์ดโฮสต์ Mac (<a href="ui-mock-v3.html">ui-mock-v3.html</a> / <code>web/</code>)
+        ต่างกันแค่ความสามารถของเครื่อง: Windows เท่า Mac, Android มี Hotspot / Wi-Fi / ไฟล์บนเครื่อง / OTG, iOS มี Hotspot / Wi-Fi
+        ของที่รันจริงวันนี้ยังเป็นเว็บ + โปรแกรม Mac มุมลูกข่ายสลับบทบาทใน <a href="ui-mock-v3.html">ui-mock-v3.html</a></p>
+    </div>
+    <button type="button" class="btn ghost sm" id="theme-btn">🌗 สลับโหมดมืด / สว่าง</button>
+  </div>
+
+  <div class="note">
+    เมนูโฮสต์: เชิญ (Owner เท่านั้น), ถ่ายโอน, ไฟล์, ข้อความ, ตรวจปัญหา, ตั้งค่า, เกี่ยวกับ
+    ลูกข่ายเห็นถ่ายโอนด้วย แต่ไม่มีเชิญ
+    ของเดิมวันนี้ยังเป็นเว็บ Owner + โปรแกรม Mac ลูกข่ายใช้เบราว์เซอร์
+    ความสามารถที่ต่าง: <b>Windows</b> เท่า Mac, <b>Android</b> เลือกเครือข่าย Hotspot หรือ Wi-Fi และมีที่เก็บในเครื่อง + USB OTG, <b>iOS</b> เลือก Hotspot หรือ Wi-Fi แท็บไฟล์บนเครื่องว่างเพราะไม่มี OTG
+  </div>
+
+  <div class="ctrl">
+    <div class="seg" id="layout-seg">
+      <button type="button" data-layout="compare" class="on">เทียบทั้งสาม</button>
+      <button type="button" data-layout="focus">จอเดียว</button>
+    </div>
+    <div class="seg" id="plat-seg">
+      <button type="button" data-plat="win" class="on">Windows</button>
+      <button type="button" data-plat="and">Android</button>
+      <button type="button" data-plat="ios">iOS</button>
+    </div>
+    <div class="seg" id="menu-seg">
+      <button type="button" data-menu="invite" class="on">เชิญ</button>
+      <button type="button" data-menu="upload">ถ่ายโอน</button>
+      <button type="button" data-menu="files">ไฟล์</button>
+      <button type="button" data-menu="chat">ข้อความ</button>
+      <button type="button" data-menu="diag">ตรวจปัญหา</button>
+      <button type="button" data-menu="settings">ตั้งค่า</button>
+      <button type="button" data-menu="about">เกี่ยวกับ</button>
+    </div>
+    <div class="seg" id="path-seg">
+      <button type="button" data-path="hotspot" class="on">Hotspot</button>
+      <button type="button" data-path="wifi">Wi-Fi</button>
+    </div>
+    <div class="seg" id="shell-seg">
+      <button type="button" data-shell="dash" class="on">แดชบอร์ด</button>
+      <button type="button" data-shell="tray">ถาด / การแจ้งเตือน</button>
+    </div>
+  </div>
+
+  <div class="stage" id="stage">
+    <section class="frame focus show-compare" data-plat="win">
+      <div class="frame-cap"><b>Windows · โฮสต์</b><span>แดชบอร์ดเดียวกับ Mac · ถาดระบบ · Explorer · ADB</span></div>
+      <div class="desk">
+        <div class="win-title">
+          <span>🟦</span>
+          <b>Share Group</b>
+          <span class="mut">ห้องหลัก · Owner</span>
+          <div class="win-caption"><span>─</span><span>□</span><span>✕</span></div>
+        </div>
+        <div class="host-addr"><span>localhost</span><div class="addr" data-url>http://127.0.0.1:8080</div><span class="pill p-owner">Owner</span></div>
+        <div class="wb">
+          <aside class="side" data-side="win"></aside>
+          <main class="main" data-host="win"></main>
+        </div>
+        <div class="tray hidden" data-tray="win"></div>
+      </div>
+    </section>
+
+    <section class="frame show-compare" data-plat="and">
+      <div class="frame-cap"><b>Android · โฮสต์</b><span>แดชบอร์ดเดียวกับ Mac · Hotspot / Wi-Fi · ไฟล์บนเครื่อง · OTG</span></div>
+      <div class="phone and">
+        <div class="phone-status"><span>12:45</span><span data-and-net>Hotspot  28  🔋</span></div>
+        <div class="pwa-bar">
+          <svg width="22" height="22" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#5b7cff"/><circle cx="50" cy="14" r="7.5" fill="#fff"/><circle cx="16" cy="82" r="7.5" fill="#fff"/><circle cx="84" cy="82" r="7.5" fill="#fff"/></svg>
+          Share Group · Owner
+        </div>
+        <div class="phone-body" data-host="and"></div>
+        <nav class="tabbar">
+          <button type="button" class="nav" data-menu="invite"><span>📲</span>เชิญ</button>
+          <button type="button" class="nav" data-menu="upload"><span>⇅</span>ถ่ายโอน</button>
+          <button type="button" class="nav" data-menu="files"><span>🗂️</span>ไฟล์</button>
+          <button type="button" class="nav" data-menu="chat"><span>💬</span>ข้อความ</button>
+          <button type="button" class="nav" data-menu="diag"><span>🩺</span>ตรวจปัญหา</button>
+          <button type="button" class="nav" data-menu="settings"><span>⚙️</span>ตั้งค่า</button>
+          <button type="button" class="nav" data-menu="about"><span>ℹ️</span>เกี่ยวกับ</button>
+        </nav>
+        <div class="home-ind"><i></i></div>
+      </div>
+    </section>
+
+    <section class="frame show-compare" data-plat="ios">
+      <div class="frame-cap"><b>iOS · โฮสต์</b><span>แดชบอร์ดเดียวกับ Mac · Hotspot / Wi-Fi · แท็บไฟล์บนเครื่องว่าง</span></div>
+      <div class="phone ios">
+        <div class="phone-status"><i class="island"></i><span style="position:relative;z-index:1">12:45</span></div>
+        <div class="pwa-bar">Share Group · Owner</div>
+        <div class="phone-body" data-host="ios"></div>
+        <nav class="tabbar">
+          <button type="button" class="nav" data-menu="invite"><span>📲</span>เชิญ</button>
+          <button type="button" class="nav" data-menu="upload"><span>⇅</span>ถ่ายโอน</button>
+          <button type="button" class="nav" data-menu="files"><span>🗂️</span>ไฟล์</button>
+          <button type="button" class="nav" data-menu="chat"><span>💬</span>ข้อความ</button>
+          <button type="button" class="nav" data-menu="diag"><span>🩺</span>ตรวจปัญหา</button>
+          <button type="button" class="nav" data-menu="settings"><span>⚙️</span>ตั้งค่า</button>
+          <button type="button" class="nav" data-menu="about"><span>ℹ️</span>เกี่ยวกับ</button>
+        </nav>
+        <div class="home-ind"><i></i></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div id="conflict-mask" class="mask hidden">
+  <div class="dlg">
+    <h4>มีไฟล์ชื่อนี้อยู่แล้ว</h4>
+    <p class="mut">สกรีนช็อต 09.38.png</p>
+    <label class="set-row"><span>ข้าม — ไม่ส่งไฟล์นี้</span><input type="radio" name="cf" value="skip"></label>
+    <label class="set-row"><span>เขียนทับ — แทนที่ไฟล์เดิม (ไฟล์ที่ตัวเองส่งหรือ Owner)</span><input type="radio" name="cf" value="overwrite"></label>
+    <label class="set-row"><span>เก็บทั้งสองไฟล์ — ชื่อ (2)</span><input type="radio" name="cf" value="rename" checked></label>
+    <label class="set-row"><span>ทำแบบนี้กับไฟล์ที่เหลือ</span><input type="checkbox"></label>
+    <div class="tools" style="justify-content:flex-end">
+      <button type="button" class="btn ghost sm" id="cf-cancel">ยกเลิก</button>
+      <button type="button" class="btn sm" id="cf-ok">ตกลง</button>
+    </div>
+  </div>
+</div>
+<div id="detail-mask" class="mask hidden">
+  <div class="dlg">
+    <h4>รายละเอียดไฟล์</h4>
+    <p style="font-weight:600">trip-2026.mp4</p>
+    <p class="mut">1.4 GB · จาก Pixel 8 · หมดอายุใน 23 ชม.</p>
+    <h4 class="mut" style="font-size:12px">SHA-256</h4>
+    <div style="font:11px/1.5 ui-monospace,Menlo,monospace;background:var(--input);border-radius:8px;padding:8px;word-break:break-all">a3f1c8e2b91d0446… (ต้นแบบ ไม่คำนวณจริง)</div>
+    <div class="tools">
+      <button type="button" class="btn ghost sm" id="fd-copy">คัดลอก checksum</button>
+      <button type="button" class="btn ghost sm" id="fd-cmp">เทียบกับไฟล์ในเครื่อง</button>
+    </div>
+    <p class="mut" id="fd-cmp-out"></p>
+    <div class="tools" style="justify-content:flex-end"><button type="button" class="btn sm" id="fd-close">ปิด</button></div>
+  </div>
+</div>
+<div id="room-mask" class="mask hidden">
+  <div class="dlg">
+    <h4>ห้องใหม่</h4>
+    <input class="input" placeholder="ชื่อห้อง" maxlength="40" value="ทีมออกแบบ">
+    <div class="tools" style="justify-content:flex-end">
+      <button type="button" class="btn ghost sm" id="room-cancel">ยกเลิก</button>
+      <button type="button" class="btn sm" id="room-ok">สร้าง</button>
+    </div>
+  </div>
+</div>
+<div id="toast" class="toast hidden"></div>
+
+<script>
+const S = {
+  layout: 'compare',
+  plat: 'win',
+  menu: 'invite',
+  shell: 'dash',
+  path: 'hotspot',
+  theme: 'dark',
+  tab: 'room',
+  room: 'main',
+  pin: '482916',
+  guest: true,
+  pending: true,
+  sel: new Set(),
+  device: null,
+};
+
+const HOST = {
+  win: { name: 'PC สำนักงาน', os: 'Windows', ip: '192.168.1.24', wifi: '192.168.1.24', hotspot: '192.168.1.24', local: 'http://127.0.0.1:8080' },
+  and: { name: 'Pixel 8', os: 'Android', wifi: '192.168.1.40', hotspot: '192.168.43.1', local: 'http://127.0.0.1:8080' },
+  ios: { name: 'iPhone ของแอน', os: 'iOS', wifi: '192.168.1.50', hotspot: '172.20.10.1', local: 'http://127.0.0.1:8080' },
+};
+
+const FILES = [
+  { id: 'v', name: 'trip-2026.mp4', kind: 'video', size: '1.4 GB', from: 'Pixel 8', badge: 'ตรวจแล้ว', ttl: '⏳ 23 ชม.', bg: 'linear-gradient(135deg,#3a4a8f,#8f6bff)', ic: '🎬' },
+  { id: 'i', name: 'IMG_2041.jpg', kind: 'image', size: '3.2 MB', from: 'iPhone', badge: 'ตรวจแล้ว', ttl: '⏳ 23 ชม.', note: 'บน Mac จะแปลงจาก HEIC', bg: 'linear-gradient(135deg,#c2546d,#ffb84d)', ic: '🖼️' },
+  { id: 's', name: 'สกรีนช็อต 09.38.png', kind: 'shot', size: '820 KB', from: 'คลิปบอร์ด', badge: 'ตรวจแล้ว', ttl: '⏳ 21 ชม.', bg: 'linear-gradient(135deg,#2fb98a,#3a8fd6)', ic: '📸' },
+];
+
+const CABLE = {
+  win: [
+    { id: 'galaxy', name: 'Galaxy S23', kind: 'android', sub: 'ADB · USB debugging', canMutate: true },
+    { id: 'pixel', name: 'Pixel 8', kind: 'android', sub: 'ADB · เสียบสาย', canMutate: true },
+    { id: 'iphone', name: 'iPhone ของแอน', kind: 'ios', sub: 'ไม่มีแอป Xcode บน Windows', canMutate: false, limited: true },
+  ],
+  and: [
+    { id: 'self', name: 'Pixel 8 (เครื่องนี้)', kind: 'android', sub: 'ที่เก็บในเครื่องโฮสต์', canMutate: true, local: true },
+    { id: 'galaxy', name: 'Galaxy S23', kind: 'android', sub: 'USB OTG', canMutate: true },
+  ],
+  ios: [],
+};
+
+const FOLDERS = {
+  android: ['แอป', 'ดาวน์โหลด', 'รูปภาพ', 'กล้อง', 'วิดีโอ', 'เอกสาร', 'เพลง', 'ที่เก็บข้อมูล'],
+  ios: ['Share Group', 'tmp', 'Library'],
+};
+
+function $(id){ return document.getElementById(id); }
+function toast(t){ const el=$('toast'); el.textContent=t; el.classList.remove('hidden'); clearTimeout(toast.t); toast.t=setTimeout(()=>el.classList.add('hidden'),1600); }
+function platIP(plat){
+  const h = HOST[plat];
+  if (plat === 'win') return h.ip;
+  return S.path === 'wifi' ? h.wifi : h.hotspot;
+}
+function netLabel(plat){
+  if (plat === 'win') return 'Wi-Fi • ' + platIP(plat);
+  return (S.path === 'wifi' ? 'Wi-Fi' : 'Hotspot') + ' • ' + platIP(plat);
+}
+function joinURL(plat){ return 'http://' + platIP(plat) + ':8080/?r=' + S.room; }
+function guestURL(plat){ return 'http://' + platIP(plat) + ':8080/g/a8f3c1'; }
+function roomName(){ return S.room === 'main' ? 'ห้องหลัก' : 'ทีมออกแบบ'; }
+function keyHint(plat){ return plat === 'win' ? 'Ctrl' : 'กดค้าง'; }
+
+function sideHTML(plat){
+  const h = HOST[plat];
+  const cables = CABLE[plat];
+  const wifiOthers = plat === 'win'
+    ? `<div class="it"><div class="ic">🤖</div><div>Pixel 8<small>Android · Wi-Fi</small></div></div>
+       <div class="it"><div class="ic">📱</div><div style="flex:1;min-width:0">iPhone ของแอน<small>iOS · Wi-Fi</small></div>
+         <select class="sel" style="max-width:108px"><option>Member</option><option>Viewer</option><option>Uploader</option></select>
+       </div>
+       <div class="tools" style="padding:0 8px 8px">
+         <button type="button" class="btn ghost sm">เปลี่ยนชื่อ</button>
+         <button type="button" class="btn ghost sm">ถอด</button>
+       </div>`
+    : plat === 'and'
+      ? `<div class="it"><div class="ic">🪟</div><div>PC สำนักงาน<small>Windows · Wi-Fi</small></div></div>
+         <div class="it"><div class="ic">💻</div><div>MacBook<small>macOS · Wi-Fi</small></div></div>`
+      : `<div class="it"><div class="ic">🪟</div><div>PC สำนักงาน<small>Windows · Wi-Fi</small></div></div>
+         <div class="it"><div class="ic">🤖</div><div>Pixel 8<small>Android · Wi-Fi</small></div></div>`;
+  return `<div class="it" style="cursor:default">
+      <div class="ic" style="background:#5b7cff30">🏠</div>
+      <div><b>${roomName()}</b><small>Owner · ${h.name}</small></div>
+    </div>
+    <div style="padding:4px 8px 8px">
+      <label class="mut" style="font-size:11px">ห้อง</label>
+      <select class="sel" data-act="room-pick" style="width:100%;margin-top:4px">
+        <option value="main" ${S.room==='main'?'selected':''}>ห้องหลัก</option>
+        <option value="design" ${S.room==='design'?'selected':''}>ทีมออกแบบ</option>
+      </select>
+    </div>
+    <div class="room-actions">
+      <button type="button" class="btn ghost sm" data-act="room-new">＋ ห้องใหม่</button>
+      <button type="button" class="btn ghost sm" data-act="toast" data-msg="เปลี่ยนชื่อห้องแล้ว">เปลี่ยนชื่อ</button>
+      <button type="button" class="btn bad sm ${S.room==='main'?'hidden':''}" data-act="toast" data-msg="ลบห้องเริ่มต้นไม่ได้">ลบห้อง</button>
+    </div>
+    <h4>Wi-Fi</h4>
+    <div class="it act"><div class="ic">${plat==='win'?'🪟':plat==='and'?'🤖':'📱'}</div><div>${h.name}<small>${h.os} · เครื่องนี้</small></div><span class="pill p-owner" style="margin-left:auto">Owner</span></div>
+    ${wifiOthers}
+    <h4>สาย USB</h4>
+    ${cables.length
+      ? cables.map((d) => `<button type="button" class="it ${S.tab==='device'&&S.device===d.id?'act':''}" data-act="open-dev" data-dev="${d.id}">
+      <div class="ic">${d.kind==='android'?'🤖':'📱'}</div>
+      <div>${d.name}<small>${d.sub}</small></div>
+      <span class="pill ${d.limited?'p-warn':'p-usb'}" style="margin-left:auto">${d.limited?'จำกัด':'เปิดไฟล์'}</span>
+    </button>`).join('')
+      : '<p class="scope" style="padding:6px 8px">ยังไม่มีเครื่องที่เสียบสาย</p>'}
+    <h4>เมนู</h4>
+    <button type="button" class="it nav" data-menu="invite"><div class="ic">📲</div>เชิญ</button>
+    <button type="button" class="it nav" data-menu="upload"><div class="ic">⇅</div>ถ่ายโอน</button>
+    <button type="button" class="it nav" data-menu="files"><div class="ic">🗂️</div>ไฟล์<span class="count">${FILES.length}</span></button>
+    <button type="button" class="it nav" data-menu="chat"><div class="ic">💬</div>ข้อความ / คลิปบอร์ด</button>
+    <button type="button" class="it nav" data-menu="diag"><div class="ic">🩺</div>ตรวจปัญหาการเชื่อมต่อ</button>
+    <button type="button" class="it nav" data-menu="settings"><div class="ic">⚙️</div>ตั้งค่า</button>
+    <button type="button" class="it nav" data-menu="about"><div class="ic">ℹ️</div>เกี่ยวกับระบบ</button>`;
+}
+
+function inviteHTML(plat){
+  const h = HOST[plat];
+  return `${S.pending ? `<section class="card pending">
+      <h4 style="margin:0 0 8px;font-size:14px">อุปกรณ์รออนุมัติ</h4>
+      <div class="pend">
+        <div>MacBook<small class="mut"> · macOS · รอเข้าห้อง</small></div>
+        <div class="tools">
+          <button type="button" class="btn sm" data-act="approve">อนุมัติ</button>
+          <button type="button" class="btn ghost sm" data-act="reject">ปฏิเสธ</button>
+        </div>
+      </div>
+    </section>` : ''}
+    <section class="card">
+      <div class="owner">
+        <div class="qrbox">QR<br>${plat==='win'?'Wi-Fi':(S.path==='wifi'?'Wi-Fi':'Hotspot')}<small>${platIP(plat)}</small></div>
+        <div class="owner-info">
+          <h3 style="margin:0;font-size:15px">เชิญอุปกรณ์อื่นเข้า ${roomName()}</h3>
+          <p class="hint">สแกน QR หรือเปิดลิงก์ แล้วกรอก PIN บนอุปกรณ์ใน Wi-Fi เดียวกัน</p>
+          <div class="pin-row">
+            <span class="mut">ลิงก์</span>
+            <code class="url">${joinURL(plat)}</code>
+            <button type="button" class="btn ghost sm" data-act="toast" data-msg="คัดลอกลิงก์แล้ว">คัดลอก</button>
+          </div>
+          <div class="pin-row">
+            <span class="mut">PIN</span>
+            <span class="pin-d">${S.pin}</span>
+            <button type="button" class="btn ghost sm" data-act="rotate-pin">🔄 สร้างใหม่</button>
+          </div>
+          <div class="pin-row">
+            <label class="mut">เครือข่ายที่ใช้</label>
+            <select class="sel" ${plat==='win'?'':'data-act="net-pick"'}>${plat==='win'
+              ? `<option>Wi-Fi • ${platIP(plat)} — แนะนำ</option><option>Ethernet • 10.0.0.8</option><option>VPN • 10.8.0.2</option>`
+              : `<option value="hotspot" ${S.path==='hotspot'?'selected':''}>Hotspot • ${h.hotspot}</option>
+                 <option value="wifi" ${S.path==='wifi'?'selected':''}>Wi-Fi • ${h.wifi}</option>`}</select>
+          </div>
+          <label class="set-row" style="border:0;padding:0"><span>อนุมัติอุปกรณ์ใหม่ก่อนเข้าใช้ห้อง</span><input type="checkbox" checked></label>
+          <div class="limits">
+            <label>โควตาห้อง
+              <select class="sel"><option>ไม่จำกัด</option><option>512 MiB</option><option>1 GiB</option><option selected>5 GiB</option><option>20 GiB</option></select>
+            </label>
+            <label>ไฟล์หมดอายุ
+              <select class="sel"><option>ไม่หมดอายุ</option><option>1 ชั่วโมง</option><option selected>1 วัน</option><option>7 วัน</option><option>30 วัน</option></select>
+            </label>
+          </div>
+          <div>
+            <div class="mut" style="font-size:12px;margin-bottom:4px">ลิงก์แขก (อัปโหลดอย่างเดียว)</div>
+            ${S.guest ? `<div class="pin-row">
+              <code class="url">${guestURL(plat)}</code>
+              <button type="button" class="btn ghost sm" data-act="toast" data-msg="คัดลอกลิงก์แขกแล้ว">คัดลอก</button>
+              <button type="button" class="btn ghost sm" data-act="clear-guest">ปิดลิงก์</button>
+            </div>
+            <p class="hint">หมดอายุใน 48 นาที</p>` : `<button type="button" class="btn ghost sm" data-act="make-guest">สร้างลิงก์แขก 1 ชั่วโมง</button>`}
+          </div>
+          <div class="quota" style="width:100%">
+            <div class="tools"><span class="hint">ใช้ไป 1.4 GB จาก 5 GiB</span></div>
+            <div class="bar"><i style="width:28%"></i></div>
+          </div>
+          <div>
+            <div class="hint">อัปโหลดที่ค้างในห้อง (ไม่โชว์ชื่อไฟล์)</div>
+            <div class="xr">
+              <div class="fi" style="background:#ffb84d22">⏸</div>
+              <div class="meta">อุปกรณ์ PC สำนักงาน · ค้างที่ 18%<small class="mut"> · ไม่มี Resume_Key ในหน้านี้</small></div>
+              <button type="button" class="btn bad sm" data-act="toast" data-msg="ยกเลิกอัปโหลดที่ค้างแล้ว">ยกเลิก</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>`;
+}
+
+function uploadHTML(plat){
+  const folder = plat === 'win';
+  const paste = plat === 'win' ? ' • กด Ctrl+V เพื่อวางภาพจากคลิปบอร์ด' : '';
+  return `<div class="drop" data-act="conflict">
+      <div class="big">⬆️</div>
+      <div class="txt"><b>${folder ? 'ลากไฟล์หรือโฟลเดอร์มาวาง หรือกดเพื่อเลือก' : 'แตะเพื่อเลือกไฟล์'}</b><br>
+      <small class="mut">ส่งตรงในวงแลน ไม่ผ่านอินเทอร์เน็ต${paste}</small></div>
+    </div>
+    <div class="tools">
+      ${folder ? `<button type="button" class="btn ghost sm" data-act="conflict">📁 เลือกโฟลเดอร์</button>` : ''}
+      <label class="hint">ถ้าชื่อซ้ำ:
+        <select class="sel"><option>ถามทุกครั้ง</option><option>เก็บทั้งสองไฟล์</option><option>เขียนทับ</option><option>ข้าม</option></select>
+      </label>
+    </div>
+    ${plat!=='win' ? `<p class="hint">มือถือเลือกโฟลเดอร์ทั้งก้อนอัปโหลดไม่ได้ เลือกเป็นไฟล์ทีละชุด</p>` : ''}
+    <div class="card">
+      <h3 style="font-size:14px;margin-bottom:8px">การถ่ายโอน</h3>
+      <div class="xr">
+        <div class="fi" style="background:#5b7cff26">🎬</div>
+        <div class="meta">brief-cut.mp4<small class="mut"> · อัปโหลด 42% · 18 MB/s · กำลังตรวจ SHA-256</small>
+          <div class="bar" style="margin-top:6px"><i style="width:42%"></i></div></div>
+        <div class="st"><button type="button" class="btn ghost sm">หยุดชั่วคราว</button></div>
+      </div>
+      <div class="xr">
+        <div class="fi" style="background:#ffb84d22">⏸</div>
+        <div class="meta">deck.pdf<small class="mut"> · หยุดชั่วคราวที่ 18% · ต่อได้หลังเน็ตหลุด</small>
+          <div class="bar" style="margin-top:6px"><i class="warn" style="width:18%"></i></div></div>
+        <div class="st tools"><button type="button" class="btn sm">ต่อ</button><button type="button" class="btn bad sm">ยกเลิก</button></div>
+      </div>
+      <div class="xr">
+        <div class="fi" style="background:#3ddc9722">✅</div>
+        <div class="meta">สกรีนช็อต 09.38.png<small class="mut"> · เสร็จแล้ว · ตรวจแล้ว</small>
+          <div class="bar" style="margin-top:6px"><i class="ok" style="width:100%"></i></div></div>
+        <div class="st" style="color:var(--ok)">ตรวจแล้ว</div>
+      </div>
+    </div>`;
+}
+
+function filesHTML(plat){
+  const cards = FILES.map((f) => {
+    const on = S.sel.has(f.id) ? ' chk' : '';
+    const heic = f.note ? ' · HEIC คงเดิม (แปลง JPG ด้วย sips ได้บนโฮสต์ Mac)' : '';
+    return `<article class="fc${on}" data-file="${f.id}">
+      <div class="th" style="background:${f.bg}">${f.ic}<span class="ext">${f.kind==='video'?'MP4':f.kind==='image'?'JPG':'PNG'}</span></div>
+      <div class="bd">
+        <div class="nm">${f.name}</div>
+        <small>${f.size} · ${f.from}${heic}</small>
+        <small>${f.badge} · ${f.ttl}</small>
+        <div class="tools"><button type="button" class="btn ghost sm" data-act="detail">รายละเอียด</button>
+        <button type="button" class="btn sm">⬇</button></div>
+      </div>
+    </article>`;
+  }).join('');
+  const n = S.sel.size;
+  const pick = plat === 'win'
+    ? `กดเพื่อเลือก · Shift ช่วง · Ctrl สลับ · ไม่มี checkbox`
+    : `แตะเพื่อเลือก · กดค้างสลับ · ไม่มี checkbox`;
+  const dl = plat === 'ios'
+    ? 'Safari / แอปนี้บันทึกลง Files — เลือกโฟลเดอร์ปลายทางเองไม่ได้'
+    : plat === 'and'
+      ? 'ต้องกดดาวน์โหลดเอง ไฟล์ลงโฟลเดอร์ดาวน์โหลด'
+      : 'ดาวน์โหลดหลายไฟล์เป็น zip สูงสุด 500 ไฟล์ ไม่บีบอัด';
+  return `<div class="tools">
+      <input class="search" type="search" placeholder="ค้นหาชื่อไฟล์หรืออุปกรณ์…">
+      <select class="sel"><option>ล่าสุด</option><option>ตามอุปกรณ์</option><option>ตามวันที่</option></select>
+    </div>
+    <p class="hint">${pick}</p>
+    <p class="hint">${dl}</p>
+    <div class="grid">${cards}</div>
+    <div class="selbar ${n? '' : 'hidden'}">
+      <div class="grow"><b>เลือก ${n} ไฟล์</b></div>
+      <button type="button" class="btn sm">⬇ ดาวน์โหลดเป็น .zip</button>
+      <button type="button" class="btn ghost sm">🗑 ลบที่เลือก</button>
+      <button type="button" class="btn ghost sm" data-act="clear">ล้าง</button>
+    </div>`;
+}
+
+function filesTabsHTML(){
+  return `<div class="tabs">
+      <button type="button" class="${S.tab==='room'?'on':''}" data-act="files-tab" data-tab="room">ไฟล์ในห้อง</button>
+      <button type="button" class="${S.tab==='device'?'on':''}" data-act="files-tab" data-tab="device">ไฟล์บนเครื่อง</button>
+    </div>`;
+}
+
+function deviceHTML(plat){
+  const list = CABLE[plat] || [];
+  if (!list.length) {
+    return `<div class="card empty">ยังไม่มีเครื่องที่เสียบสาย</div>`;
+  }
+  const current = list.find((d) => d.id === S.device) || list[0];
+  const folders = (current.kind === 'android' ? FOLDERS.android : FOLDERS.ios).map((name, i) =>
+    `<li class="${i===1?'picked':''}"><div class="ic">📁</div><div class="nm">${name}<small>${current.kind==='android' && name==='ดาวน์โหลด' ? 'เพดาน 400 รายการต่อโฟลเดอร์' : 'โฟลเดอร์'}</small></div></li>`
+  ).join('');
+  const mutate = current.canMutate;
+  const key = keyHint(plat);
+  return `<div class="tools">
+      <button type="button" class="btn ghost sm">ย้อนกลับ</button>
+      <div style="flex:1;min-width:140px;font-weight:700;font-size:13px">${current.name}</div>
+      <div class="views tools">
+        <button type="button" class="btn ghost sm">รายการ</button>
+        <button type="button" class="btn ghost sm">ไอคอน</button>
+        <button type="button" class="btn ghost sm">แกลเลอรี</button>
+      </div>
+    </div>
+    <p class="hint">กดเพื่อเลือก · ${plat==='win'?'ดับเบิลคลิกเข้าโฟลเดอร์ · Shift ช่วง · '+key+' สลับ':'แตะเข้าโฟลเดอร์ · กดค้างสลับ'}</p>
+    ${current.limited ? `<p class="banner">${plat==='win'
+      ? 'iPhone บนโฮสต์ Windows: ไม่มีแอปจาก Xcode จึงเรียกดูคอนเทนเนอร์ไม่ได้ แอป Files ของระบบเรียกดูผ่าน USB ไม่ได้ — เท่ากับข้อจำกัดบน Mac แต่ Windows ไม่มี Xcode ให้ติดตั้งแอปทดลอง'
+      : 'iPhone: ดูได้เฉพาะคอนเทนเนอร์ของแอปนี้ ไม่ลบและไม่สร้างโฟลเดอร์ผ่านสาย แอป Files ของระบบเรียกดูไม่ได้'}</p>` : ''}
+    ${current.kind==='android' ? `<p class="hint">โฟลเดอร์ลัดชุดเดียวกับระบบปัจจุบัน: แอป / ดาวน์โหลด / รูปภาพ / กล้อง / วิดีโอ / เอกสาร / เพลง / ที่เก็บข้อมูล</p>` : ''}
+    ${plat==='win' && current.limited
+      ? `<div class="card empty">ยังเรียกดูไฟล์บน iPhone เครื่องนี้ไม่ได้</div>`
+      : `<ul class="flist">${folders}</ul>`}
+    <div class="selbar">
+      <div class="grow"><b>เลือก 1 รายการ</b></div>
+      ${mutate ? `<button type="button" class="btn sm">คัดลอก ${plat==='win'?'Ctrl+C':''}</button>
+      <button type="button" class="btn sm">ตัด ${plat==='win'?'Ctrl+X':''}</button>` : ''}
+      <button type="button" class="btn sm" data-act="toast" data-msg="ดึงเข้าห้องแล้ว">ดึงเข้าห้อง</button>
+      <button type="button" class="btn sm">⬇ บันทึกลงเครื่องนี้</button>
+      ${mutate ? `<button type="button" class="btn ghost sm">🗑 ลบ</button>` : ''}
+      <button type="button" class="btn ghost sm" data-act="clear">ล้าง</button>
+    </div>
+    ${mutate ? `<div class="selbar clipbar">
+      <div class="grow"><b>คัดลอก 1 รายการ</b> <span class="mut">จาก ${current.name}</span></div>
+      <button type="button" class="btn ghost sm">โฟลเดอร์ใหม่</button>
+      <button type="button" class="btn sm">วาง ${plat==='win'?'Ctrl+V':''}</button>
+      <button type="button" class="btn ghost sm">ล้าง</button>
+    </div>` : ''}`;
+}
+
+function chatHTML(plat){
+  const who = HOST[plat].name;
+  return `<div class="card">
+      <div class="tools"><h3 style="margin:0;font-size:15px">📋 คลิปบอร์ดร่วม</h3><small class="mut">จาก ${who} · เมื่อสักครู่</small></div>
+      <pre style="margin:10px 0;white-space:pre-wrap;font-size:13px">https://meet.example.com/design-sync</pre>
+      <div class="tools">
+        <button type="button" class="btn sm" data-act="toast" data-msg="คัดลอกแล้ว">คัดลอกลงเครื่องนี้</button>
+        <button type="button" class="btn ghost sm">ล้าง</button>
+      </div>
+      <div class="tools" style="margin-top:8px">
+        <input class="search" placeholder="พิมพ์หรือวางข้อความ/ลิงก์…">
+        <button type="button" class="btn sm">แชร์ไปคลิปบอร์ดร่วม</button>
+      </div>
+      <p class="hint">สูงสุด 20,000 ตัวอักษร</p>
+    </div>
+    <div class="card chat">
+      <h3 style="font-size:15px">💬 ข้อความ</h3>
+      <div class="msg">PC สำนักงาน: ส่งลิงก์ประชุมมาที่ห้องนี้ได้ไหม</div>
+      <div class="msg me">${who}: วางในคลิปบอร์ดร่วมแล้ว</div>
+      <div class="tools" style="margin-top:8px">
+        <input class="search" placeholder="พิมพ์ข้อความ…">
+        <button type="button" class="btn">ส่ง</button>
+      </div>
+      <p class="hint">สูงสุด 4,000 ตัวอักษรต่อข้อความ · เก็บล่าสุด 200 ข้อความ หายเมื่อรีสตาร์ตเซิร์ฟเวอร์</p>
+    </div>`;
+}
+
+function settingsHTML(plat){
+  const tools = plat === 'win' ? `
+      <h4 style="margin-bottom:8px">เครื่องมือบนเครื่องนี้</h4>
+      <p class="hint" style="margin-bottom:8px">ชุดเดียวกับโฮสต์ Mac วันนี้ ถาดระบบเทียบ menu bar, Explorer เทียบ Finder</p>
+      <div class="tools">
+        <button type="button" class="btn ghost sm" data-act="shell-tray">ถาดระบบ</button>
+        <button type="button" class="btn ghost sm" data-act="toast" data-msg="CLI: go run ./cmd/share send &lt;ไฟล์&gt;">CLI share send</button>
+        <button type="button" class="btn ghost sm" data-act="toast" data-msg="คลิกขวาไฟล์ใน Explorer → ส่งไป Share Group">Explorer context menu</button>
+        <button type="button" class="btn ghost sm" data-act="toast" data-msg="HTTP API เรียกได้เฉพาะ 127.0.0.1">HTTP API localhost</button>
+        <button type="button" class="btn ghost sm" data-act="toast" data-msg="HTTPS ด้วย -tls ใบรับรอง self-signed">HTTPS -tls</button>
+      </div>`
+    : plat === 'and' ? `
+      <h4 style="margin-bottom:8px">เครื่องมือบนเครื่องนี้</h4>
+      <p class="hint" style="margin-bottom:8px">การแจ้งเตือนค้างเทียบ menu bar บน Mac</p>
+      <div class="tools">
+        <button type="button" class="btn ghost sm" data-act="shell-tray">การแจ้งเตือนค้าง</button>
+        <button type="button" class="btn ghost sm" data-act="toast" data-msg="Web Share Target: แชร์ไฟล์จากแอปอื่นเข้าห้อง">Web Share Target</button>
+        <button type="button" class="btn ghost sm" data-act="toast" data-msg="HTTPS ด้วย -tls">HTTPS -tls</button>
+      </div>`
+    : `
+      <h4 style="margin-bottom:8px">เครื่องมือบนเครื่องนี้</h4>
+      <p class="hint" style="margin-bottom:8px">การแจ้งเตือนเทียบ menu bar บน Mac</p>
+      <div class="tools">
+        <button type="button" class="btn ghost sm" data-act="shell-tray">Live Activity / การแจ้งเตือน</button>
+        <button type="button" class="btn ghost sm" data-act="toast" data-msg="Shortcuts เรียกได้เฉพาะ localhost">Shortcuts localhost</button>
+        <button type="button" class="btn ghost sm" data-act="toast" data-msg="HTTPS ด้วย -tls">HTTPS -tls</button>
+      </div>`;
+  return `<h3>ตั้งค่า</h3>
+    <div class="card">
+      <div class="set-row"><span>ธีม</span><select class="sel"><option>ตามระบบ</option><option>มืด</option><option>สว่าง</option></select></div>
+      <div class="set-row"><span>ภาษา</span><select class="sel"><option>ไทย</option><option>English</option></select></div>
+      <label class="set-row"><span>ย่อรูปใหญ่ก่อนส่ง (ยาวสุด 1920 พิกเซล)</span><input type="checkbox" checked></label>
+      <label class="set-row"><span>ตรวจ SHA-256 ตอนส่งไฟล์</span><input type="checkbox" checked></label>
+      <label class="set-row"><span>แจ้งเตือนของระบบเมื่อมีไฟล์ใหม่</span><input type="checkbox" ${plat==='win'?'checked':''}></label>
+      <label class="set-row"><span>พรีวิวด้วย sips / qlmanage (-system-preview)</span><input type="checkbox" ${plat==='win'?'':'disabled'} ${plat==='win'?'':'title="อยู่บนโฮสต์ Mac"'}></label>
+      <p class="hint">PWA และการแจ้งเตือนจริงต้องใช้ HTTPS หรือ localhost${plat==='win' ? ' · แปลง HEIC ด้วย sips อยู่บนโฮสต์ Mac' : ''}</p>
+    </div>
+    <div class="card" style="margin-top:10px">${tools}</div>`;
+}
+
+function diagHTML(plat){
+  const nic = plat === 'win'
+    ? 'Wi-Fi • 192.168.1.24 พร้อมให้เครื่องอื่นเข้า'
+    : netLabel(plat) + ' พร้อมให้เครื่องอื่นเข้า';
+  const fw = plat === 'win'
+    ? 'Windows Firewall เปิดอยู่ — อนุญาต Share Group ถ้าเครื่องอื่นเข้าไม่ได้'
+    : plat === 'and'
+      ? 'ไม่มี macOS Firewall — ถ้าเข้าไม่ได้ให้ตรวจสิทธิ์เครือข่ายและ Client isolation ของ Hotspot'
+      : 'ไม่มี macOS Firewall — ต้องอนุญาต Local Network ถ้าเครื่องอื่นเข้าไม่ได้';
+  const band = plat === 'win' ? '5 GHz' : (S.path === 'wifi' ? '5 GHz' : (plat === 'ios' ? 'Personal Hotspot' : 'Hotspot 5 GHz'));
+  const power = plat === 'win'
+    ? 'idle — จะทำงานเมื่อมีการถ่ายโอน'
+    : plat === 'and'
+      ? 'ต้องยกเว้นแบตเตอรี่ / มีการแจ้งเตือนค้าง ระหว่างถ่ายโอน'
+      : 'Low Power Mode และการล็อกจออาจหยุดถ่ายโอน';
+  const rows = [
+    ['✅', 'การ์ดเครือข่าย', nic],
+    ['⚠️', 'Firewall', fw],
+    ['✅', 'เครื่องที่เคยเข้ามา', 'มีอุปกรณ์เรียกเข้ามาใน 10 นาทีล่าสุด'],
+    ['✅', 'ย่าน Wi-Fi', band],
+    ['✅', 'พื้นที่ดิสก์', 'ว่างเพียงพอ หลังหักอย่างน้อย 1 GiB'],
+    [plat==='win'?'✅':'⚠️', 'กัน Mac หลับ', power],
+    ['⚠️', 'Secure Context', 'HTTP ใน LAN — PWA และการแจ้งเตือนของระบบใช้ได้บน localhost หรือ HTTPS'],
+  ];
+  return `<div class="tools">
+      <h3 style="margin:0;flex:1">ตรวจปัญหาการเชื่อมต่อ</h3>
+      <button type="button" class="btn ghost sm" data-act="toast" data-msg="ตรวจใหม่แล้ว">ตรวจใหม่</button>
+      <button type="button" class="btn ghost sm" data-act="toast" data-msg="คัดลอกรายงานแล้ว">คัดลอกรายงาน</button>
+    </div>
+    <p class="hint">ตรวจเมื่อวันนี้ 12:40 (ผลที่เก็บไว้ไม่เกิน 30 วินาที)</p>
+    <div class="card">${rows.map(([ic,t,s]) => `<div class="ck-row"><span>${ic}</span><div><b>${t}</b><small class="mut"> · ${s}</small></div></div>`).join('')}</div>`;
+}
+
+function aboutHTML(plat){
+  const h = HOST[plat];
+  return `<div class="card">
+      <p style="font-size:18px;font-weight:700">Share Group</p>
+      <p class="mut" style="margin-top:4px">แชร์ไฟล์ในวงแลน รันบนเครื่องโฮสต์ของเจ้าของ</p>
+      <div class="set-row"><span>เวอร์ชัน</span><b>0.1.0</b></div>
+      <div class="set-row"><span>ผู้พัฒนา</span><b>nooartskyline</b></div>
+      <div class="set-row"><span>เครื่องนี้</span><b>${h.os} · ${h.name}</b></div>
+    </div>
+    <div class="card">
+      <h4 style="margin-bottom:8px">ระบบนี้ทำงานอย่างไร</h4>
+      <p class="mut" style="font-size:13px;line-height:1.55">เป็นโปรแกรมบนเครื่องโฮสต์ ไม่ใช่เว็บบนคลาวด์ และไม่ใช่แอปลูกข่าย เครื่องอื่นใช้เบราว์เซอร์ เปิดลิงก์หรือสแกน QR แล้วกรอก PIN ไฟล์เก็บบนดิสก์ของโฮสต์ ไม่มีบัญชีผู้ใช้</p>
+      <p class="mut" style="font-size:13px;line-height:1.55;margin-top:8px">เปิด localhost บนเครื่องนี้แล้วเป็น Owner อัตโนมัติ หน้าตาและสิทธิ์เท่ากับแดชบอร์ด Mac</p>
+      <p class="scope" style="margin-top:8px">โปรแกรมที่รันจริงวันนี้โฮสต์บน Mac เท่านั้น หน้านี้เป็นต้นแบบผิว Owner ถ้าโฮสต์เป็น ${h.os}</p>
+    </div>`;
+}
+
+function trayHTML(plat){
+  if (plat === 'win') {
+    return `<b>Share Group</b>
+      <div>ห้อง: ${roomName()}</div>
+      <div>PIN: ${S.pin} <button type="button" class="btn ghost sm" data-act="toast" data-msg="คัดลอก PIN แล้ว">คัดลอก</button></div>
+      <div>เครือข่าย: ${netLabel(plat)}</div>
+      <div>อุปกรณ์: 3 · รออนุมัติ: ${S.pending?1:0}</div>
+      <div class="tools" style="margin-top:6px">
+        <button type="button" class="btn sm" data-act="shell-dash">เปิดโปรแกรม</button>
+        <button type="button" class="btn ghost sm">เปิดในเบราว์เซอร์</button>
+      </div>
+      <label class="set-row"><span>เปิดเซิร์ฟเวอร์</span><input type="checkbox" checked></label>
+      <label class="set-row"><span>เปิดเมื่อเข้าสู่ระบบ</span><input type="checkbox" checked></label>`;
+  }
+  if (plat === 'and') {
+    return `<div class="hostchip">
+      <div style="flex:1"><b>Share Group กำลังทำงาน</b><br><span class="mut">${roomName()} · PIN ${S.pin} · อุปกรณ์ 3${S.pending?' · รออนุมัติ 1':''}</span></div>
+      <button type="button" class="btn ghost sm" data-act="shell-dash">เปิด</button>
+    </div>
+    <p class="hint">การแจ้งเตือนค้างเทียบเมนู menu bar บน Mac: แสดง PIN, ห้อง, จำนวนอุปกรณ์ และที่รออนุมัติ</p>`;
+  }
+  return `<div class="hostchip">
+      <div style="flex:1"><b>Share Group</b><br><span class="mut">${roomName()} · PIN ${S.pin}</span></div>
+      <span class="pill p-ok">เปิดอยู่</span>
+    </div>
+    <p class="hint">Live Activity / การแจ้งเตือนเทียบเมนู menu bar บน Mac ไม่มีถาดระบบแบบเดสก์ท็อป</p>`;
+}
+
+function paneHTML(plat){
+  if (S.menu === 'invite') return inviteHTML(plat);
+  if (S.menu === 'upload') return uploadHTML(plat);
+  if (S.menu === 'files') {
+    if (S.tab === 'device') return filesTabsHTML() + deviceHTML(plat);
+    return filesTabsHTML() + filesHTML(plat);
+  }
+  if (S.menu === 'chat') return chatHTML(plat);
+  if (S.menu === 'settings') return settingsHTML(plat);
+  if (S.menu === 'diag') return diagHTML(plat);
+  if (S.menu === 'about') return aboutHTML(plat);
+  return '';
+}
+
+function appHTML(plat){
+  if (S.shell === 'tray' && plat !== 'win') {
+    return trayHTML(plat) + '<div style="height:8px"></div>' + paneHTML(plat);
+  }
+  return paneHTML(plat);
+}
+
+function markSeg(id, key, val){
+  document.querySelectorAll('#'+id+' button').forEach((b) => b.classList.toggle('on', b.dataset[key] === val));
+}
+
+function render(){
+  if (S.menu === 'device') { S.menu = 'files'; S.tab = 'device'; }
+  document.documentElement.dataset.layout = S.layout;
+  document.documentElement.dataset.theme = S.theme;
+  markSeg('layout-seg','layout',S.layout);
+  markSeg('plat-seg','plat',S.plat);
+  markSeg('menu-seg','menu',S.menu);
+  markSeg('path-seg','path',S.path);
+  markSeg('shell-seg','shell',S.shell);
+  $('plat-seg').classList.toggle('hidden', S.layout !== 'focus');
+  $('path-seg').classList.toggle('hidden', S.layout === 'focus' && S.plat === 'win');
+  document.querySelectorAll('[data-and-net]').forEach((el) => {
+    el.textContent = (S.path === 'wifi' ? 'Wi-Fi' : 'Hotspot') + '  28  🔋';
+  });
+
+  document.querySelectorAll('.frame[data-plat]').forEach((fr) => {
+    fr.classList.toggle('focus', fr.dataset.plat === S.plat);
+  });
+
+  document.querySelectorAll('[data-url]').forEach((el) => {
+    const plat = el.closest('[data-plat]')?.dataset.plat || 'win';
+    el.textContent = HOST[plat].local;
+  });
+
+  document.querySelectorAll('[data-side]').forEach((el) => {
+    el.innerHTML = sideHTML(el.dataset.side);
+  });
+
+  document.querySelectorAll('[data-host]').forEach((host) => {
+    host.innerHTML = appHTML(host.dataset.host);
+  });
+
+  document.querySelectorAll('[data-tray]').forEach((el) => {
+    const show = S.shell === 'tray' && el.dataset.tray === 'win';
+    el.classList.toggle('hidden', !show);
+    if (show) el.innerHTML = trayHTML('win');
+  });
+
+  document.querySelectorAll('.nav').forEach((b) => {
+    if (b.dataset.menu) {
+      b.classList.toggle('act', b.dataset.menu === S.menu);
+      b.classList.toggle('on', b.dataset.menu === S.menu);
+    }
+  });
+}
+
+function bindSeg(id, key){
+  $(id).addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    const val = b.dataset[key];
+    if (!val) return;
+    S[key] = val;
+    if (key === 'menu') {
+      S.shell = 'dash';
+      if (val === 'files') S.tab = 'room';
+    }
+    render();
+  });
+}
+
+['layout','plat','menu','shell','path'].forEach((k) => bindSeg(k+'-seg', k));
+
+document.addEventListener('click', (e) => {
+  const nav = e.target.closest('.nav[data-menu], .it.nav[data-menu]');
+  if (nav) {
+    S.menu = nav.dataset.menu;
+    S.shell = 'dash';
+    if (S.menu === 'files') S.tab = 'room';
+    render();
+    return;
+  }
+
+  const act = e.target.closest('[data-act]');
+  if (act) {
+    const a = act.dataset.act;
+    if (a === 'toast') { toast(act.dataset.msg || 'ตกลง'); return; }
+    if (a === 'conflict') { $('conflict-mask').classList.remove('hidden'); return; }
+    if (a === 'detail') { $('detail-mask').classList.remove('hidden'); return; }
+    if (a === 'clear') { S.sel.clear(); render(); return; }
+    if (a === 'approve') { S.pending = false; toast('อนุมัติแล้ว'); render(); return; }
+    if (a === 'reject') { S.pending = false; toast('ปฏิเสธแล้ว'); render(); return; }
+    if (a === 'rotate-pin') { S.pin = String(Math.floor(100000+Math.random()*900000)); toast('สร้าง PIN ใหม่แล้ว'); render(); return; }
+    if (a === 'clear-guest') { S.guest = false; toast('ปิดลิงก์แขกแล้ว'); render(); return; }
+    if (a === 'make-guest') { S.guest = true; toast('สร้างลิงก์แขก 1 ชั่วโมง'); render(); return; }
+    if (a === 'room-new') { $('room-mask').classList.remove('hidden'); return; }
+    if (a === 'files-tab') { S.tab = act.dataset.tab; S.menu = 'files'; S.shell = 'dash'; render(); return; }
+    if (a === 'open-dev') { S.device = act.dataset.dev; S.menu = 'files'; S.tab = 'device'; S.shell = 'dash'; render(); return; }
+    if (a === 'shell-tray') { S.shell = 'tray'; render(); return; }
+    if (a === 'shell-dash') { S.shell = 'dash'; render(); return; }
+  }
+
+  const pick = e.target.closest('select[data-act="room-pick"]');
+  if (pick) { S.room = pick.value; render(); return; }
+
+  const card = e.target.closest('.fc[data-file]');
+  if (card && !e.target.closest('button')) {
+    const id = card.dataset.file;
+    if (S.sel.has(id)) S.sel.delete(id); else S.sel.add(id);
+    render();
+  }
+});
+
+document.addEventListener('change', (e) => {
+  const pick = e.target.closest('select[data-act="room-pick"]');
+  if (pick) { S.room = pick.value; render(); }
+  const net = e.target.closest('select[data-act="net-pick"]');
+  if (net) { S.path = net.value; render(); }
+});
+
+$('theme-btn').onclick = () => { S.theme = S.theme === 'dark' ? 'light' : 'dark'; render(); };
+$('cf-cancel').onclick = () => $('conflict-mask').classList.add('hidden');
+$('cf-ok').onclick = () => { $('conflict-mask').classList.add('hidden'); toast('ส่งไฟล์เข้าห้อง'); };
+$('fd-close').onclick = () => $('detail-mask').classList.add('hidden');
+$('fd-copy').onclick = () => toast('คัดลอก checksum แล้ว');
+$('fd-cmp').onclick = () => { $('fd-cmp-out').textContent = 'ต้นแบบ: ในโปรแกรมจริงเลือกไฟล์จากเครื่องนี้แล้วเทียบ SHA-256'; };
+$('room-cancel').onclick = () => $('room-mask').classList.add('hidden');
+$('room-ok').onclick = () => { $('room-mask').classList.add('hidden'); S.room = 'design'; toast('สร้างห้องแล้ว'); render(); };
+
+render();
+</script>
+</body>
+</html>

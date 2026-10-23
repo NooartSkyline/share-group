@@ -108,7 +108,8 @@ const I18N = {
     wait_title: 'รอเจ้าของห้องอนุมัติ', wait_body: 'เข้าห้องแล้ว แต่ยังใช้ไฟล์และข้อความไม่ได้ จนกว่าเจ้าของจะกดอนุมัติอุปกรณ์นี้',
     rooms_label: 'ห้อง', room_new: '＋ ห้องใหม่', devices_title: 'อุปกรณ์ในห้องนี้',
     devices_wifi: 'Wi-Fi', devices_usb: 'สาย USB',
-    pending_title: 'อุปกรณ์รออนุมัติ', invite_title: 'เชิญอุปกรณ์อื่นเข้าห้อง',
+    pending_title: 'อุปกรณ์รออนุมัติ', invite_nav: 'เชิญ', invite_tab: 'เชิญ',
+    invite_title: 'เชิญอุปกรณ์อื่นเข้าห้อง', upload_nav: 'ถ่ายโอน', upload_tab: 'ถ่ายโอน',
     invite_help: 'สแกน QR หรือเปิดลิงก์ แล้วกรอก PIN บนอุปกรณ์ที่อยู่ใน Wi-Fi วงเดียวกัน',
     path_wifi: 'Wi-Fi', via_wifi: 'Wi-Fi', via_usb: 'สาย USB',
     cable_plugged_pill: 'เสียบสาย', cable_not_joined: 'ยังไม่เข้าห้อง', cable_idle: 'ยังไม่พบสาย',
@@ -201,7 +202,8 @@ const I18N = {
     wait_title: 'Waiting for approval', wait_body: 'You joined, but files and chat stay locked until the owner approves this device.',
     rooms_label: 'Room', room_new: '+ New room', devices_title: 'Devices in this room',
     devices_wifi: 'Wi-Fi', devices_usb: 'USB',
-    pending_title: 'Devices waiting for approval', invite_title: 'Invite others to',
+    pending_title: 'Devices waiting for approval', invite_nav: 'Invite', invite_tab: 'Invite',
+    invite_title: 'Invite others to', upload_nav: 'Transfer', upload_tab: 'Transfer',
     invite_help: 'Scan the QR code or open the link, then enter the PIN on a device on the same Wi-Fi.',
     path_wifi: 'Wi-Fi', via_wifi: 'Wi-Fi', via_usb: 'USB',
     cable_plugged_pill: 'Plugged', cable_not_joined: 'not in the room yet', cable_idle: 'No USB device',
@@ -610,13 +612,15 @@ async function enter(me) {
   setupUploads();
   setupFilesPane();
   setupChat();
-  setView(isDesktopLayout() ? 'files' : 'upload');
   if (role() === 'owner') {
     await setupOwner();
     await setupRooms();
   }
   setupSettings();
   setupAbout();
+  syncRoleNav();
+  if (role() === 'owner') setView('invite');
+  else setView(canUpload() && !isDesktopLayout() ? 'upload' : 'files');
   connectWS();
   resumeAfterRejoin(); // uploads paused by a 401 carry on without asking for the files again
   await Promise.all([refreshDevices(), refreshFiles(), refreshChat()]);
@@ -847,12 +851,20 @@ function setupNav() {
   setupCableFS();
 }
 
+function syncRoleNav() {
+  const up = canUpload();
+  for (const b of $$('[data-go="upload"]')) b.hidden = !up;
+  const owner = role() === 'owner';
+  for (const b of $$('[data-go="invite"]')) b.hidden = !owner;
+}
+
 function setView(v) {
+  if (v === 'invite' && role() !== 'owner') v = 'files';
+  if (v === 'upload' && !canUpload()) v = 'files';
   state.view = v;
   $('app').dataset.view = v;
-  const sideActive = v === 'upload' ? 'files' : v; // on wide screens upload is always visible
   for (const b of $$('.side [data-go]')) {
-    if (b.dataset.go === sideActive) b.setAttribute('aria-current', 'page');
+    if (b.dataset.go === v) b.setAttribute('aria-current', 'page');
     else b.removeAttribute('aria-current');
   }
   for (const b of $$('#tabbar [data-go]')) {
@@ -884,7 +896,7 @@ function syncFilesTabs() {
   const tabs = $('files-tabs');
   if (!tabs) return;
   const owner = state.me && role() === 'owner';
-  const filesView = state.view === 'files' || state.view === 'upload';
+  const filesView = state.view === 'files';
   tabs.hidden = !owner || !filesView;
   if (!owner && state.filesSrc === 'device') setFilesSrc('room');
 }
@@ -2790,7 +2802,7 @@ function enqueue(items) {
   }
   pump();
   renderTransfers();
-  if (!isDesktopLayout()) setView('upload');
+  setView('upload');
 }
 
 
@@ -3719,7 +3731,7 @@ function pickPendingFile(id, file) {
   queue.push(item);
   pump();
   renderTransfers();
-  if (!isDesktopLayout()) setView('upload');
+  setView('upload');
 }
 
 // cancelPending discards a stored session that no running upload owns: one DELETE, and the
@@ -4136,6 +4148,14 @@ async function setupOwner() {
   if (setupOwner.done) return;
   setupOwner.done = true;
   $('owner').hidden = false;
+  const navBtn = el('button', { class: 'nav', type: 'button', id: 'nav-invite', onclick: () => setView('invite') },
+    el('span', { 'aria-hidden': 'true' }, '📲'), ' ' + t('invite_nav'));
+  navBtn.dataset.go = 'invite';
+  const tabBtn = el('button', { type: 'button', id: 'tab-invite', onclick: () => setView('invite') },
+    el('span', { 'aria-hidden': 'true' }, '📲'), t('invite_tab'));
+  tabBtn.dataset.go = 'invite';
+  $$('.side-nav')[0].prepend(navBtn);
+  $('tabbar').prepend(tabBtn);
   await loadJoinInfo();
   await loadNetworks();
   await loadCable();
@@ -4726,11 +4746,14 @@ function setupOwnerTools() {
     manual.value = '';
     uploadRows.clear();
     const hadFocus = pane.contains(document.activeElement) || statusCard.contains(document.activeElement);
-    if (state.view === 'diag') setView(isDesktopLayout() ? 'files' : 'upload');
+    if (state.view === 'diag' || state.view === 'invite') setView(canUpload() && !isDesktopLayout() ? 'upload' : 'files');
     pane.remove();
     navBtn.remove();
     tabBtn.remove();
     statusCard.remove();
+    $('nav-invite')?.remove();
+    $('tab-invite')?.remove();
+    if ($('owner')) $('owner').hidden = true;
     if (hadFocus) {
       const next = $$('[data-go="files"]').find((b) => b.offsetParent !== null);
       if (next) next.focus();

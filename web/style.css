@@ -91,13 +91,9 @@ body.in-app .shell{max-width:1360px;padding:0;border:1px solid var(--line);borde
 .nav[aria-current="page"]{background:var(--chip);font-weight:600}
 .main{display:flex;flex-direction:column;gap:12px;min-width:0;min-height:0;padding:20px;overflow-x:hidden;overflow-y:auto}
 .pane{display:none;flex-direction:column;gap:16px}
-#app[data-view="upload"] #pane-upload,#app[data-view="files"] #pane-files,#app[data-view="chat"] #pane-chat,#app[data-view="diag"] #pane-diag,#app[data-view="settings"] #pane-settings,#app[data-view="about"] #pane-about{display:flex}
-#app[data-view="files"][data-files-src="device"] #pane-cable-fs,#app[data-view="upload"][data-files-src="device"] #pane-cable-fs{display:flex}
-@media (min-width:821px){
-  #pane-upload{display:flex !important}
-  #app[data-view="upload"] #pane-files{display:flex}
-}
-#app[data-files-src="device"] #owner,#app[data-files-src="device"] #owner-status,#app[data-files-src="device"] #pane-upload,#app[data-files-src="device"] #pane-files{display:none !important}
+#app[data-view="invite"] #pane-invite,#app[data-view="upload"] #pane-upload,#app[data-view="files"] #pane-files,#app[data-view="chat"] #pane-chat,#app[data-view="diag"] #pane-diag,#app[data-view="settings"] #pane-settings,#app[data-view="about"] #pane-about{display:flex}
+#app[data-view="files"][data-files-src="device"] #pane-cable-fs{display:flex}
+#app[data-files-src="device"] #pane-upload,#app[data-files-src="device"] #pane-files{display:none !important}
 
 .files-tabs{display:flex;gap:4px;background:transparent;border:0;border-bottom:1px solid var(--line);border-radius:0;padding:0;position:sticky;top:0;z-index:6}
 .files-tabs button{flex:0 0 auto;background:transparent;border:0;color:var(--mut);border-radius:0;border-bottom:2px solid transparent;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:-1px}

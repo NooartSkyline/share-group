@@ -76,6 +76,7 @@
 
     <h4 class="nav-title">เมนู</h4>
     <nav class="side-nav" aria-label="เมนูหลัก">
+      <button class="nav" type="button" data-go="upload" id="nav-upload"><span>⇅</span> <span data-i18n="upload_nav">ถ่ายโอน</span></button>
       <button class="nav" type="button" data-go="files"><span>🗂️</span> ไฟล์ <span id="nav-files-count" class="count" hidden></span></button>
       <button class="nav" type="button" data-go="chat"><span>💬</span> ข้อความ / คลิปบอร์ด <span id="nav-chat-badge" class="count badge" hidden></span></button>
     </nav>
@@ -87,6 +88,7 @@
       <ul id="pending-devices" class="pending-devs"></ul>
     </section>
 
+    <section id="pane-invite" class="pane">
     <section id="owner" class="card owner" hidden>
       <div class="invite-wifi">
         <div class="owner-qr" id="invite-qrs">
@@ -150,6 +152,7 @@
           </div>
         </div>
       </div>
+    </section>
     </section>
 
     <nav id="files-tabs" class="files-tabs" hidden aria-label="แหล่งไฟล์">
@@ -302,7 +305,7 @@
 </div>
 
 <nav id="tabbar" class="tabbar" aria-label="เมนูหลัก" hidden>
-  <button type="button" data-go="upload"><span>⇅</span>ถ่ายโอน</button>
+  <button type="button" data-go="upload" id="tab-upload"><span>⇅</span><span data-i18n="upload_tab">ถ่ายโอน</span></button>
   <button type="button" data-go="files"><span>🗂️</span>ไฟล์</button>
   <button type="button" data-go="chat"><span>💬</span>ข้อความ<i id="tab-chat-badge" class="badge dotbadge" hidden></i></button>
 </nav>

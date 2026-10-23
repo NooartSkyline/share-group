@@ -298,6 +298,7 @@
         <span class="pill p-usb" style="margin-left:auto">เปิดไฟล์</span>
       </button>
       <h4>เมนู</h4>
+      <button type="button" class="it" data-menu="invite"><div class="ic">📲</div>เชิญ</button>
       <button type="button" class="it" data-menu="upload"><div class="ic">⇅</div>ถ่ายโอน</button>
       <button type="button" class="it act" data-menu="files"><div class="ic">🗂️</div>ไฟล์</button>
       <button type="button" class="it" data-menu="chat"><div class="ic">💬</div>ข้อความ / คลิปบอร์ด</button>
@@ -307,7 +308,7 @@
     </aside>
 
     <main class="main">
-      <section id="pane-files">
+      <section id="pane-invite">
         <section class="card pending" id="pending-banner">
           <h4>อุปกรณ์รออนุมัติ</h4>
           <div class="pend">
@@ -389,12 +390,8 @@
             </div>
           </div>
         </section>
-        <div class="tabs">
-          <button type="button" class="on" data-tab="room">ไฟล์ในห้อง</button>
-          <button type="button" data-tab="device">ไฟล์บนเครื่อง</button>
-        </div>
-
-        <section id="pane-upload">
+      </section>
+      <section id="pane-upload">
           <div class="drop" id="drop">
             <div class="big">⬆️</div>
             <div class="txt"><b>ลากไฟล์หรือโฟลเดอร์มาวาง หรือกดที่นี่เพื่อเพิ่มไฟล์ทดลอง</b><br>
@@ -415,7 +412,12 @@
             <h3 style="font-size:14px;margin-bottom:8px">การถ่ายโอน</h3>
             <div class="xfer" id="xfer-list"></div>
           </div>
-        </section>
+      </section>
+      <section id="pane-files">
+        <div class="tabs">
+          <button type="button" class="on" data-tab="room">ไฟล์ในห้อง</button>
+          <button type="button" data-tab="device">ไฟล์บนเครื่อง</button>
+        </div>
         <div id="view-room">
           <div class="tools">
             <input id="file-search" class="search" type="search" placeholder="🔍 ค้นหาชื่อไฟล์หรืออุปกรณ์…">
@@ -622,6 +624,7 @@
 </div></div>
 
 <nav class="tabbar hidden" aria-label="เมนูหลัก">
+  <button type="button" data-menu="invite"><span>📲</span>เชิญ</button>
   <button type="button" data-menu="upload"><span>⇅</span>ถ่ายโอน</button>
   <button type="button" data-menu="files"><span>🗂️</span>ไฟล์</button>
   <button type="button" data-menu="chat"><span>💬</span>ข้อความ</button>
@@ -816,7 +819,7 @@ const S = {
   screen: 'app',
   role: 'owner',
   meName: 'MacBook',
-  menu: 'files',
+  menu: 'invite',
   tab: 'room',
   device: 'galaxy',
   path: ['ดาวน์โหลด'],
@@ -937,15 +940,15 @@ function renderRole() {
     : S.role === 'member' ? 'ส่ง รับ ข้อความได้ ไม่จัดการห้อง'
     : S.role === 'viewer' ? 'ดูและดาวน์โหลดได้อย่างเดียว'
     : 'อัปโหลดอย่างเดียว ไม่ดูไฟล์และข้อความ';
-  const ownerOnly = !isOwner() || S.tab !== 'room' || (S.menu !== 'files' && S.menu !== 'upload');
-  $('owner-card').classList.toggle('hidden', ownerOnly);
-  $('pending-banner').classList.toggle('hidden', !S.showPending || ownerOnly);
+  const inviteOpen = isOwner() && S.menu === 'invite';
+  $('owner-card').classList.toggle('hidden', !inviteOpen);
+  $('pending-banner').classList.toggle('hidden', !S.showPending || !inviteOpen);
   document.querySelector('.room-switch').classList.toggle('hidden', !isOwner());
   $('wifi-pc').classList.toggle('hidden', S.pcGone);
   document.querySelector('#wifi-pc .dev-tools').classList.toggle('hidden', !isOwner());
   document.querySelectorAll('[data-open-dev]').forEach((b) => b.classList.toggle('hidden', !isOwner()));
   const filesTabs = document.querySelector('.tabs');
-  if (filesTabs) filesTabs.classList.toggle('hidden', !isOwner() || (S.menu !== 'files' && S.menu !== 'upload'));
+  if (filesTabs) filesTabs.classList.toggle('hidden', !isOwner() || S.menu !== 'files');
   $('drop').classList.toggle('hidden', !canUpload());
   document.querySelector('.drop-tools').classList.toggle('hidden', !canUpload());
   $('room-del').classList.toggle('hidden', S.role === 'viewer' || S.role === 'uploader');
@@ -962,32 +965,30 @@ function renderMenu() {
     b.classList.toggle('act', on);
     b.classList.toggle('on', on);
   });
-  const desktop = isDesktop();
-  const filesish = S.menu === 'files' || S.menu === 'upload';
-  $('pane-files').classList.toggle('hidden', !filesish);
-  $('pane-upload').classList.toggle('hidden',
-    S.tab === 'device' || (desktop ? !filesish : S.menu !== 'upload') || !canUpload());
+  $('pane-invite').classList.toggle('hidden', S.menu !== 'invite' || !isOwner());
+  $('pane-files').classList.toggle('hidden', S.menu !== 'files');
+  $('pane-upload').classList.toggle('hidden', S.menu !== 'upload' || !canUpload());
   $('pane-chat').classList.toggle('hidden', S.menu !== 'chat' || !canChatRead());
   $('pane-diag').classList.toggle('hidden', S.menu !== 'diag' || !isOwner());
   $('pane-settings').classList.toggle('hidden', S.menu !== 'settings');
   $('pane-about').classList.toggle('hidden', S.menu !== 'about');
+  document.querySelectorAll('[data-menu="invite"]').forEach((b) => b.classList.toggle('hidden', !isOwner()));
   document.querySelectorAll('[data-menu="diag"]').forEach((b) => b.classList.toggle('hidden', !isOwner()));
   document.querySelectorAll('[data-menu="chat"]').forEach((b) => b.classList.toggle('hidden', !canChatRead()));
-  document.querySelectorAll('[data-menu="upload"]').forEach((b) => b.classList.toggle('hidden', !canUpload() || desktop));
+  document.querySelectorAll('[data-menu="upload"]').forEach((b) => b.classList.toggle('hidden', !canUpload()));
 }
 
 function renderTabs() {
   document.querySelectorAll('[data-tab]').forEach((b) => b.classList.toggle('on', b.dataset.tab === S.tab));
-  const mobileUpload = !isDesktop() && S.menu === 'upload';
-  $('view-room').classList.toggle('hidden', S.tab !== 'room' || mobileUpload);
-  $('view-device').classList.toggle('hidden', S.tab !== 'device' || mobileUpload);
+  $('view-room').classList.toggle('hidden', S.tab !== 'room' || S.menu !== 'files');
+  $('view-device').classList.toggle('hidden', S.tab !== 'device' || S.menu !== 'files');
   const room = rooms[$('room-pick').value] || 'ห้องหลัก';
   $('win-title').textContent = S.tab === 'device'
     ? 'Share Group • ' + devices[S.device].name
     : 'Share Group • ' + room;
-  const ownerChrome = isOwner() && S.tab === 'room' && (S.menu === 'files' || (isDesktop() && S.menu === 'upload'));
-  $('owner-card').classList.toggle('hidden', !ownerChrome);
-  $('pending-banner').classList.toggle('hidden', !S.showPending || !ownerChrome);
+  const inviteOpen = isOwner() && S.menu === 'invite';
+  $('owner-card').classList.toggle('hidden', !inviteOpen);
+  $('pending-banner').classList.toggle('hidden', !S.showPending || !inviteOpen);
   $('room-delete').classList.toggle('hidden', !isOwner() || $('room-pick').value === defaultRoom);
 }
 
@@ -1617,7 +1618,7 @@ $('join-pin-btn').addEventListener('click', () => {
 $('wait-approved').addEventListener('click', () => enterApp('member'));
 $('wait-back').addEventListener('click', () => showJoin());
 $('leave-room').addEventListener('click', () => showJoin());
-$('role-demo').addEventListener('change', () => { S.role = $('role-demo').value; if (S.menu === 'diag' && !isOwner()) S.menu = 'files'; render(); });
+$('role-demo').addEventListener('change', () => { S.role = $('role-demo').value; if ((S.menu === 'diag' || S.menu === 'invite') && !isOwner()) S.menu = canUpload() ? 'upload' : 'files'; render(); });
 $('pc-role').addEventListener('change', () => toast('เปลี่ยนบทบาทเป็น ' + $('pc-role').selectedOptions[0].textContent));
 $('pc-rename').addEventListener('click', () => {
   const n = prompt('ชื่ออุปกรณ์', S.pcName);
@@ -1659,7 +1660,7 @@ function applyLang() {
 
 document.addEventListener('keydown', (e) => {
   if (e.target.matches('input, textarea, select')) return;
-  if ((e.metaKey || e.ctrlKey) && e.code === 'KeyV' && S.menu !== 'files') return;
+  if ((e.metaKey || e.ctrlKey) && e.code === 'KeyV' && S.menu !== 'upload') return;
   if ((e.metaKey || e.ctrlKey) && e.code === 'KeyV' && S.tab === 'room' && canUpload()) {
     e.preventDefault();
     const n = new Date();
