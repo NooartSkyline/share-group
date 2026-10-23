@@ -187,7 +187,7 @@ func (s *Service) iosConnectedUDID(ctx context.Context) string {
 	}
 	raw, err := s.runTimed(ctx, cableListTimeout, "xcrun", "devicectl", "list", "devices", "--json-output", "-")
 	if err != nil {
-		return firstIOSDeviceUDID(s.runShort(ctx, "xcrun", "devicectl", "list", "devices"))
+		return ""
 	}
 	return firstPhysicalUDID(raw)
 }
@@ -204,22 +204,23 @@ func firstPhysicalUDID(raw []byte) string {
 		if m == nil {
 			continue
 		}
-		conn := nestedString(m, "connectionProperties", "transportType")
+		conn := strings.ToLower(nestedString(m, "connectionProperties", "transportType"))
 		state := nestedString(m, "connectionProperties", "pairingState")
 		reality := nestedString(m, "hardwareProperties", "reality")
 		if strings.EqualFold(reality, "simulated") {
 			continue
 		}
-		if strings.Contains(strings.ToLower(conn), "wired") || strings.Contains(strings.ToLower(conn), "usb") || conn != "" {
-			if strings.EqualFold(state, "unpaired") {
-				continue
-			}
-			if id := nestedString(m, "hardwareProperties", "udid"); id != "" {
-				return id
-			}
-			if id, _ := m["identifier"].(string); id != "" {
-				return id
-			}
+		if strings.EqualFold(state, "unpaired") {
+			continue
+		}
+		if !strings.Contains(conn, "wired") && !strings.Contains(conn, "usb") {
+			continue
+		}
+		if id := nestedString(m, "hardwareProperties", "udid"); id != "" {
+			return id
+		}
+		if id, _ := m["identifier"].(string); id != "" {
+			return id
 		}
 	}
 	return ""

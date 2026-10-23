@@ -141,6 +141,52 @@ func TestListCableFSBothDevices(t *testing.T) {
 	}
 }
 
+func TestFirstPhysicalUDIDWiredOnly(t *testing.T) {
+	const wifiPaired = `{"result":{"devices":[
+		{"connectionProperties":{"transportType":"sameMachine","pairingState":"paired"},"hardwareProperties":{"reality":"simulated","udid":"SIM-1"}},
+		{"connectionProperties":{"transportType":"localNetwork","pairingState":"paired","tunnelState":"disconnected"},"hardwareProperties":{"reality":"physical","udid":"00008140-000545891AE1801C"}}
+	]}}`
+	if id := firstPhysicalUDID([]byte(wifiPaired)); id != "" {
+		t.Fatalf("wifi/sim = %q", id)
+	}
+	const usb = `{"result":{"devices":[
+		{"connectionProperties":{"transportType":"localNetwork","pairingState":"paired"},"hardwareProperties":{"reality":"physical","udid":"WIFI-UDID"}},
+		{"connectionProperties":{"transportType":"wired","pairingState":"paired"},"hardwareProperties":{"reality":"physical","udid":"00008110-001A4D123456789A"}}
+	]}}`
+	if id := firstPhysicalUDID([]byte(usb)); id != "00008110-001A4D123456789A" {
+		t.Fatalf("wired = %q", id)
+	}
+}
+
+func TestListCableFSOmitsNetworkPairedIPhone(t *testing.T) {
+	run := fake.NewRunner()
+	run.On("/usr/sbin/networksetup -listallhardwareports", fake.RunResult{Out: []byte("Hardware Port: Wi-Fi\nDevice: en0\n")})
+	run.On("/usr/sbin/ioreg -r -c IOUSBHostDevice -l -d 1 -w 0", fake.RunResult{Out: []byte(ioregPixel)})
+	run.On("adb version", fake.RunResult{Out: []byte("Android Debug Bridge version 1.0.41")})
+	run.On("adb devices", fake.RunResult{Out: []byte("List of devices attached\nRFCWA19V99W\tdevice\nc3782355\tdevice\n")})
+	run.On("adb -s RFCWA19V99W reverse tcp:8080 tcp:8080", fake.RunResult{})
+	run.On("adb -s c3782355 reverse tcp:8080 tcp:8080", fake.RunResult{})
+	run.On("idevice_id -l", fake.RunResult{})
+	run.On("xcrun devicectl list devices --json-output -", fake.RunResult{Out: []byte(`{"result":{"devices":[
+		{"connectionProperties":{"transportType":"localNetwork","pairingState":"paired","tunnelState":"disconnected"},"hardwareProperties":{"reality":"physical","udid":"00008140-000545891AE1801C"}}
+	]}}`)})
+	svc := NewService(netList{{Name: "en0", IP: "192.168.1.23", Kind: domain.NetPhysical}}, 8080, "")
+	svc.SetRunner(run)
+
+	root, err := svc.ListCableFS(context.Background(), owner(), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(root.Entries) != 2 {
+		t.Fatalf("devices = %+v", root.Entries)
+	}
+	for _, e := range root.Entries {
+		if e.Path == domain.CableiPhone || e.Path == domain.CableiPad {
+			t.Fatalf("network iPhone listed: %+v", root.Entries)
+		}
+	}
+}
+
 func TestSanitizeCableZipPaths(t *testing.T) {
 	got, err := SanitizeCableZipPaths([]string{"android/download/a.jpg", " android/download/a.jpg", "android/download/b.png"})
 	if err != nil || len(got) != 2 || got[0] != "android/download/a.jpg" || got[1] != "android/download/b.png" {
