@@ -24,7 +24,8 @@
   - `sw.js` (service worker), `manifest.webmanifest` และ `icons/` สำหรับ PWA
   - `web/test/` เป็นไฟล์ทดสอบ/benchmark ห้ามฝังเข้า binary
 - Dependency เฉพาะการทดสอบ: `pgregory.net/rapid` (property test ฝั่ง Go) ยังไม่อยู่ใน `go.mod` ถ้าเพิ่มต้องปักเวอร์ชันตายตัวและใช้ใน `_test.go` เท่านั้น ฝั่ง JS ไม่ใช้ dependency ภายนอก (ไม่มี npm, ไม่มี `fast-check`)
-- วางแผนไว้: แอป menu bar ด้วย Wails v3 (Phase G)
+- แอป menu bar (Phase G): Swift AppKit ใน `desktop/LanShareMenu` เรียกเซิร์ฟเวอร์ Go แดชบอร์ดยังเป็น `web/` (ไม่ใช้ Wails)
+- โฮสต์ Phase I (ล็อกแล้ว ยังไม่ทำ): แกน Go + `web/` เดิมทุกเครื่อง — Windows คอมไพล์ `GOOS=windows` ทั้งเซิร์ฟเวอร์และถาดระบบใน `desktop/windows`; Android เป็น Kotlin ใน `mobile/android` ห่อไลบรารี Go เปิด `localhost` ใน WebView; iOS เป็น Swift ใน `mobile/ios` ห่อ xcframework เปิด `localhost` ใน WKWebView ใช้ได้ตอนแอปเปิดอยู่ ห้ามเขียนเซิร์ฟเวอร์ซ้ำใน C# / Kotlin / Swift และห้ามใช้ Flutter
 
 ## คำสั่ง
 ```bash

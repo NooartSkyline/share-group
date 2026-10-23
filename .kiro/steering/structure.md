@@ -35,8 +35,12 @@ internal/
     system/                 Clock และ IDGenerator ตัวจริง
 web/                        UI บนเบราว์เซอร์ ฝังด้วย embed.go (ดูรายการไฟล์ใน tech.md) web/test/ ห้ามฝัง
 tools/genicons/             เครื่องมือสร้างไอคอน PWA และไอคอนแอป Mac (โลโก้ไฟล์กลางวงกลุ่ม)
+desktop/LanShareMenu/       เปลือก menu bar บน Mac (Swift AppKit) เปิด/ปิดเซิร์ฟเวอร์ Go ไม่ใส่กฎห้อง
+desktop/windows/            เปลือกถาดระบบ Windows เป็น Go (Phase I ยังไม่ทำ)
+mobile/android/             เปลือกแอป Android เป็น Kotlin ห่อไลบรารี Go (Phase I ยังไม่ทำ)
+mobile/ios/                 เปลือกแอป iOS เป็น Swift ห่อไลบรารี Go (Phase I ยังไม่ทำ)
 docs/project-scope.md       ขอบเขต การตัดสินใจ เฟส สถานะ ระบบ นักพัฒนา และ Mock UI (ภาษาไทย หัวข้อ 12–15)
-mock/                       ต้นแบบ UI แบบ HTML (ui-mock-v3.html คือตัวปัจจุบัน; v2 เก็บเทียบ; ui-mock.html เลิกใช้แล้ว)
+mock/                       ต้นแบบ UI แบบ HTML (ui-mock-v3.html คือตัวปัจจุบัน; v2 เก็บเทียบ; ui-mock-hosts.html คือโฮสต์ Phase I; ui-mock.html เลิกใช้แล้ว)
 ```
 
 ## กฎของแต่ละชั้น
@@ -48,6 +52,8 @@ mock/                       ต้นแบบ UI แบบ HTML (ui-mock-v3.htm
 - ทุกเมธอดของ repository/store ที่แตะไฟล์หรือข้อความต้องรับ `RoomID` เพื่อให้การค้นหาอยู่ในขอบเขตของห้อง
 - พฤติกรรมภายนอกใหม่: เพิ่ม port ใน `usecase/port`, implement ใน `adapter` หรือ `infra`, เพิ่ม fake ใน `usecase/fake`, แล้วเชื่อมใน `main.go`
 - อย่าสร้าง interface ล่วงหน้าก่อนจะมีผู้ใช้งานจริง
+- โฮสต์ Phase I (Windows / Android / iOS) ใช้แกน `internal/` ก้อนเดียวกับ Mac เปลือก Kotlin / Swift / ถาด Windows เป็นชั้นนอกสุดเทียบเท่า `cmd`: เปิด-ปิดเซิร์ฟเวอร์, การแจ้งเตือน, Hotspot, ที่เก็บเครื่อง, OTG ห้ามใส่กฎห้อง PIN สิทธิ์ หรือการโอนในแอปเนทีฟ ห้าม copy `domain`/`usecase` ออกจาก Go แดชบอร์ดยังเป็น `web/` บน `127.0.0.1`
+- ความสามารถของ OS เครื่องใหม่ implement เป็น adapter ของ port ที่มีอยู่ (`NetworkProvider`, `FileStore`, `CaffeinateLauncher`, `ActivityTracker`, `HEICConverter`, `SystemPreviewer`) หรือ port ใหม่เมื่อมีผู้ใช้จริง เครื่องที่ไม่มีฟีเจอร์นั้นคืน `domain.ErrUnsupported`
 
 ## การตั้งชื่อ
 - ชื่อ package เป็นตัวพิมพ์เล็กคำเดียว ตรงกับชื่อโฟลเดอร์
