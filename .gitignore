@@ -14,3 +14,6 @@ mobile/ios/build/
 mobile/ios/*.xcuserstate
 mobile/ios/ShareGroupHost.xcodeproj/xcuserdata/
 mobile/ios/ShareGroupHost.xcodeproj/project.xcworkspace/xcuserdata/
+
+# local scratch: Xcode derived data, host runtime, screenshots
+tmp/
