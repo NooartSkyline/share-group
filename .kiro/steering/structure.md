@@ -43,6 +43,8 @@ desktop/windows/            เปลือกถาดระบบ Windows เ�
 mobile/android/             เปลือกแอป Android เป็น Kotlin + WebView + foreground service ห่อ mobilehost (Phase I)
 mobile/ios/                 เปลือกแอป iOS เป็น Swift + WKWebView ห่อ mobilehost (Phase I ใช้ได้ตอนแอปเปิดอยู่)
 docs/project-scope.md       ขอบเขต การตัดสินใจ เฟส สถานะ ระบบ นักพัฒนา และ Mock UI (ภาษาไทย หัวข้อ 12–15)
+dist/<เวอร์ชัน>/            ไฟล์ติดตั้งโฮสต์ที่แจก (Mac .dmg, Android .apk, Windows .zip) รุ่นเก่าเก็บแยกโฟลเดอร์
+VERSION                     เลขเวอร์ชันปัจจุบัน ใช้ตอนแพ็ก `scripts/package-hosts.sh`
 mock/                       ต้นแบบ UI แบบ HTML (ui-mock-v3.html คือตัวปัจจุบัน; v2 เก็บเทียบ; ui-mock-hosts.html คือโฮสต์ Phase I; ui-mock.html เลิกใช้แล้ว)
 ```
 

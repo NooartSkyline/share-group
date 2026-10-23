@@ -39,6 +39,7 @@ go test -tags integration ./...     # เทสต์ integration (เช่น 
 node --test web/test/               # เทสต์ฟังก์ชันล้วนของ JS (logic.js ฯลฯ) ด้วย Node ตัวเดียว ไม่ต้อง npm
 go vet ./...
 gofmt -l .                          # แสดงรายการไฟล์ที่ยังไม่ได้ format
+sh scripts/package-hosts.sh         # แพ็กไฟล์ติดตั้งโฮสต์ Mac/Android/Windows เข้า dist/<เวอร์ชัน>/
 ```
 
 Config flag (`internal/infra/config`): `-port`, `-data`, `-iface`, `-room-name`, `-max-pin-failures`, `-lockout`, `-min-free`, `-upload-ttl`, `-stall-timeout`, `-keep-awake`, `-system-preview`

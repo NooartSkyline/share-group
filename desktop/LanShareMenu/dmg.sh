@@ -3,7 +3,9 @@
 set -e
 APP_SRC="$(CDPATH= cd -- "$(dirname "$0")" && pwd)"
 ROOT="$(CDPATH= cd -- "$APP_SRC/../.." && pwd)"
-VERSION="${VERSION:-0.1.0}"
+if [ -z "${VERSION:-}" ]; then
+  VERSION="$(tr -d '[:space:]' < "$ROOT/VERSION")"
+fi
 APP="$APP_SRC/build/Share Group.app"
 DIST="$ROOT/build"
 DMG="${1:-$DIST/Share Group-$VERSION.dmg}"

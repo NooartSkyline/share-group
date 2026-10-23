@@ -17,3 +17,9 @@ mobile/ios/ShareGroupHost.xcodeproj/project.xcworkspace/xcuserdata/
 
 # local scratch: Xcode derived data, host runtime, screenshots
 tmp/
+
+# intermediate host builds — ไฟล์ติดตั้งอยู่ที่ dist/<เวอร์ชัน>/
+desktop/LanShareMenu/build/
+desktop/windows/build/
+/build/
+/Share Group-*.dmg

@@ -6,13 +6,13 @@ OUT="$ROOT/desktop/windows/build"
 mkdir -p "$OUT"
 
 echo "build tray → $OUT/ShareGroup.exe"
-(cd "$ROOT" && GOOS=windows GOARCH=amd64 go build -ldflags="-H=windowsgui" -o "$OUT/ShareGroup.exe" ./desktop/windows)
+(cd "$ROOT" && CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags="-H=windowsgui" -o "$OUT/ShareGroup.exe" ./desktop/windows)
 
 echo "build lanshare → $OUT/lanshare.exe"
-(cd "$ROOT" && GOOS=windows GOARCH=amd64 go build -o "$OUT/lanshare.exe" ./cmd/lanshare)
+(cd "$ROOT" && CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o "$OUT/lanshare.exe" ./cmd/lanshare)
 
 echo "build share → $OUT/share.exe"
-(cd "$ROOT" && GOOS=windows GOARCH=amd64 go build -o "$OUT/share.exe" ./cmd/share)
+(cd "$ROOT" && CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o "$OUT/share.exe" ./cmd/share)
 
 cp "$ROOT/desktop/windows/install.cmd" "$OUT/install.cmd"
 cp "$ROOT/desktop/windows/uninstall.cmd" "$OUT/uninstall.cmd"
