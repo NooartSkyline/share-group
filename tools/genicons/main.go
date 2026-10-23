@@ -56,6 +56,7 @@ var specs = []spec{
 	{"icon_256x256@2x.png", "desktop/LanShareMenu/icon.iconset", 512, styleRounded, 0.74},
 	{"icon_512x512.png", "desktop/LanShareMenu/icon.iconset", 512, styleRounded, 0.74},
 	{"icon_512x512@2x.png", "desktop/LanShareMenu/icon.iconset", 1024, styleRounded, 0.74},
+	{"AppIcon.png", "mobile/ios/ShareGroupHost/Assets.xcassets/AppIcon.appiconset", 1024, styleFull, 0.66},
 }
 
 // พิกัด 0..1 ในกล่องสัญลักษณ์: หน้ากระดาษตรงกลาง จุดสามจุดรอบนอก
