@@ -230,7 +230,9 @@
           <ul id="cable-fs-list" class="cable-fs-list"></ul>
           <div id="cable-fs-selbar" class="selbar" hidden>
             <span class="grow"><b id="cable-fs-sel-count"></b> <span id="cable-fs-sel-size"></span></span>
-            <button id="cable-fs-copy" class="btn sm" type="button" data-i18n="cable_fs_copy">คัดลอก</button>
+            <button id="cable-fs-copy" class="btn sm" type="button" data-i18n="cable_fs_copy" title="คัดลอก (⌘C)">คัดลอก</button>
+            <button id="cable-fs-cut" class="btn sm" type="button" data-i18n="cable_fs_cut" title="ตัด (⌘X)">ตัด</button>
+            <button id="cable-fs-import" class="btn sm" type="button" data-i18n="cable_fs_import">ดึงเข้าห้อง</button>
             <button id="cable-fs-save" class="btn sm" type="button" data-i18n="cable_fs_save">⬇ บันทึกลงเครื่อง</button>
             <button id="cable-fs-delete" class="btn danger sm" type="button" data-i18n="cable_fs_del">🗑 ลบ</button>
             <button id="cable-fs-sel-clear" class="btn ghost sm" type="button" data-i18n="cable_fs_clear">ล้าง</button>
@@ -238,8 +240,12 @@
           <div id="cable-fs-clipbar" class="selbar clipbar" hidden>
             <span class="grow"><b id="cable-fs-clip-count"></b> <span id="cable-fs-clip-from" class="mut"></span></span>
             <button id="cable-fs-mkdir" class="btn ghost sm" type="button" data-i18n="cable_fs_mkdir">โฟลเดอร์ใหม่</button>
-            <button id="cable-fs-paste" class="btn sm" type="button" data-i18n="cable_fs_paste">วาง</button>
+            <button id="cable-fs-paste" class="btn sm" type="button" data-i18n="cable_fs_paste" title="วาง (⌘V)">วาง</button>
             <button id="cable-fs-clip-clear" class="btn ghost sm" type="button" data-i18n="cable_fs_clear">ล้าง</button>
+          </div>
+          <div id="cable-fs-busy" class="cable-fs-busy" hidden>
+            <span class="cable-fs-spin" aria-hidden="true"></span>
+            <span id="cable-fs-busy-text"></span>
           </div>
         </div>
         <div id="cable-fs-preview" hidden>

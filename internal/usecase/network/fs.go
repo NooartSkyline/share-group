@@ -11,14 +11,15 @@ import (
 )
 
 const (
-	cableListTimeout   = 8 * time.Second
-	cablePeekTimeout   = 8 * time.Second
-	cablePullTimeout   = 3 * time.Minute
-	cableDeleteTimeout = 1 * time.Minute
-	maxCableFSEntries  = 400
-	maxCableZipFiles   = 200
-	maxCableZipDepth   = 24
-	cablePeekLimit     = 16 << 10
+	cableListTimeout    = 8 * time.Second
+	cablePeekTimeout    = 8 * time.Second
+	cablePullTimeout    = 3 * time.Minute
+	cableDeleteTimeout  = 1 * time.Minute
+	maxCableFSEntries   = 400
+	maxCableZipFiles    = 5000
+	maxCableZipDepth    = 24
+	cableZipListTimeout = 30 * time.Second
+	cablePeekLimit      = 16 << 10
 )
 
 // CablePeek is the start of a file on the plugged-in phone, for hex preview
@@ -63,6 +64,10 @@ type cableRoot struct {
 }
 
 func (s *Service) ListCableFS(ctx context.Context, actor domain.Device, loc string) (CableFSList, error) {
+	return s.loadCableFS(ctx, actor, loc, true)
+}
+
+func (s *Service) loadCableFS(ctx context.Context, actor domain.Device, loc string, ui bool) (CableFSList, error) {
 	if !actor.CanManage() {
 		return CableFSList{}, domain.ErrForbidden
 	}
@@ -115,7 +120,7 @@ func (s *Service) ListCableFS(ctx context.Context, actor domain.Device, loc stri
 		return s.listIOS(ctx, out, rootID, rel)
 	}
 	if _, ok := parseAndroidDevice(device); ok {
-		return s.listAndroid(ctx, out, rootID, rel)
+		return s.listAndroid(ctx, out, rootID, rel, ui)
 	}
 	return CableFSList{}, domain.ErrInvalidInput
 }
@@ -146,7 +151,7 @@ func SanitizeCableZipPaths(paths []string) ([]string, error) {
 		out = append(out, loc)
 	}
 	if len(out) > maxCableZipFiles {
-		return nil, domain.ErrInvalidInput
+		return nil, domain.ErrTooManyItems
 	}
 	return out, nil
 }
@@ -198,7 +203,7 @@ func (s *Service) PlanCableZip(ctx context.Context, actor domain.Device, files, 
 			return nil, err
 		}
 	}
-	if len(out) == 0 && len(folderLocs) == 0 {
+	if len(out) == 0 {
 		return nil, domain.ErrInvalidInput
 	}
 	return out, nil
@@ -211,9 +216,15 @@ func (s *Service) walkCableZip(ctx context.Context, actor domain.Device, loc, pr
 	if depth > maxCableZipDepth {
 		return nil
 	}
-	list, err := s.ListCableFS(ctx, actor, loc)
+	list, err := s.loadCableFS(ctx, actor, loc, false)
 	if err != nil {
 		return err
+	}
+	if len(list.Entries) == 0 && strings.TrimSpace(list.Hint) != "" {
+		if depth == 0 {
+			return domain.ErrNotFound
+		}
+		return nil
 	}
 	for _, e := range list.Entries {
 		if e.Dir {
@@ -242,7 +253,7 @@ func appendCableZip(out *[]CableZipFile, seen map[string]struct{}, loc, name str
 		return nil
 	}
 	if len(*out) >= maxCableZipFiles {
-		return domain.ErrInvalidInput
+		return domain.ErrTooManyItems
 	}
 	seen[loc] = struct{}{}
 	*out = append(*out, CableZipFile{Loc: loc, Name: name})

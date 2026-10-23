@@ -11,6 +11,7 @@ var (
 	ErrUnauthorized = errors.New("unauthorized")
 	ErrForbidden    = errors.New("forbidden")
 	ErrInvalidInput = errors.New("invalid input")
+	ErrTooManyItems = errors.New("too many items")
 	ErrInvalidPIN   = errors.New("invalid pin")
 	ErrLocked       = errors.New("too many attempts")
 	ErrNoNetwork    = errors.New("no usable network interface")

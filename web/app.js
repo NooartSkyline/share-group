@@ -111,6 +111,7 @@ const I18N = {
     files_tab_room: 'ไฟล์ในห้อง', files_tab_device: 'ไฟล์บนเครื่อง',
     cable_fs_title: 'ไฟล์บนเครื่อง', cable_fs_empty: 'โฟลเดอร์นี้ว่าง',
     cable_fs_import: 'ดึงเข้าห้อง', cable_fs_imported: 'ดึงเข้าห้องแล้ว',
+    cable_fs_imported_n: 'ดึงเข้าห้องแล้ว {n} รายการ',
     cable_fs_back: 'ย้อนกลับ', cable_fs_hint_idle: 'ยังไม่พบเครื่องที่เสียบสาย',
     cable_fs_hex: 'ข้อมูลดิบ', cable_fs_hex_trunc: 'แสดงเฉพาะต้นไฟล์',
     cable_fs_preview_load: 'กำลังดึงไฟล์จากเครื่อง…',
@@ -120,15 +121,27 @@ const I18N = {
     cable_fs_select_all: 'เลือกทั้งหมด', cable_fs_select_none: 'ยกเลิกทั้งหมด',
     cable_fs_save: '⬇ บันทึกลงเครื่อง', cable_fs_clear: 'ล้าง',
     cable_fs_picked: 'เลือก {n} รายการ',
-    cable_fs_save_need: 'เลือกไฟล์ก่อน', cable_fs_save_limit: 'เลือกได้ไม่เกิน 200 ไฟล์',
+    cable_fs_save_need: 'เลือกรายการก่อน', cable_fs_save_limit: 'บันทึกได้ไม่เกิน 5000 ไฟล์ต่อครั้ง',
+    cable_fs_save_busy: 'กำลังบันทึกลงเครื่อง…',
+    cable_fs_saved: 'เริ่มบันทึกลงเครื่องแล้ว',
+    cable_fs_save_empty: 'โฟลเดอร์นี้ว่าง ไม่มีไฟล์ให้บันทึก',
+    cable_fs_save_unreadable: 'อ่านโฟลเดอร์นี้จากมือถือไม่ได้',
     cable_fs_copy: 'คัดลอก', cable_fs_copy_need: 'เลือกรายการก่อน',
     cable_fs_copy_ok: 'คัดลอก {n} รายการแล้ว · เปิดหน้าที่จะวาง แล้วกดวาง',
+    cable_fs_copy_busy: 'กำลังคัดลอก…',
+    cable_fs_cut: 'ตัด',
+    cable_fs_cut_ok: 'ตัด {n} รายการแล้ว · เปิดหน้าที่จะวาง แล้วกดวาง',
+    cable_fs_cut_busy: 'กำลังตัด…',
+    cable_fs_cut_apps: 'ตัดแอปไม่ได้ ใช้คัดลอกเพื่อติดตั้งบนเครื่องอื่น',
     cable_fs_copy_limit: 'คัดลอกได้ไม่เกิน 8 แอปต่อครั้ง',
     cable_fs_copy_mixed: 'เลือกแอปกับไฟล์พร้อมกันไม่ได้',
     cable_fs_paste: 'วาง',
-    cable_fs_paste_need: 'เปิดหน้าที่จะวางบนเครื่องอื่น แล้วกดวาง',
-    cable_fs_paste_need_device: 'เสียบ Android เครื่องอื่นที่เปิด USB debugging ก่อน',
+    cable_fs_paste_busy: 'กำลังวาง…',
+    cable_fs_paste_need: 'เปิดหน้าที่จะวาง แล้วกดวาง',
+    cable_fs_paste_need_device: 'เสียบ Android ที่เปิด USB debugging ก่อน',
     cable_fs_paste_need_folder: 'เปิดโฟลเดอร์ที่จะวาง แล้วกดวาง',
+    cable_fs_paste_same: 'วางในโฟลเดอร์ที่ตัดมาไม่ได้',
+    cable_fs_pasted_copy: 'วางสำเนาแล้ว {n} รายการ',
     cable_fs_mkdir: 'โฟลเดอร์ใหม่',
     cable_fs_mkdir_prompt: 'ชื่อโฟลเดอร์ใหม่',
     cable_fs_mkdir_ok: 'สร้างโฟลเดอร์แล้ว',
@@ -137,6 +150,8 @@ const I18N = {
     cable_fs_pasted_files: 'วางแล้ว {n} รายการ',
     cable_fs_clip_from: 'จาก {name}',
     cable_fs_clip_count: 'คัดลอก {n} รายการ',
+    cable_fs_clip_cut: 'ตัด {n} รายการ',
+    cable_fs_moved: 'ย้ายแล้ว {n} รายการ',
     cable_fs_del: '🗑 ลบ',
     cable_fs_del_confirm: 'ลบ {n} รายการออกจากเครื่องที่เสียบสาย?\nลบแล้วกู้คืนไม่ได้',
     cable_fs_deleted: 'ลบแล้ว',
@@ -178,6 +193,7 @@ const I18N = {
     files_tab_room: 'Room files', files_tab_device: 'On device',
     cable_fs_title: 'Files on device', cable_fs_empty: 'This folder is empty',
     cable_fs_import: 'Add to room', cable_fs_imported: 'Added to the room',
+    cable_fs_imported_n: 'Added {n} items to the room',
     cable_fs_back: 'Back', cable_fs_hint_idle: 'No USB device is plugged in',
     cable_fs_hex: 'Raw bytes', cable_fs_hex_trunc: 'Showing the start of the file',
     cable_fs_preview_load: 'Pulling the file from the device…',
@@ -187,15 +203,27 @@ const I18N = {
     cable_fs_select_all: 'Select all', cable_fs_select_none: 'Clear all',
     cable_fs_save: '⬇ Save to this Mac', cable_fs_clear: 'Clear',
     cable_fs_picked: 'Selected {n} items',
-    cable_fs_save_need: 'Select files first', cable_fs_save_limit: 'Choose up to 200 files',
+    cable_fs_save_need: 'Select items first', cable_fs_save_limit: 'Save up to 5000 files at a time',
+    cable_fs_save_busy: 'Saving to this Mac…',
+    cable_fs_saved: 'Started saving to this Mac',
+    cable_fs_save_empty: 'This folder is empty, so there is nothing to save',
+    cable_fs_save_unreadable: 'Could not read this folder from the phone',
     cable_fs_copy: 'Copy', cable_fs_copy_need: 'Select items first',
     cable_fs_copy_ok: 'Copied {n} items · open the destination, then paste',
+    cable_fs_copy_busy: 'Copying…',
+    cable_fs_cut: 'Cut',
+    cable_fs_cut_ok: 'Cut {n} items · open the destination, then paste',
+    cable_fs_cut_busy: 'Cutting…',
+    cable_fs_cut_apps: 'Apps cannot be cut. Copy them to install on another phone',
     cable_fs_copy_limit: 'Copy up to 8 apps at a time',
     cable_fs_copy_mixed: 'Apps and files cannot be copied together',
     cable_fs_paste: 'Paste',
-    cable_fs_paste_need: 'Open the destination on another device, then paste',
-    cable_fs_paste_need_device: 'Plug in another Android with USB debugging first',
+    cable_fs_paste_busy: 'Pasting…',
+    cable_fs_paste_need: 'Open the destination, then paste',
+    cable_fs_paste_need_device: 'Plug in an Android with USB debugging first',
     cable_fs_paste_need_folder: 'Open the folder to paste into, then paste',
+    cable_fs_paste_same: 'Cannot paste into a folder that was cut',
+    cable_fs_pasted_copy: 'Pasted {n} copies',
     cable_fs_mkdir: 'New folder',
     cable_fs_mkdir_prompt: 'New folder name',
     cable_fs_mkdir_ok: 'Folder created',
@@ -204,6 +232,8 @@ const I18N = {
     cable_fs_pasted_files: 'Pasted {n} items',
     cable_fs_clip_from: 'from {name}',
     cable_fs_clip_count: '{n} items copied',
+    cable_fs_clip_cut: '{n} items cut',
+    cable_fs_moved: 'Moved {n} items',
     cable_fs_del: '🗑 Delete',
     cable_fs_del_confirm: 'Delete {n} items from the plugged-in device?\nThis cannot be undone',
     cable_fs_deleted: 'Deleted',
@@ -273,11 +303,20 @@ const isDesktopLayout = () => window.matchMedia('(min-width: 821px)').matches;
 
 let toastTimer;
 function toast(msg) {
-  const t = $('toast');
-  t.textContent = msg;
-  t.hidden = false;
+  const box = $('toast');
+  box.textContent = msg;
+  box.hidden = false;
+  box.classList.remove('hold');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { t.hidden = true; }, 3500);
+  toastTimer = setTimeout(() => { box.hidden = true; }, 3500);
+}
+
+function toastHold(msg) {
+  const box = $('toast');
+  box.textContent = msg;
+  box.hidden = false;
+  box.classList.add('hold');
+  clearTimeout(toastTimer);
 }
 
 function show(id) {
@@ -926,8 +965,9 @@ function renderDeviceList() {
   renderPendingBanner();
 }
 
-const cableFS = { path: '', seq: 0, preview: null, previewSeq: 0, view: 'preview', layout: 'list', entries: [], selected: new Set() };
-const cableClip = { kind: '', count: 0, names: [], source: '', sourceName: '', targets: [] };
+const cableFS = { path: '', seq: 0, preview: null, previewSeq: 0, view: 'preview', layout: 'list', entries: [], selected: new Set(), anchor: '', base: new Set() };
+const cableClip = { kind: '', count: 0, names: [], source: '', sourceName: '', targets: [], cut: false, origins: [] };
+const CABLE_ZIP_MAX = 5000;
 
 function setupCableFS() {
   if (setupCableFS.done) return;
@@ -942,7 +982,12 @@ function setupCableFS() {
     if (cableFS.preview) saveCableFiles([cableFS.preview]);
   });
   $('cable-fs-select-all').addEventListener('click', toggleCableSelectAll);
-  $('cable-fs-copy').addEventListener('click', copyCableItems);
+  $('cable-fs-copy').addEventListener('click', () => copyCableItems(false));
+  $('cable-fs-cut').addEventListener('click', () => copyCableItems(true));
+  $('cable-fs-import').addEventListener('click', importCableItems);
+  setupCableModKeys();
+  setupCableClipKeys();
+  labelCableClipKeys();
   $('cable-fs-paste').addEventListener('click', pasteCableClip);
   $('cable-fs-mkdir').addEventListener('click', mkdirCableFolder);
   $('cable-mkdir-form').addEventListener('submit', (ev) => {
@@ -968,6 +1013,8 @@ function setupCableFS() {
   });
   $('cable-fs-sel-clear').addEventListener('click', () => {
     cableFS.selected.clear();
+    cableFS.anchor = '';
+    cableFS.base = new Set();
     syncCablePicks();
   });
   for (const b of $$('#cable-fs-preview-views [data-preview-view]')) {
@@ -1040,6 +1087,15 @@ function cableCopyable(entries) {
   return (entries || []).filter((f) => f && f.path && f.path.includes('/') && !isCableAppsRoot(f.path));
 }
 
+function cableImportable(entries) {
+  return (entries || []).filter((f) => (
+    f && f.path && f.path.includes('/') &&
+    !isCablePhonePath(f.path) &&
+    !isCableAppPath(f.path) &&
+    !isCableAppsRoot(f.path)
+  ));
+}
+
 function applyCableClip(r) {
   cableClip.kind = (r && r.kind) || '';
   cableClip.count = (r && r.count) || 0;
@@ -1047,6 +1103,90 @@ function applyCableClip(r) {
   cableClip.source = (r && r.source) || '';
   cableClip.sourceName = (r && r.sourceName) || '';
   cableClip.targets = (r && r.targets) || [];
+  cableClip.cut = !!(r && r.cut);
+  cableClip.origins = (r && r.origins) || [];
+}
+
+function cableModLabel() {
+  return /Mac|iPhone|iPad/i.test(navigator.platform || navigator.userAgent || '') ? '⌘' : 'Ctrl+';
+}
+
+function labelCableClipKeys() {
+  const mod = cableModLabel();
+  const copy = $('cable-fs-copy');
+  const cut = $('cable-fs-cut');
+  const paste = $('cable-fs-paste');
+  if (copy) copy.title = t('cable_fs_copy') + ' (' + mod + 'C)';
+  if (cut) cut.title = t('cable_fs_cut') + ' (' + mod + 'X)';
+  if (paste) paste.title = t('cable_fs_paste') + ' (' + mod + 'V)';
+}
+
+function cableTypingTarget(el) {
+  if (!el) return false;
+  const node = el.nodeType === 3 ? el.parentElement : el;
+  if (!node || !node.closest) return false;
+  return !!node.closest('input, textarea, select, [contenteditable="true"]');
+}
+
+let cableClipBusy = '';
+
+function setCableClipBusy(kind) {
+  cableClipBusy = kind || '';
+  const box = $('cable-fs-busy');
+  const text = $('cable-fs-busy-text');
+  const browse = $('cable-fs-browse');
+  const msg = kind ? t('cable_fs_' + kind + '_busy') : '';
+  if (box) box.hidden = !kind;
+  if (text) text.textContent = msg;
+  if (browse) browse.setAttribute('aria-busy', kind ? 'true' : 'false');
+  const disable = !!kind;
+  for (const id of ['cable-fs-copy', 'cable-fs-cut', 'cable-fs-paste', 'cable-fs-mkdir', 'cable-fs-clip-clear', 'cable-fs-import', 'cable-fs-save', 'cable-fs-delete', 'cable-fs-back', 'cable-fs-select-all']) {
+    const b = $(id);
+    if (!b) continue;
+    if (id === 'cable-fs-back') b.disabled = disable || !cableFS.path;
+    else b.disabled = disable;
+  }
+  if (kind) toastHold(msg);
+}
+
+function setupCableClipKeys() {
+  document.addEventListener('keydown', (e) => {
+    if (!(e.metaKey || e.ctrlKey) || e.altKey || e.shiftKey) return;
+    if (e.repeat) return;
+    if (cableTypingTarget(e.target)) return;
+    if (document.querySelector('dialog[open]')) return;
+    if (state.view !== 'files' && state.view !== 'upload') return;
+    if (e.code === 'KeyA') {
+      e.preventDefault();
+      if (state.filesSrc === 'device') {
+        if (role() !== 'owner' || cableClipBusy) return;
+        cableFS.entries.forEach((f) => cableFS.selected.add(f.path));
+        if (cableFS.entries.length) cableFS.anchor = cableFS.entries[cableFS.entries.length - 1].path;
+        cableFS.base = new Set(cableFS.selected);
+        syncCablePicks();
+      } else {
+        const list = displayedFiles();
+        list.forEach((f) => state.selected.add(f.id));
+        if (list.length) fileSelectAnchor = list[list.length - 1].id;
+        fileSelectBase = new Set(state.selected);
+        renderFiles();
+      }
+      return;
+    }
+    if (cableClipBusy) { e.preventDefault(); return; }
+    if (role() !== 'owner') return;
+    if (state.filesSrc !== 'device') return;
+    if (e.code === 'KeyC') {
+      e.preventDefault();
+      copyCableItems(false);
+    } else if (e.code === 'KeyX') {
+      e.preventDefault();
+      copyCableItems(true);
+    } else if (e.code === 'KeyV') {
+      e.preventDefault();
+      pasteCableClip();
+    }
+  });
 }
 
 function cablePasteDest() {
@@ -1055,11 +1195,33 @@ function cablePasteDest() {
   const parts = loc.split('/').filter(Boolean);
   const device = parts[0] || '';
   if (!device.startsWith('android')) return { dest: '', reason: 'need' };
-  if (device === cableClip.source) return { dest: '', reason: 'need' };
+  if (cableClip.kind === 'apps' && device === cableClip.source) return { dest: '', reason: 'need' };
   if (!cableClip.targets.some((t) => t.id === device)) return { dest: '', reason: 'device' };
   if (cableClip.kind === 'apps') return { dest: device, reason: '' };
   if (!parts[1] || parts[1] === 'apps') return { dest: '', reason: 'folder' };
   return { dest: loc, reason: '' };
+}
+
+function cableCutNested(dest) {
+  if (!cableClip.cut || cableClip.kind === 'apps') return false;
+  const d = String(dest || '').replace(/\/+$/, '');
+  if (!d) return false;
+  for (const origin of cableClip.origins || []) {
+    const o = String(origin || '').replace(/\/+$/, '');
+    if (!o) continue;
+    if (d === o || d.startsWith(o + '/')) return true;
+  }
+  return false;
+}
+
+function cablePasteSameFolder(dest) {
+  const d = String(dest || '').replace(/\/+$/, '');
+  if (!d) return false;
+  for (const origin of cableClip.origins || []) {
+    const parent = String(origin || '').replace(/\/+$/, '').split('/').slice(0, -1).join('/');
+    if (parent && d === parent) return true;
+  }
+  return false;
 }
 
 async function refreshCableClip() {
@@ -1076,7 +1238,8 @@ function renderCableClip() {
   if (!bar) return;
   bar.hidden = cableClip.count === 0;
   if (!cableClip.count) return;
-  $('cable-fs-clip-count').textContent = t('cable_fs_clip_count').replace('{n}', String(cableClip.count));
+  const countKey = cableClip.cut ? 'cable_fs_clip_cut' : 'cable_fs_clip_count';
+  $('cable-fs-clip-count').textContent = t(countKey).replace('{n}', String(cableClip.count));
   $('cable-fs-clip-from').textContent = cableClip.sourceName
     ? t('cable_fs_clip_from').replace('{name}', cableClip.sourceName)
     : '';
@@ -1084,8 +1247,15 @@ function renderCableClip() {
   if (mkdir) mkdir.hidden = cableClip.kind === 'apps';
 }
 
-async function copyCableItems() {
-  const items = cableCopyable(cableFS.entries.filter((f) => cableFS.selected.has(f.path)));
+function cablePickedItems() {
+  const picked = cableFS.entries.filter((f) => cableFS.selected.has(f.path));
+  if (picked.length) return picked;
+  if (cableFS.preview) return [cableFS.preview];
+  return [];
+}
+
+async function copyCableItems(cut) {
+  const items = cableCopyable(cablePickedItems());
   if (!items.length) {
     toast(t('cable_fs_copy_need'));
     return;
@@ -1096,6 +1266,10 @@ async function copyCableItems() {
     toast(t('cable_fs_copy_mixed'));
     return;
   }
+  if (cut && apps.length) {
+    toast(t('cable_fs_cut_apps'));
+    return;
+  }
   let payload = items;
   if (apps.length) {
     const pkgs = [...new Set(apps.map((f) => f.path.split('/').filter(Boolean).slice(0, 3).join('/')))];
@@ -1104,19 +1278,48 @@ async function copyCableItems() {
       return;
     }
     payload = pkgs.map((p) => ({ path: p, dir: true }));
-  } else if (items.length > 200) {
+  } else if (items.length > CABLE_ZIP_MAX) {
     toast(t('cable_fs_save_limit'));
     return;
   }
-  const btn = $('cable-fs-copy');
-  if (btn) btn.disabled = true;
+  if (cableClipBusy) return;
+  const kind = cut ? 'cut' : 'copy';
+  setCableClipBusy(kind);
   try {
     const q = payload.map((f) => ((f.dir ? 'folder=' : 'path=') + encodeURIComponent(f.path))).join('&');
-    const r = await api('/api/admin/cable/fs/copy?' + q, { method: 'POST' });
+    const r = await api('/api/admin/cable/fs/copy?' + q + (cut ? '&cut=1' : ''), { method: 'POST' });
     applyCableClip(r);
     renderCableClip();
-    toast(t('cable_fs_copy_ok').replace('{n}', String(cableClip.count)));
-    if (!cableClip.targets.length) toast(t('cable_fs_paste_need_device'));
+    toast(t(cut ? 'cable_fs_cut_ok' : 'cable_fs_copy_ok').replace('{n}', String(cableClip.count)));
+    if (cableClip.kind === 'apps' && !cableClip.targets.length) toast(t('cable_fs_paste_need_device'));
+  } catch (err) {
+    toast(t('cable_open_fail') + ': ' + err.message);
+  } finally {
+    setCableClipBusy('');
+  }
+}
+
+async function importCableItems() {
+  const items = cableImportable(cableFS.entries.filter((f) => cableFS.selected.has(f.path)));
+  if (!items.length) {
+    toast(t('cable_fs_save_need'));
+    return;
+  }
+  if (items.length > CABLE_ZIP_MAX) {
+    toast(t('cable_fs_save_limit'));
+    return;
+  }
+  const btn = $('cable-fs-import');
+  if (btn) btn.disabled = true;
+  try {
+    const q = items.map((f) => ((f.dir ? 'folder=' : 'path=') + encodeURIComponent(f.path))).join('&');
+    const r = await api('/api/admin/cable/fs/import?' + q, { method: 'POST' });
+    const n = (r && r.count) || items.length;
+    toast(t('cable_fs_imported_n').replace('{n}', String(n)));
+    cableFS.selected.clear();
+    syncCablePicks();
+    await refreshFiles();
+    setFilesSrc('room');
   } catch (err) {
     toast(t('cable_open_fail') + ': ' + err.message);
   } finally {
@@ -1173,19 +1376,25 @@ async function pasteCableClip() {
     toast(t(reason === 'folder' ? 'cable_fs_paste_need_folder' : reason === 'device' ? 'cable_fs_paste_need_device' : 'cable_fs_paste_need'));
     return;
   }
+  if (cableCutNested(dest)) {
+    toast(t('cable_fs_paste_same'));
+    return;
+  }
   const files = cableClip.kind !== 'apps';
-  const btn = $('cable-fs-paste');
-  if (btn) btn.disabled = true;
+  const sameFolder = cablePasteSameFolder(dest);
+  if (cableClipBusy) return;
+  setCableClipBusy('paste');
   try {
     const r = await api('/api/admin/cable/fs/paste?dest=' + encodeURIComponent(dest), { method: 'POST' });
     const n = (r && (r.count || r.installed)) || 0;
-    toast(t(files ? 'cable_fs_pasted_files' : 'cable_fs_pasted').replace('{n}', String(n)));
+    const moved = files && cableClip.cut && !sameFolder;
+    toast(t(moved ? 'cable_fs_moved' : files ? (sameFolder ? 'cable_fs_pasted_copy' : 'cable_fs_pasted_files') : 'cable_fs_pasted').replace('{n}', String(n)));
     await loadCableFS(cableFS.path);
   } catch (err) {
     if (err.status === 400) toast(t('cable_fs_paste_need'));
     else toast(t('cable_open_fail') + ': ' + err.message);
   } finally {
-    if (btn) btn.disabled = false;
+    setCableClipBusy('');
   }
 }
 
@@ -1210,6 +1419,8 @@ async function loadCableFS(path) {
   cableFS.path = loc;
   cableFS.entries = [];
   cableFS.selected.clear();
+  cableFS.anchor = '';
+  cableFS.base = new Set();
   const back = $('cable-fs-back');
   const list = $('cable-fs-list');
   const hint = $('cable-fs-hint');
@@ -1282,22 +1493,35 @@ function cableFSRow(e, enter, act) {
     }, { once: true });
     icon = img;
   }
-  const ck = el('button', {
-    class: 'cable-fs-ck', type: 'button', 'aria-label': e.name,
-    onclick: (ev) => { ev.stopPropagation(); toggleCablePick(e.path); },
-  });
   const row = el('li', { class: e.dir ? 'dir' : 'file' },
-    ck,
     icon,
     el('span', { class: 'nm ellipsis', title: e.name }, e.name, meta ? el('small', {}, meta) : null),
   );
   row.dataset.path = e.path;
   row.dataset.size = String(e.size || 0);
   row.tabIndex = 0;
-  if (e.dir) {
-    row.onclick = () => enter();
-  } else {
-    row.onclick = () => previewCableFile(e);
+  const pickRow = (ev) => {
+    if (ev.button != null && ev.button !== 0) return;
+    if (ev.target.closest && ev.target.closest('.cable-fs-acts')) return;
+    pickCableItem(e.path, ev);
+    if (e.dir) {
+      closeCablePreview();
+      return;
+    }
+    if (cableFS.selected.has(e.path)) previewCableFile(e);
+    else if (cableFS.preview && cableFS.preview.path === e.path) closeCablePreview();
+  };
+  row.onpointerdown = pickRow;
+  row.onclick = (ev) => {
+    if (Date.now() - cablePickAt < 500) return;
+    pickRow(ev);
+  };
+  row.ondblclick = (ev) => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    if (e.dir) enter();
+  };
+  if (!e.dir) {
     row.append(el('div', { class: 'cable-fs-acts' },
       el('button', { class: 'btn ghost sm', type: 'button', onclick: (ev) => { ev.stopPropagation(); act(e, 'import'); } }, t('cable_fs_import')),
     ));
@@ -1305,17 +1529,83 @@ function cableFSRow(e, enter, act) {
   return row;
 }
 
-function toggleCablePick(path) {
-  if (cableFS.selected.has(path)) cableFS.selected.delete(path);
-  else cableFS.selected.add(path);
+const cableHeld = { cmd: false, shift: false };
+
+function setupCableModKeys() {
+  if (setupCableModKeys.done) return;
+  setupCableModKeys.done = true;
+  const sync = (e) => {
+    cableHeld.cmd = !!(e.metaKey || e.ctrlKey || e.key === 'Meta' || e.key === 'Control');
+    cableHeld.shift = !!(e.shiftKey || e.key === 'Shift');
+  };
+  document.addEventListener('keydown', sync, true);
+  document.addEventListener('keyup', (e) => {
+    if (e.key === 'Meta' || e.key === 'Control') cableHeld.cmd = false;
+    else if (e.key === 'Shift') cableHeld.shift = false;
+    else sync(e);
+  }, true);
+  window.addEventListener('blur', () => { cableHeld.cmd = false; cableHeld.shift = false; });
+}
+
+function cableCmdKey(ev) {
+  if (cableHeld.cmd) return true;
+  if (!ev) return false;
+  if (ev.metaKey || ev.ctrlKey) return true;
+  return !!(ev.getModifierState && (ev.getModifierState('Meta') || ev.getModifierState('Control') || ev.getModifierState('OS')));
+}
+
+function cableShiftKey(ev) {
+  if (cableHeld.shift) return true;
+  return !!(ev && (ev.shiftKey || (ev.getModifierState && ev.getModifierState('Shift'))));
+}
+
+let cablePickAt = 0;
+
+function addPickRange(selected, ids, from, to) {
+  const a = ids.indexOf(from);
+  const b = ids.indexOf(to);
+  if (a < 0 || b < 0) return;
+  const lo = Math.min(a, b);
+  const hi = Math.max(a, b);
+  for (let i = lo; i <= hi; i++) selected.add(ids[i]);
+}
+
+function pickCableItem(path, ev) {
+  if (ev) ev.stopPropagation();
+  cablePickAt = Date.now();
+  const paths = cableFS.entries.map((f) => f.path);
+  const idx = paths.indexOf(path);
+  const cmd = cableCmdKey(ev);
+  const shift = cableShiftKey(ev);
+  if (shift && cableFS.anchor && paths.includes(cableFS.anchor) && idx >= 0) {
+    if (!cmd) cableFS.selected = new Set(cableFS.base);
+    addPickRange(cableFS.selected, paths, cableFS.anchor, path);
+  } else if (cmd) {
+    if (cableFS.selected.has(path)) cableFS.selected.delete(path);
+    else cableFS.selected.add(path);
+    cableFS.anchor = path;
+    cableFS.base = new Set(cableFS.selected);
+  } else {
+    cableFS.selected.clear();
+    cableFS.selected.add(path);
+    cableFS.anchor = path;
+    cableFS.base = new Set(cableFS.selected);
+  }
   syncCablePicks();
 }
 
 function toggleCableSelectAll() {
   const items = cableFS.entries;
   if (!items.length) return;
-  if (items.every((f) => cableFS.selected.has(f.path))) cableFS.selected.clear();
-  else items.forEach((f) => cableFS.selected.add(f.path));
+  if (items.every((f) => cableFS.selected.has(f.path))) {
+    cableFS.selected.clear();
+    cableFS.anchor = '';
+    cableFS.base = new Set();
+  } else {
+    items.forEach((f) => cableFS.selected.add(f.path));
+    cableFS.anchor = items[items.length - 1].path;
+    cableFS.base = new Set(cableFS.selected);
+  }
   syncCablePicks();
 }
 
@@ -1323,8 +1613,7 @@ function syncCablePicks() {
   for (const li of $$('#cable-fs-list li.file, #cable-fs-list li.dir')) {
     const on = cableFS.selected.has(li.dataset.path);
     li.classList.toggle('picked', on);
-    const ck = li.querySelector('.cable-fs-ck');
-    if (ck) ck.textContent = on ? '✓' : '';
+    li.setAttribute('aria-selected', on ? 'true' : 'false');
   }
   renderCableSelection();
 }
@@ -1338,9 +1627,16 @@ function renderCableSelection() {
     allBtn.textContent = n > 0 && n === cableFS.entries.length ? t('cable_fs_select_none') : t('cable_fs_select_all');
   }
   if (bar) bar.hidden = n === 0;
+  const copyable = cableCopyable(cableFS.entries.filter((f) => cableFS.selected.has(f.path)));
   const copyBtn = $('cable-fs-copy');
-  if (copyBtn) {
-    copyBtn.hidden = cableCopyable(cableFS.entries.filter((f) => cableFS.selected.has(f.path))).length === 0;
+  if (copyBtn) copyBtn.hidden = copyable.length === 0;
+  const cutBtn = $('cable-fs-cut');
+  if (cutBtn) {
+    cutBtn.hidden = copyable.length === 0 || copyable.some((f) => isCableAppPath(f.path));
+  }
+  const importBtn = $('cable-fs-import');
+  if (importBtn) {
+    importBtn.hidden = cableImportable(cableFS.entries.filter((f) => cableFS.selected.has(f.path))).length === 0;
   }
   if (!n) return;
   const total = cableFS.entries.filter((f) => cableFS.selected.has(f.path)).reduce((s, f) => s + (f.size || 0), 0);
@@ -1375,31 +1671,46 @@ async function deleteCableItems(items) {
   }
 }
 
-function saveCableFiles(files) {
+function triggerDownload(href, name) {
+  const a = el('a', { href });
+  a.setAttribute('download', name || '');
+  a.rel = 'noopener';
+  document.body.append(a);
+  a.click();
+  setTimeout(() => a.remove(), 2000);
+}
+
+async function saveCableFiles(files) {
   const list = (files || []).filter((f) => f && f.path);
   if (!list.length) {
     toast(t('cable_fs_save_need'));
     return;
   }
-  if (list.length > 200) {
+  if (list.length > CABLE_ZIP_MAX) {
     toast(t('cable_fs_save_limit'));
     return;
   }
   const only = list.length === 1 ? list[0] : null;
   if (only && !only.dir) {
-    const a = el('a', { href: '/api/admin/cable/fs/file?path=' + encodeURIComponent(only.path) });
-    a.setAttribute('download', only.name || '');
-    document.body.append(a);
-    a.click();
-    a.remove();
+    triggerDownload('/api/admin/cable/fs/file?path=' + encodeURIComponent(only.path), only.name || '');
     return;
   }
+  if (cableClipBusy) return;
   const q = list.map((f) => (f.dir ? 'folder=' : 'path=') + encodeURIComponent(f.path)).join('&');
-  const a = el('a', { href: '/api/admin/cable/fs/zip?' + q });
-  a.setAttribute('download', '');
-  document.body.append(a);
-  a.click();
-  a.remove();
+  const zipName = only && only.dir ? (only.name || 'folder') + '.zip' : 'phone.zip';
+  setCableClipBusy('save');
+  try {
+    await api('/api/admin/cable/fs/zip?' + q + '&plan=1');
+    triggerDownload('/api/admin/cable/fs/zip?' + q, zipName);
+    toast(t('cable_fs_saved'));
+  } catch (err) {
+    if (err.status === 404) toast(t('cable_fs_save_unreadable'));
+    else if (err.body && err.body.error === 'too_many_files') toast(t('cable_fs_save_limit'));
+    else if (err.status === 400) toast(t('cable_fs_save_empty'));
+    else toast(t('cable_open_fail') + ': ' + err.message);
+  } finally {
+    setCableClipBusy('');
+  }
 }
 
 function closeCablePreview() {
@@ -1766,8 +2077,6 @@ function renderFiles() {
     }
     const checked = state.selected.has(f.id);
     const th = thumbFor(f);
-    th.append(el('span', { class: 'ck', 'aria-hidden': 'true' }, checked ? '✓' : ''));
-    th.addEventListener('click', () => toggleSelect(f.id));
 
     const acts = el('div', { class: 'acts' });
     if (canViewInBrowser(f)) {
@@ -1782,7 +2091,7 @@ function renderFiles() {
     if (isOwner) {
       acts.append(el('button', { class: 'btn danger sm', type: 'button', onclick: () => deleteFile(f) }, t('del')));
     }
-    nodes.push(el('div', { class: 'fc' + (checked ? ' chk' : '') },
+    const card = el('div', { class: 'fc' + (checked ? ' chk' : '') },
       th,
       el('div', { class: 'bd' },
         f.dir ? el('div', { class: 'dir ellipsis' }, '📁 ' + f.dir + '/') : null,
@@ -1792,15 +2101,52 @@ function renderFiles() {
         integrityBadgeNode(f.integrity),
         acts,
       ),
-    ));
+    );
+    card.setAttribute('aria-selected', checked ? 'true' : 'false');
+    card.addEventListener('pointerdown', (ev) => {
+      if (ev.button !== 0) return;
+      if (ev.target.closest('.acts')) return;
+      pickFileItem(f.id, ev);
+    });
+    nodes.push(card);
   }
   grid.replaceChildren(...nodes);
   renderSelection();
 }
 
-function toggleSelect(id) {
-  if (state.selected.has(id)) state.selected.delete(id); else state.selected.add(id);
+let fileSelectAnchor = '';
+let fileSelectBase = new Set();
+
+function displayedFiles() {
+  const sort = $('file-sort') ? $('file-sort').value : 'newest';
+  const q = $('file-search') ? $('file-search').value : '';
+  return Logic.filterAndSortFiles(state.files, q, sort);
+}
+
+function pickFileItem(id, ev) {
+  const ids = displayedFiles().map((f) => f.id);
+  const idx = ids.indexOf(id);
+  const cmd = cableCmdKey(ev);
+  const shift = cableShiftKey(ev);
+  if (shift && fileSelectAnchor && ids.includes(fileSelectAnchor) && idx >= 0) {
+    if (!cmd) state.selected = new Set(fileSelectBase);
+    addPickRange(state.selected, ids, fileSelectAnchor, id);
+  } else if (cmd) {
+    if (state.selected.has(id)) state.selected.delete(id);
+    else state.selected.add(id);
+    fileSelectAnchor = id;
+    fileSelectBase = new Set(state.selected);
+  } else {
+    state.selected.clear();
+    state.selected.add(id);
+    fileSelectAnchor = id;
+    fileSelectBase = new Set(state.selected);
+  }
   renderFiles();
+}
+
+function toggleSelect(id) {
+  pickFileItem(id, null);
 }
 
 function renderSelection() {
@@ -1822,12 +2168,19 @@ function setupFilesPane() {
   $('file-search').addEventListener('input', debounce(renderFiles, 80));
   $('file-sort').addEventListener('change', renderFiles);
   $('select-all').addEventListener('click', () => {
-    if (state.selected.size === state.files.length) state.selected.clear();
-    else state.files.forEach((f) => state.selected.add(f.id));
+    if (state.selected.size === state.files.length) {
+      state.selected.clear();
+      fileSelectAnchor = '';
+      fileSelectBase = new Set();
+    } else {
+      state.files.forEach((f) => state.selected.add(f.id));
+      if (state.files.length) fileSelectAnchor = state.files[state.files.length - 1].id;
+      fileSelectBase = new Set(state.selected);
+    }
     renderFiles();
   });
   $('sel-delete').addEventListener('click', deleteSelected);
-  $('sel-clear').addEventListener('click', () => { state.selected.clear(); renderFiles(); });
+  $('sel-clear').addEventListener('click', () => { state.selected.clear(); fileSelectAnchor = ''; fileSelectBase = new Set(); renderFiles(); });
   $('sel-zip').addEventListener('click', () => {
     if (!state.selected.size) return;
     // The response is an attachment, so the browser downloads it without leaving the page.
@@ -2192,6 +2545,7 @@ function setupUploads() {
 
   // Paste an image (screenshot) from the clipboard.
   document.addEventListener('paste', (e) => {
+    if (state.filesSrc === 'device') return;
     const imgs = [...(e.clipboardData?.files || [])].filter((f) => f.type.startsWith('image/'));
     if (!imgs.length) return;
     e.preventDefault();

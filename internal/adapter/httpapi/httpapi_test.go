@@ -248,6 +248,9 @@ func TestMemberCannotUseOwnerEndpoints(t *testing.T) {
 	if res, _ := do(t, c, "POST", ts.URL+"/api/admin/cable/fs/mkdir?path=android/download&name=x", nil, nil); res.StatusCode != http.StatusForbidden {
 		t.Errorf("member POST /api/admin/cable/fs/mkdir = %d, want 403", res.StatusCode)
 	}
+	if res, _ := do(t, c, "POST", ts.URL+"/api/admin/cable/fs/import?path=android/download/a.jpg", nil, nil); res.StatusCode != http.StatusForbidden {
+		t.Errorf("member POST /api/admin/cable/fs/import = %d, want 403", res.StatusCode)
+	}
 	if res, _ := do(t, c, "GET", ts.URL+"/api/admin/cable/fs/clipboard", nil, nil); res.StatusCode != http.StatusForbidden {
 		t.Errorf("member GET /api/admin/cable/fs/clipboard = %d, want 403", res.StatusCode)
 	}
@@ -1020,5 +1023,11 @@ func TestCableOpenIdleNotFound(t *testing.T) {
 	}
 	if res, _ := do(t, owner, "POST", ts.URL+"/api/admin/cable/fs/mkdir?path=android/download&name=x", nil, nil); res.StatusCode != http.StatusNotFound {
 		t.Fatalf("idle mkdir = %d, want 404", res.StatusCode)
+	}
+	if res, _ := do(t, owner, "POST", ts.URL+"/api/admin/cable/fs/import", nil, nil); res.StatusCode != http.StatusBadRequest {
+		t.Fatalf("empty import = %d, want 400", res.StatusCode)
+	}
+	if res, _ := do(t, owner, "POST", ts.URL+"/api/admin/cable/fs/import?path=android/download/a.jpg", nil, nil); res.StatusCode != http.StatusNotFound {
+		t.Fatalf("idle import = %d, want 404", res.StatusCode)
 	}
 }

@@ -635,10 +635,18 @@ func (s *Server) cableFSZip(w http.ResponseWriter, r *http.Request, actor domain
 		s.fail(w, r, err)
 		return
 	}
+	if len(items) == 0 {
+		s.fail(w, r, domain.ErrInvalidInput)
+		return
+	}
+	if q.Get("plan") == "1" {
+		writeJSON(w, http.StatusOK, map[string]any{"count": len(items)})
+		return
+	}
 	h := w.Header()
 	h.Set("Content-Type", "application/zip")
 	h.Set("Content-Disposition", mime.FormatMediaType("attachment",
-		map[string]string{"filename": "phone-" + time.Now().Format("2006-01-02-1504") + ".zip"}))
+		map[string]string{"filename": cableZipFilename(q["folder"], q["path"], time.Now())}))
 	h.Set("Cache-Control", "private, no-store")
 	bw := bufio.NewWriterSize(w, 4<<20)
 	zw := zip.NewWriter(bw)
@@ -676,6 +684,17 @@ func (s *Server) cableFSZip(w http.ResponseWriter, r *http.Request, actor domain
 		s.Log.Warn("cable zip aborted", "err", err)
 		panic(http.ErrAbortHandler)
 	}
+}
+
+func cableZipFilename(folders, files []string, now time.Time) string {
+	if len(folders) == 1 && len(files) == 0 {
+		name := strings.TrimSpace(path.Base(folders[0]))
+		name = strings.ReplaceAll(name, "\\", "_")
+		if name != "" && name != "." && name != ".." {
+			return name + ".zip"
+		}
+	}
+	return "phone-" + now.Format("2006-01-02-1504") + ".zip"
 }
 
 func zipEntryName(name string, used map[string]int) string {
@@ -730,6 +749,10 @@ func clipboardJSON(c network.CableClipboard) map[string]any {
 	if kind == "" && c.Count > 0 {
 		kind = "apps"
 	}
+	origins := c.Origins
+	if origins == nil {
+		origins = []string{}
+	}
 	return map[string]any{
 		"kind":       kind,
 		"count":      c.Count,
@@ -737,6 +760,8 @@ func clipboardJSON(c network.CableClipboard) map[string]any {
 		"source":     c.Source,
 		"sourceName": c.SourceName,
 		"targets":    targets,
+		"cut":        c.Cut,
+		"origins":    origins,
 	}
 }
 
@@ -751,7 +776,8 @@ func (s *Server) cableFSClipboard(w http.ResponseWriter, r *http.Request, actor 
 
 func (s *Server) cableFSCopy(w http.ResponseWriter, r *http.Request, actor domain.Device) {
 	q := r.URL.Query()
-	c, err := s.Network.CopyCableItems(r.Context(), actor, q["path"], q["folder"])
+	cut := q.Get("cut") == "1" || q.Get("cut") == "true"
+	c, err := s.Network.CopyCableItems(r.Context(), actor, q["path"], q["folder"], cut)
 	if err != nil {
 		s.fail(w, r, err)
 		return
@@ -787,20 +813,54 @@ func (s *Server) cableFSClearClipboard(w http.ResponseWriter, r *http.Request, a
 }
 
 func (s *Server) cableFSImport(w http.ResponseWriter, r *http.Request, actor domain.Device) {
-	cf, err := s.Network.OpenCableFile(r.Context(), actor, r.URL.Query().Get("path"))
+	q := r.URL.Query()
+	plan, err := s.Network.PlanCableZip(r.Context(), actor, q["path"], q["folder"])
 	if err != nil {
 		s.fail(w, r, err)
 		return
 	}
-	defer cf.Content.Close()
-	f, err := s.Transfer.Upload(r.Context(), actor, transfer.UploadInput{
-		Name: cf.Name, Size: cf.Size, Body: cf.Content,
-	})
-	if err != nil {
-		s.fail(w, r, err)
+	if len(plan) == 0 {
+		s.fail(w, r, domain.ErrInvalidInput)
 		return
 	}
-	writeJSON(w, http.StatusCreated, s.toFileDTO(f, actor.ID))
+	n := 0
+	var last domain.File
+	var first error
+	for _, z := range plan {
+		cf, err := s.Network.OpenCableFile(r.Context(), actor, z.Loc)
+		if err != nil {
+			if first == nil {
+				first = err
+			}
+			continue
+		}
+		name := path.Base(z.Name)
+		dir := path.Dir(z.Name)
+		if dir == "." {
+			dir = ""
+		}
+		f, err := s.Transfer.Upload(r.Context(), actor, transfer.UploadInput{
+			Name: name, Dir: dir, Size: cf.Size, Body: cf.Content,
+		})
+		_ = cf.Content.Close()
+		if err != nil {
+			if first == nil {
+				first = err
+			}
+			continue
+		}
+		last = f
+		n++
+	}
+	if n == 0 {
+		if first != nil {
+			s.fail(w, r, first)
+			return
+		}
+		s.fail(w, r, domain.ErrNotFound)
+		return
+	}
+	writeJSON(w, http.StatusCreated, map[string]any{"count": n, "id": last.ID, "name": last.Name})
 }
 
 func (s *Server) cableOpen(w http.ResponseWriter, r *http.Request, actor domain.Device) {

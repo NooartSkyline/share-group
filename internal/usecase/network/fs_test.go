@@ -207,7 +207,7 @@ func TestSanitizeCableZipPaths(t *testing.T) {
 	for i := range many {
 		many[i] = "android/download/f" + strconv.Itoa(i)
 	}
-	if _, err := SanitizeCableZipPaths(many); err != domain.ErrInvalidInput {
+	if _, err := SanitizeCableZipPaths(many); err != domain.ErrTooManyItems {
 		t.Errorf("too many = %v", err)
 	}
 }
@@ -325,12 +325,39 @@ func TestPlanCableZipFolderWalk(t *testing.T) {
 		t.Fatalf("file = %+v", got[1])
 	}
 
-	empty, err := svc.PlanCableZip(context.Background(), owner(), nil, []string{"android/download/ว่าง"})
+	if _, err := svc.PlanCableZip(context.Background(), owner(), nil, []string{"android/download/ว่าง"}); err != domain.ErrInvalidInput {
+		t.Fatalf("empty folder err = %v, want invalid", err)
+	}
+
+	if _, err := svc.PlanCableZip(context.Background(), owner(), nil, []string{"android/download/ลับ"}); err != domain.ErrNotFound {
+		t.Fatalf("unreadable folder err = %v, want not found", err)
+	}
+}
+
+func TestPlanCableZipManyFiles(t *testing.T) {
+	var ls strings.Builder
+	ls.WriteString("total 250\n")
+	for i := 0; i < 250; i++ {
+		ls.WriteString("-rw-rw---- 1 u0_a305 media_rw 10 2026-10-23 09:46 f")
+		ls.WriteString(strconv.Itoa(i))
+		ls.WriteString(".jpg\n")
+	}
+	run := fake.NewRunner()
+	run.On("/usr/sbin/networksetup -listallhardwareports", fake.RunResult{Out: []byte("Hardware Port: Wi-Fi\nDevice: en0\n")})
+	run.On("/usr/sbin/ioreg -r -c IOUSBHostDevice -l -d 1 -w 0", fake.RunResult{Out: []byte(ioregPixel)})
+	run.On("adb version", fake.RunResult{Out: []byte("Android Debug Bridge version 1.0.41")})
+	run.On("adb devices", fake.RunResult{Out: []byte("List of devices attached\nR58M123\tdevice\n")})
+	run.On("adb reverse tcp:8080 tcp:8080", fake.RunResult{})
+	run.On("adb shell ls -lp -- '/sdcard/Download/album'", fake.RunResult{Out: []byte(ls.String())})
+	svc := NewService(netList{{Name: "en0", IP: "192.168.1.23", Kind: domain.NetPhysical}}, 8080, "")
+	svc.SetRunner(run)
+
+	got, err := svc.PlanCableZip(context.Background(), owner(), nil, []string{"android/download/album"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(empty) != 0 {
-		t.Fatalf("empty folder = %+v", empty)
+	if len(got) != 250 {
+		t.Fatalf("n=%d, want 250", len(got))
 	}
 }
 
@@ -417,6 +444,9 @@ func TestPasteAcrossDevices(t *testing.T) {
 	if pasteAcrossDevices("android:RFCWA19V99W", "android:RFCWA19V99W", serials) {
 		t.Fatal("same android")
 	}
+	if !cablePasteAllowed("android:RFCWA19V99W", "android:RFCWA19V99W", serials, true) {
+		t.Fatal("same android files")
+	}
 	if !pasteAcrossDevices("android:RFCWA19V99W", "android:c3782355", serials) {
 		t.Fatal("other android")
 	}
@@ -425,6 +455,45 @@ func TestPasteAcrossDevices(t *testing.T) {
 	}
 	if pasteAcrossDevices("android:RFCWA19V99W", "iphone", serials) {
 		t.Fatal("to ios")
+	}
+}
+
+func TestCutPasteOverlap(t *testing.T) {
+	serials := []string{"RFCWA19V99W"}
+	origin := "android:RFCWA19V99W/download/note.txt"
+	if !cutPasteSameFolder([]string{origin}, "android:RFCWA19V99W/download", serials) {
+		t.Fatal("same folder")
+	}
+	if cutPasteNested([]string{origin}, "android:RFCWA19V99W/download", serials) {
+		t.Fatal("same folder is not nested")
+	}
+	if cutPasteSameFolder([]string{origin}, "android:RFCWA19V99W/pictures", serials) || cutPasteNested([]string{origin}, "android:RFCWA19V99W/pictures", serials) {
+		t.Fatal("other folder")
+	}
+	if !cutPasteNested([]string{"android:RFCWA19V99W/download/foo"}, "android:RFCWA19V99W/download/foo/bar", serials) {
+		t.Fatal("inside cut folder")
+	}
+	if !cutPasteSameFolder([]string{"android/download/note.txt"}, "android/download", nil) {
+		t.Fatal("bare android")
+	}
+}
+
+func TestUniquifyClipFiles(t *testing.T) {
+	taken := map[string]struct{}{"note.txt": {}, "foo": {}}
+	files := uniquifyClipFiles([]cableClipFile{
+		{Name: "note.txt", Path: "/tmp/note.txt"},
+		{Name: "foo/a.jpg", Path: "/tmp/a.jpg"},
+		{Name: "foo/b.jpg", Path: "/tmp/b.jpg"},
+		{Name: "fresh.txt", Path: "/tmp/fresh.txt"},
+	}, taken)
+	if files[0].Name != "note (2).txt" {
+		t.Fatalf("file = %s", files[0].Name)
+	}
+	if files[1].Name != "foo (2)/a.jpg" || files[2].Name != "foo (2)/b.jpg" {
+		t.Fatalf("folder = %s %s", files[1].Name, files[2].Name)
+	}
+	if files[3].Name != "fresh.txt" {
+		t.Fatalf("free = %s", files[3].Name)
 	}
 }
 
@@ -447,12 +516,15 @@ func TestCopyCableItemsRejectsMixed(t *testing.T) {
 	run.On("adb reverse tcp:8080 tcp:8080", fake.RunResult{})
 	svc := NewService(netList{{Name: "en0", IP: "192.168.1.23", Kind: domain.NetPhysical}}, 8080, "")
 	svc.SetRunner(run)
-	_, err := svc.CopyCableItems(context.Background(), owner(), []string{"android/download/a.jpg"}, []string{"android/apps/com.foo.app"})
+	_, err := svc.CopyCableItems(context.Background(), owner(), []string{"android/download/a.jpg"}, []string{"android/apps/com.foo.app"}, false)
 	if err != domain.ErrInvalidInput {
 		t.Fatalf("mixed = %v", err)
 	}
-	if _, err := svc.CopyCableItems(context.Background(), domain.Device{Role: domain.RoleMember, RoomID: "main"}, []string{"android/download/a.jpg"}, nil); err != domain.ErrForbidden {
+	if _, err := svc.CopyCableItems(context.Background(), domain.Device{Role: domain.RoleMember, RoomID: "main"}, []string{"android/download/a.jpg"}, nil, false); err != domain.ErrForbidden {
 		t.Errorf("member = %v", err)
+	}
+	if _, err := svc.CopyCableItems(context.Background(), owner(), nil, []string{"android/apps/com.foo.app"}, true); err != domain.ErrInvalidInput {
+		t.Fatalf("cut apps = %v", err)
 	}
 }
 
@@ -485,10 +557,11 @@ func TestPasteCableFilesToOtherAndroid(t *testing.T) {
 	if err != nil || n != 1 {
 		t.Fatalf("pictures n=%d err=%v", n, err)
 	}
-	if _, err := svc.PasteCableApps(context.Background(), owner(), "android:RFCWA19V99W"); err != domain.ErrInvalidInput {
-		t.Fatalf("same = %v", err)
+	n, err = svc.PasteCableApps(context.Background(), owner(), "android:RFCWA19V99W/dcim")
+	if err != nil || n != 1 {
+		t.Fatalf("same device n=%d err=%v", n, err)
 	}
-	pushDL, pushPic := false, false
+	pushDL, pushPic, pushSelf := false, false, false
 	for _, c := range run.Calls() {
 		line := strings.Join(append([]string{c.Name}, c.Args...), " ")
 		if strings.Contains(line, "push") && strings.Contains(line, "/sdcard/Download/note.txt") {
@@ -497,9 +570,98 @@ func TestPasteCableFilesToOtherAndroid(t *testing.T) {
 		if strings.Contains(line, "push") && strings.Contains(line, "/sdcard/Pictures/note.txt") {
 			pushPic = true
 		}
+		if strings.Contains(line, "push") && strings.Contains(line, "/sdcard/DCIM/note.txt") {
+			pushSelf = true
+		}
 	}
-	if !pushDL || !pushPic {
-		t.Fatalf("missing push download=%v pictures=%v", pushDL, pushPic)
+	if !pushDL || !pushPic || !pushSelf {
+		t.Fatalf("missing push download=%v pictures=%v same=%v", pushDL, pushPic, pushSelf)
+	}
+}
+
+func TestPasteCutClearsClipboard(t *testing.T) {
+	run := fake.NewRunner()
+	run.On("/usr/sbin/networksetup -listallhardwareports", fake.RunResult{Out: []byte("Hardware Port: Wi-Fi\nDevice: en0\n")})
+	run.On("/usr/sbin/ioreg -r -c IOUSBHostDevice -l -d 1 -w 0", fake.RunResult{Out: []byte(ioregPixel)})
+	run.On("adb version", fake.RunResult{Out: []byte("Android Debug Bridge version 1.0.41")})
+	run.On("adb devices", fake.RunResult{Out: []byte("List of devices attached\nRFCWA19V99W\tdevice\nc3782355\tdevice\n")})
+	run.On("adb", fake.RunResult{})
+	svc := NewService(netList{{Name: "en0", IP: "192.168.1.23", Kind: domain.NetPhysical}}, 8080, "")
+	svc.SetRunner(run)
+	dir := t.TempDir()
+	local := filepath.Join(dir, "note.txt")
+	if err := os.WriteFile(local, []byte("hi"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	svc.clip = &cableAppClip{
+		kind:    cableClipFiles,
+		source:  "android:RFCWA19V99W",
+		names:   []string{"note.txt"},
+		files:   []cableClipFile{{Name: "note.txt", Path: local}},
+		dir:     dir,
+		cut:     true,
+		origins: []string{"android:RFCWA19V99W/download/note.txt"},
+	}
+	n, err := svc.PasteCableApps(context.Background(), owner(), "android:c3782355/download")
+	if err != nil || n != 1 {
+		t.Fatalf("n=%d err=%v", n, err)
+	}
+	if svc.clip != nil {
+		t.Fatal("cut paste should clear clipboard")
+	}
+}
+
+func TestPasteCutSameDevice(t *testing.T) {
+	run := fake.NewRunner()
+	run.On("/usr/sbin/networksetup -listallhardwareports", fake.RunResult{Out: []byte("Hardware Port: Wi-Fi\nDevice: en0\n")})
+	run.On("/usr/sbin/ioreg -r -c IOUSBHostDevice -l -d 1 -w 0", fake.RunResult{Out: []byte(ioregPixel)})
+	run.On("adb version", fake.RunResult{Out: []byte("Android Debug Bridge version 1.0.41")})
+	run.On("adb devices", fake.RunResult{Out: []byte("List of devices attached\nRFCWA19V99W\tdevice\n")})
+	run.On("adb reverse tcp:8080 tcp:8080", fake.RunResult{})
+	run.On("adb shell ls -lp -- '/sdcard/Download'", fake.RunResult{Out: []byte("-rw-rw---- 1 u0_a305 media_rw 21 2026-10-23 09:46 note.txt\n")})
+	run.On("adb", fake.RunResult{})
+	svc := NewService(netList{{Name: "en0", IP: "192.168.1.23", Kind: domain.NetPhysical}}, 8080, "")
+	svc.SetRunner(run)
+	dir := t.TempDir()
+	local := filepath.Join(dir, "note.txt")
+	if err := os.WriteFile(local, []byte("hi"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	svc.clip = &cableAppClip{
+		kind:    cableClipFiles,
+		source:  domain.CableAndroid,
+		names:   []string{"note.txt"},
+		files:   []cableClipFile{{Name: "note.txt", Path: local}},
+		dir:     dir,
+		cut:     true,
+		origins: []string{"android/download/note.txt"},
+	}
+	n, err := svc.PasteCableApps(context.Background(), owner(), "android/download")
+	if err != nil || n != 1 {
+		t.Fatalf("same folder n=%d err=%v", n, err)
+	}
+	if svc.clip == nil {
+		t.Fatal("same-folder paste should keep the cut clipboard")
+	}
+	n, err = svc.PasteCableApps(context.Background(), owner(), "android/pictures")
+	if err != nil || n != 1 {
+		t.Fatalf("n=%d err=%v", n, err)
+	}
+	if svc.clip != nil {
+		t.Fatal("cut paste should clear clipboard")
+	}
+	copied, moved := false, false
+	for _, c := range run.Calls() {
+		line := strings.Join(append([]string{c.Name}, c.Args...), " ")
+		if strings.Contains(line, "push") && strings.Contains(line, "/sdcard/Download/note (2).txt") {
+			copied = true
+		}
+		if strings.Contains(line, "push") && strings.Contains(line, "/sdcard/Pictures/note.txt") {
+			moved = true
+		}
+	}
+	if !copied || !moved {
+		t.Fatalf("missing push copy=%v move=%v", copied, moved)
 	}
 }
 

@@ -262,6 +262,8 @@ func (s *Server) fail(w http.ResponseWriter, r *http.Request, err error) {
 		writeError(w, http.StatusNotFound, "not_found", nil)
 	case errors.Is(err, domain.ErrInvalidInput):
 		writeError(w, http.StatusBadRequest, "bad_request", nil)
+	case errors.Is(err, domain.ErrTooManyItems):
+		writeError(w, http.StatusBadRequest, "too_many_files", nil)
 	case errors.Is(err, domain.ErrUnsupported):
 		writeError(w, http.StatusUnsupportedMediaType, "unsupported", nil)
 	case errors.Is(err, domain.ErrNoNetwork):

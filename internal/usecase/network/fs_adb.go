@@ -55,7 +55,7 @@ func androidAbs(rootID, rel string) (string, error) {
 	return abs, nil
 }
 
-func (s *Service) listAndroid(ctx context.Context, out CableFSList, rootID, rel string) (CableFSList, error) {
+func (s *Service) listAndroid(ctx context.Context, out CableFSList, rootID, rel string, ui bool) (CableFSList, error) {
 	if rootID == androidAppsRoot {
 		return s.listAndroidApps(ctx, out, rel)
 	}
@@ -67,7 +67,11 @@ func (s *Service) listAndroid(ctx context.Context, out CableFSList, rootID, rel 
 		out.Hint = "เปิด USB debugging แล้วกด Trust บนมือถือ จึงจะดูไฟล์ในเครื่องได้"
 		return out, nil
 	}
-	raw, err := s.adbCmd(ctx, cableListTimeout, out.Device, "shell", "ls -lp -- "+androidShellQuote(abs))
+	wait := cableListTimeout
+	if !ui {
+		wait = cableZipListTimeout
+	}
+	raw, err := s.adbCmd(ctx, wait, out.Device, "shell", "ls -lp -- "+androidShellQuote(abs))
 	if err != nil {
 		out.Hint = "อ่านโฟลเดอร์นี้จากมือถือไม่ได้"
 		return out, nil
@@ -78,7 +82,7 @@ func (s *Service) listAndroid(ctx context.Context, out CableFSList, rootID, rel 
 		return out, nil
 	}
 	entries := parseAndroidLs(text, out.Path)
-	if len(entries) > maxCableFSEntries {
+	if ui && len(entries) > maxCableFSEntries {
 		entries = entries[:maxCableFSEntries]
 		out.Hint = "แสดง " + strconv.Itoa(maxCableFSEntries) + " รายการแรก"
 	}
@@ -405,12 +409,14 @@ func (s *Service) androidAppPaths(ctx context.Context, device, pkg string) ([]st
 }
 
 type cableAppClip struct {
-	kind   string
-	source string
-	names  []string
-	pkgs   []cableAppPkg
-	files  []cableClipFile
-	dir    string
+	kind    string
+	source  string
+	names   []string
+	pkgs    []cableAppPkg
+	files   []cableClipFile
+	dir     string
+	cut     bool
+	origins []string
 }
 
 type cableAppPkg struct {
@@ -430,7 +436,7 @@ type CablePasteTarget struct {
 	Name string
 }
 
-// CableClipboard is items waiting to be pasted on another Android.
+// CableClipboard is items waiting to be pasted on this or another Android.
 type CableClipboard struct {
 	Kind       string
 	Count      int
@@ -438,6 +444,8 @@ type CableClipboard struct {
 	Source     string
 	SourceName string
 	Targets    []CablePasteTarget
+	Cut        bool
+	Origins    []string
 }
 
 func (s *Service) CableClipboard(ctx context.Context, actor domain.Device) (CableClipboard, error) {
@@ -464,25 +472,32 @@ func (s *Service) CableClipboard(ctx context.Context, actor domain.Device) (Cabl
 	} else if kind == "" {
 		kind = cableClipApps
 	}
+	sameDevice := kind == cableClipFiles || len(clip.files) > 0
 	out := CableClipboard{
 		Kind:       kind,
 		Count:      count,
 		Names:      append([]string(nil), clip.names...),
 		Source:     clip.source,
 		SourceName: s.clipboardSourceName(ctx, st, clip.source),
-		Targets:    s.androidPasteTargets(ctx, st, clip.source),
+		Targets:    s.androidPasteTargets(ctx, st, clip.source, sameDevice),
+		Cut:        clip.cut,
+		Origins:    append([]string(nil), clip.origins...),
 	}
 	return out, nil
 }
 
 // CopyCableItems copies selected apps or files from a plugged-in phone so they
-// can be pasted onto another Android.
-func (s *Service) CopyCableItems(ctx context.Context, actor domain.Device, files, folders []string) (CableClipboard, error) {
+// can be pasted on this Android or another. cut removes the originals after a
+// successful paste; apps cannot be cut.
+func (s *Service) CopyCableItems(ctx context.Context, actor domain.Device, files, folders []string, cut bool) (CableClipboard, error) {
 	all := append(append([]string(nil), files...), folders...)
 	if len(all) == 0 {
 		return CableClipboard{}, domain.ErrInvalidInput
 	}
 	if _, _, err := androidCopyPackages(all); err == nil {
+		if cut {
+			return CableClipboard{}, domain.ErrInvalidInput
+		}
 		return s.CopyCableApps(ctx, actor, all)
 	}
 	for _, loc := range all {
@@ -490,7 +505,7 @@ func (s *Service) CopyCableItems(ctx context.Context, actor domain.Device, files
 			return CableClipboard{}, domain.ErrInvalidInput
 		}
 	}
-	return s.copyCableFiles(ctx, actor, files, folders)
+	return s.copyCableFiles(ctx, actor, files, folders, cut)
 }
 
 func (s *Service) CopyCableApps(ctx context.Context, actor domain.Device, paths []string) (CableClipboard, error) {
@@ -541,7 +556,7 @@ func (s *Service) CopyCableApps(ctx context.Context, actor domain.Device, paths 
 	return s.CableClipboard(ctx, actor)
 }
 
-func (s *Service) copyCableFiles(ctx context.Context, actor domain.Device, files, folders []string) (CableClipboard, error) {
+func (s *Service) copyCableFiles(ctx context.Context, actor domain.Device, files, folders []string, cut bool) (CableClipboard, error) {
 	if !actor.CanManage() {
 		return CableClipboard{}, domain.ErrForbidden
 	}
@@ -611,7 +626,8 @@ func (s *Service) copyCableFiles(ctx context.Context, actor domain.Device, files
 		copied = append(copied, cableClipFile{Name: it.Name, Path: dst})
 		names = append(names, pathBase(it.Name))
 	}
-	next := &cableAppClip{kind: cableClipFiles, source: source, names: names, files: copied, dir: dir}
+	origins := append(append([]string(nil), files...), folders...)
+	next := &cableAppClip{kind: cableClipFiles, source: source, names: names, files: copied, dir: dir, cut: cut, origins: origins}
 	s.clipMu.Lock()
 	old := s.clip
 	s.clip = next
@@ -657,11 +673,13 @@ func (s *Service) PasteCableApps(ctx context.Context, actor domain.Device, dest 
 	if !s.cableDeviceReady(ctx, device) {
 		return 0, domain.ErrNotFound
 	}
-	if !pasteAcrossDevices(clip.source, device, s.adbSerials(ctx)) {
+	sameDevice := len(clip.files) > 0
+	serials := s.adbSerials(ctx)
+	if !cablePasteAllowed(clip.source, device, serials, sameDevice) {
 		return 0, domain.ErrInvalidInput
 	}
 	ok := false
-	for _, t := range s.androidPasteTargets(ctx, st, clip.source) {
+	for _, t := range s.androidPasteTargets(ctx, st, clip.source, sameDevice) {
 		if t.ID == device {
 			ok = true
 			break
@@ -671,6 +689,9 @@ func (s *Service) PasteCableApps(ctx context.Context, actor domain.Device, dest 
 		return 0, domain.ErrInvalidInput
 	}
 	if len(clip.pkgs) > 0 {
+		if clip.cut {
+			return 0, domain.ErrInvalidInput
+		}
 		return s.installClipApps(ctx, device, clip.pkgs)
 	}
 	if rootID == "" {
@@ -679,7 +700,30 @@ func (s *Service) PasteCableApps(ctx context.Context, actor domain.Device, dest 
 	if rootID == androidAppsRoot {
 		return 0, domain.ErrInvalidInput
 	}
-	return s.pushCableFiles(ctx, device, rootID, rel, clip.files)
+	destLoc := device + "/" + rootID
+	if rel != "" {
+		destLoc += "/" + rel
+	}
+	if clip.cut && cutPasteNested(clip.origins, destLoc, serials) {
+		return 0, domain.ErrInvalidInput
+	}
+	files := s.renameClipIfTaken(ctx, actor, destLoc, clip.files)
+	n, err := s.pushCableFiles(ctx, device, rootID, rel, files)
+	if err != nil {
+		return n, err
+	}
+	if !cutPasteSameFolder(clip.origins, destLoc, serials) {
+		s.finishCableCut(ctx, actor, clip, n)
+	}
+	return n, nil
+}
+
+func (s *Service) finishCableCut(ctx context.Context, actor domain.Device, clip *cableAppClip, pasted int) {
+	if clip == nil || !clip.cut || pasted == 0 || pasted != len(clip.files) || len(clip.origins) == 0 {
+		return
+	}
+	_, _ = s.DeleteCableItems(ctx, actor, clip.origins)
+	_ = s.ClearCableClipboard(ctx, actor)
 }
 
 func (s *Service) installClipApps(ctx context.Context, dest string, pkgs []cableAppPkg) (int, error) {
@@ -704,6 +748,54 @@ func (s *Service) installClipApps(ctx context.Context, dest string, pkgs []cable
 		return 0, domain.ErrNotFound
 	}
 	return n, nil
+}
+
+func (s *Service) renameClipIfTaken(ctx context.Context, actor domain.Device, dest string, files []cableClipFile) []cableClipFile {
+	if len(files) == 0 {
+		return files
+	}
+	list, err := s.ListCableFS(ctx, actor, dest)
+	if err != nil {
+		return files
+	}
+	taken := make(map[string]struct{}, len(list.Entries))
+	for _, e := range list.Entries {
+		if e.Name != "" {
+			taken[strings.ToLower(e.Name)] = struct{}{}
+		}
+	}
+	return uniquifyClipFiles(files, taken)
+}
+
+func uniquifyClipFiles(files []cableClipFile, taken map[string]struct{}) []cableClipFile {
+	if len(files) == 0 || taken == nil {
+		return files
+	}
+	remap := map[string]string{}
+	out := make([]cableClipFile, len(files))
+	for i, f := range files {
+		top, rest, ok := strings.Cut(f.Name, "/")
+		if next, seen := remap[top]; seen {
+			if ok {
+				out[i] = cableClipFile{Name: next + "/" + rest, Path: f.Path}
+			} else {
+				out[i] = cableClipFile{Name: next, Path: f.Path}
+			}
+			continue
+		}
+		next := domain.UniqueName(top, func(c string) bool {
+			_, used := taken[strings.ToLower(c)]
+			return used
+		})
+		taken[strings.ToLower(next)] = struct{}{}
+		remap[top] = next
+		if ok {
+			out[i] = cableClipFile{Name: next + "/" + rest, Path: f.Path}
+		} else {
+			out[i] = cableClipFile{Name: next, Path: f.Path}
+		}
+	}
+	return out
 }
 
 func (s *Service) pushCableFiles(ctx context.Context, device, rootID, rel string, files []cableClipFile) (int, error) {
@@ -814,14 +906,14 @@ func (s *Service) installAndroidApp(ctx context.Context, device string, apks []s
 	return nil
 }
 
-func (s *Service) androidPasteTargets(ctx context.Context, st CableStatus, source string) []CablePasteTarget {
+func (s *Service) androidPasteTargets(ctx context.Context, st CableStatus, source string, sameDevice bool) []CablePasteTarget {
 	out := make([]CablePasteTarget, 0)
 	serials := s.adbSerials(ctx)
 	for _, d := range s.cableFSDevices(ctx, st) {
 		if _, ok := parseAndroidDevice(d.ID); !ok {
 			continue
 		}
-		if !pasteAcrossDevices(source, d.ID, serials) {
+		if !cablePasteAllowed(source, d.ID, serials, sameDevice) {
 			continue
 		}
 		out = append(out, CablePasteTarget{ID: d.ID, Name: d.Name})
@@ -830,16 +922,20 @@ func (s *Service) androidPasteTargets(ctx context.Context, st CableStatus, sourc
 }
 
 func pasteAcrossDevices(source, dest string, serials []string) bool {
+	return cablePasteAllowed(source, dest, serials, false)
+}
+
+func cablePasteAllowed(source, dest string, serials []string, sameDevice bool) bool {
 	if _, ok := parseAndroidDevice(dest); !ok {
 		return false
 	}
 	if _, ok := parseAndroidDevice(source); ok {
-		return androidPasteAllowed(source, dest, serials)
+		return androidPasteAllowed(source, dest, serials, sameDevice)
 	}
 	return source != "" && source != dest
 }
 
-func androidPasteAllowed(source, dest string, serials []string) bool {
+func androidPasteAllowed(source, dest string, serials []string, sameDevice bool) bool {
 	src, ok1 := parseAndroidDevice(source)
 	dst, ok2 := parseAndroidDevice(dest)
 	if !ok1 || !ok2 {
@@ -851,10 +947,81 @@ func androidPasteAllowed(source, dest string, serials []string) bool {
 	if dst == "" && len(serials) == 1 {
 		dst = serials[0]
 	}
-	if src == "" || dst == "" || src == dst {
+	if src == "" || dst == "" {
 		return false
 	}
+	if src == dst {
+		return sameDevice
+	}
 	return true
+}
+
+func sameAndroidDevice(a, b string, serials []string) bool {
+	sa, oka := parseAndroidDevice(a)
+	sb, okb := parseAndroidDevice(b)
+	if !oka || !okb {
+		return a != "" && a == b
+	}
+	if sa == "" && len(serials) == 1 {
+		sa = serials[0]
+	}
+	if sb == "" && len(serials) == 1 {
+		sb = serials[0]
+	}
+	if sa == "" && sb == "" {
+		return a == domain.CableAndroid && b == domain.CableAndroid
+	}
+	return sa != "" && sa == sb
+}
+
+// cutPasteNested is true when dest is a cut folder or inside one — paste-then-delete
+// would remove the files just written.
+func cutPasteNested(origins []string, dest string, serials []string) bool {
+	return cutPasteRelation(origins, dest, serials) == cutPasteInside
+}
+
+// cutPasteSameFolder is true when dest is the folder the items were cut from.
+func cutPasteSameFolder(origins []string, dest string, serials []string) bool {
+	return cutPasteRelation(origins, dest, serials) == cutPasteParent
+}
+
+const (
+	cutPasteNone   = 0
+	cutPasteParent = 1
+	cutPasteInside = 2
+)
+
+func cutPasteRelation(origins []string, dest string, serials []string) int {
+	destDev, destRoot, destRel, err := splitCablePath(dest)
+	if err != nil || destDev == "" || destRoot == "" {
+		return cutPasteInside
+	}
+	destKey := destRoot
+	if destRel != "" {
+		destKey += "/" + destRel
+	}
+	rel := cutPasteNone
+	for _, origin := range origins {
+		origDev, origRoot, origRel, err := splitCablePath(origin)
+		if err != nil || origRel == "" {
+			return cutPasteInside
+		}
+		if !sameAndroidDevice(destDev, origDev, serials) {
+			continue
+		}
+		origKey := origRoot + "/" + origRel
+		origParent := origRoot
+		if dir := path.Dir(origRel); dir != "." && dir != "" {
+			origParent += "/" + dir
+		}
+		if destKey == origKey || strings.HasPrefix(destKey+"/", origKey+"/") {
+			return cutPasteInside
+		}
+		if destKey == origParent {
+			rel = cutPasteParent
+		}
+	}
+	return rel
 }
 
 func (s *Service) clipboardSourceName(ctx context.Context, st CableStatus, source string) string {
