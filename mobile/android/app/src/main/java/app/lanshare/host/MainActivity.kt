@@ -42,6 +42,10 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         NetIfaces.dump(filesDir)
+        if (!sharing) {
+            loadAttempts = 0
+            loadDashboard()
+        }
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -89,7 +93,17 @@ class MainActivity : Activity() {
             cacheMode = WebSettings.LOAD_NO_CACHE
             mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
         }
-        web.webViewClient = WebViewClient()
+        web.webViewClient = object : WebViewClient() {
+            @Deprecated("Deprecated in Java")
+            override fun onReceivedError(
+                view: WebView?,
+                errorCode: Int,
+                description: String?,
+                failingUrl: String?,
+            ) {
+                handler.postDelayed({ loadDashboard() }, 400)
+            }
+        }
         web.webChromeClient = object : WebChromeClient() {
             override fun onShowFileChooser(
                 view: WebView?,
@@ -179,24 +193,24 @@ class MainActivity : Activity() {
 
     private fun loadDashboard() {
         if (sharing) return
-        val url = try {
+        var url = try {
             GoHost.url()
         } catch (_: Throwable) {
             ""
         }
+        if (url.isEmpty() && loadAttempts >= 4) {
+            url = "http://127.0.0.1:${HostService.PORT}/"
+        }
         if (url.isEmpty()) {
             loadAttempts++
-            if (loadAttempts < 40) {
+            if (loadAttempts < 80) {
                 handler.postDelayed({ loadDashboard() }, 250)
             } else {
                 Toast.makeText(this, R.string.host_missing, Toast.LENGTH_LONG).show()
             }
             return
         }
-        val current = web.url
-        if (current.isNullOrEmpty() || current == "about:blank") {
-            web.loadUrl(url)
-        }
+        web.loadUrl(url)
     }
 
     private fun handleShare(intent: Intent?) {
