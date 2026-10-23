@@ -1,4 +1,4 @@
-// Command share talks to a LAN Share server on this Mac.
+// Command share talks to a Share Group server on this Mac.
 //
 //	share send photo.jpg
 //	share send -port 9000 ./folder/report.pdf
@@ -40,7 +40,7 @@ func run(args []string) error {
 	}
 }
 
-const usage = `share — ส่งไฟล์เข้า LAN Share จากเครื่องนี้
+const usage = `share — ส่งไฟล์เข้า Share Group จากเครื่องนี้
 
 คำสั่ง:
   share send [-port 8080] <ไฟล์...>
@@ -53,7 +53,7 @@ const usage = `share — ส่งไฟล์เข้า LAN Share จาก�
 func send(args []string) error {
 	fs := flag.NewFlagSet("send", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
-	port := fs.Int("port", 8080, "port of the LAN Share server on this Mac")
+	port := fs.Int("port", 8080, "port of the Share Group server on this Mac")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -87,7 +87,7 @@ func ownerSession(c *http.Client, base string) error {
 	req.Header.Set("X-LanShare-Client", "1")
 	res, err := c.Do(req)
 	if err != nil {
-		return fmt.Errorf("cannot reach LAN Share at %s (is the server running?): %w", base, err)
+		return fmt.Errorf("cannot reach Share Group at %s (is the server running?): %w", base, err)
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {

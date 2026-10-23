@@ -39,7 +39,7 @@ func Ensure(dir string, extraIPs []net.IP) (certFile, keyFile string, err error)
 	}
 	tmpl := &x509.Certificate{
 		SerialNumber: serial,
-		Subject:      pkix.Name{CommonName: "LAN Share", Organization: []string{"LAN Share"}},
+		Subject:      pkix.Name{CommonName: "Share Group", Organization: []string{"Share Group"}},
 		NotBefore:    time.Now().Add(-time.Hour),
 		NotAfter:     time.Now().Add(10 * 365 * 24 * time.Hour),
 		KeyUsage:     x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,

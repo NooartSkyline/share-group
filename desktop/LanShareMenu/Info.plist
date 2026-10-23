@@ -5,13 +5,13 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>th</string>
 	<key>CFBundleExecutable</key>
-	<string>LAN Share</string>
+	<string>Share Group</string>
 	<key>CFBundleIdentifier</key>
 	<string>app.lanshare.menubar</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>LAN Share</string>
+	<string>Share Group</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -32,12 +32,12 @@
 			<key>NSMenuItem</key>
 			<dict>
 				<key>default</key>
-				<string>ส่งไป LAN Share</string>
+				<string>ส่งไป Share Group</string>
 			</dict>
 			<key>NSMessage</key>
 			<string>sendToLANShare</string>
 			<key>NSPortName</key>
-			<string>LAN Share</string>
+			<string>Share Group</string>
 			<key>NSRequiredContext</key>
 			<dict>
 				<key>NSApplicationIdentifier</key>

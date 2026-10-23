@@ -1,11 +1,11 @@
 #!/bin/sh
-# ติดตั้ง Finder Quick Action "ส่งไป LAN Share" และคำสั่ง share บนเครื่องนี้
+# ติดตั้ง Finder Quick Action "ส่งไป Share Group" และคำสั่ง share บนเครื่องนี้
 set -e
 ROOT="$(CDPATH= cd -- "$(dirname "$0")/../.." && pwd)"
 BIN="$HOME/LANShare/bin"
 SERVICES="$HOME/Library/Services"
 WORKFLOW_SRC="$ROOT/desktop/FinderQuickAction/LAN Share.workflow"
-WORKFLOW_DST="$SERVICES/ส่งไป LAN Share.workflow"
+WORKFLOW_DST="$SERVICES/ส่งไป Share Group.workflow"
 
 mkdir -p "$BIN"
 echo "build share → $BIN/share"
@@ -20,5 +20,5 @@ if [ -x /System/Library/CoreServices/pbs ]; then
 fi
 
 echo "ติดตั้งแล้ว: $WORKFLOW_DST"
-echo "ใน Finder คลิกขวาไฟล์ → Quick Actions / Services → ส่งไป LAN Share"
-echo "เซิร์ฟเวอร์ LAN Share ต้องเปิดอยู่บนเครื่องนี้"
+echo "ใน Finder คลิกขวาไฟล์ → Quick Actions / Services → ส่งไป Share Group"
+echo "เซิร์ฟเวอร์ Share Group ต้องเปิดอยู่บนเครื่องนี้"

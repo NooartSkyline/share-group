@@ -85,7 +85,7 @@ textarea.text-input{resize:vertical;line-height:1.5}
 .nav[aria-current="page"]{background:var(--chip);font-weight:600}
 .main{display:flex;flex-direction:column;gap:16px;min-width:0}
 .pane{display:none;flex-direction:column;gap:16px}
-#app[data-view="upload"] #pane-upload,#app[data-view="files"] #pane-files,#app[data-view="chat"] #pane-chat,#app[data-view="diag"] #pane-diag,#app[data-view="settings"] #pane-settings{display:flex}
+#app[data-view="upload"] #pane-upload,#app[data-view="files"] #pane-files,#app[data-view="chat"] #pane-chat,#app[data-view="diag"] #pane-diag,#app[data-view="settings"] #pane-settings,#app[data-view="about"] #pane-about{display:flex}
 #app[data-view="files"][data-files-src="device"] #pane-cable-fs,#app[data-view="upload"][data-files-src="device"] #pane-cable-fs{display:flex}
 @media (min-width:821px){
   #pane-upload{display:flex !important}
@@ -356,6 +356,14 @@ textarea.text-input{resize:vertical;line-height:1.5}
 .settings-row:last-child{border-bottom:0}
 .settings-row label{font-size:13px}
 .settings-row .select{width:100%}
+.about-card h3{margin:0 0 8px;font-size:15px}
+.about-card p{margin:0 0 8px;font-size:13px;line-height:1.55;color:var(--mut)}
+.about-card p:last-child{margin-bottom:0}
+.about-name{font-size:18px;font-weight:700;color:var(--text);margin-bottom:4px}
+.about-meta{display:flex;flex-direction:column;gap:8px;margin:12px 0 0}
+.about-meta div{display:flex;justify-content:space-between;gap:12px;font-size:13px}
+.about-meta dt{color:var(--mut)}
+.about-meta dd{margin:0;font-weight:600}
 @media (max-width:820px){
   .dev-tools{display:none}
   #room-switch{padding:4px}

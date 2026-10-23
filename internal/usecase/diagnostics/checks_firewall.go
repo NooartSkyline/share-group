@@ -8,7 +8,7 @@ import (
 )
 
 const firewallSteps = "เปิด System Settings > Network > Firewall > Options… " +
-	"แล้วตั้งให้โปรแกรม LAN Share เป็น \"Allow incoming connections\" (กด + เพื่อเพิ่มถ้ายังไม่อยู่ในรายการ) จากนั้นกด \"ตรวจใหม่\""
+	"แล้วตั้งให้โปรแกรม Share Group เป็น \"Allow incoming connections\" (กด + เพื่อเพิ่มถ้ายังไม่อยู่ในรายการ) จากนั้นกด \"ตรวจใหม่\""
 
 // checkFirewall asks the macOS application firewall whether this program may
 // accept incoming connections.
@@ -57,10 +57,10 @@ func (s *Service) checkFirewall(ctx context.Context, _ runEnv) domain.CheckResul
 			"เปิด System Settings > Network > Firewall > Options… แล้วปิด \"Block all incoming connections\" จากนั้นกด \"ตรวจใหม่\"")
 	case appErr == nil && access == AppBlocked:
 		return m.warn(
-			"Firewall เปิดอยู่ และ LAN Share ถูกตั้งให้บล็อกการเชื่อมต่อขาเข้า อุปกรณ์อื่นจึงเข้ามาไม่ได้",
+			"Firewall เปิดอยู่ และ Share Group ถูกตั้งให้บล็อกการเชื่อมต่อขาเข้า อุปกรณ์อื่นจึงเข้ามาไม่ได้",
 			firewallSteps)
 	case blockErr == nil && appErr == nil && access == AppPermitted:
-		return m.ok("Firewall เปิดอยู่ และอนุญาตให้ LAN Share รับการเชื่อมต่อขาเข้า")
+		return m.ok("Firewall เปิดอยู่ และอนุญาตให้ Share Group รับการเชื่อมต่อขาเข้า")
 	}
 	if blockErr != nil {
 		return m.unknownFrom(blockErr, source, manual)

@@ -97,6 +97,7 @@ func (s *Service) listIOS(ctx context.Context, out CableFSList, rootID, rel stri
 	}
 	if len(entries) > maxCableFSEntries {
 		entries = entries[:maxCableFSEntries]
+		out.Hint = "แสดง " + strconv.Itoa(maxCableFSEntries) + " รายการแรก"
 	}
 	out.Entries = entries
 	return out, nil

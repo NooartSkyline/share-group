@@ -1,6 +1,6 @@
 {
-  "name": "LAN Share แชร์ไฟล์ในเครือข่าย",
-  "short_name": "LAN Share",
+  "name": "Share Group แชร์ไฟล์ในเครือข่าย",
+  "short_name": "Share Group",
   "lang": "th",
   "start_url": "/",
   "scope": "/",

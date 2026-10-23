@@ -1,6 +1,6 @@
 'use strict';
 
-// Service Worker ของ LAN Share (ทำงานเฉพาะ Secure_Context)
+// Service Worker ของ Share Group (ทำงานเฉพาะ Secure_Context)
 //
 // นโยบาย: เก็บ cache เฉพาะไฟล์ App_Shell ใน ALLOW ที่ขอด้วย GET จาก origin
 // เดียวกัน แบบ network-first และใช้ cache เมื่อ fetch ล้มด้วย network error

@@ -2,8 +2,8 @@
 # สร้างแอป menu bar แล้วติดตั้งไป ~/Applications และเปิดทันที
 set -e
 SRC="$(CDPATH= cd -- "$(dirname "$0")" && pwd)"
-APP_SRC="$SRC/build/LAN Share.app"
-DEST="$HOME/Applications/LAN Share.app"
+APP_SRC="$SRC/build/Share Group.app"
+DEST="$HOME/Applications/Share Group.app"
 
 "$SRC/build.sh"
 

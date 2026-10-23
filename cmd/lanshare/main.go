@@ -1,4 +1,4 @@
-// Command lanshare runs the LAN Share server. It is the composition root:
+// Command lanshare runs the Share Group server. It is the composition root:
 // the only place that knows every concrete adapter and wires them together.
 package main
 
@@ -265,7 +265,7 @@ func stopPower(g *power.Guard, log *slog.Logger) {
 
 func printBanner(ctx context.Context, cfg config.Config, r domain.Room, nw *network.Service) {
 	fmt.Println()
-	fmt.Println("LAN Share กำลังทำงาน")
+	fmt.Println("Share Group กำลังทำงาน")
 	scheme := "http"
 	if cfg.TLS {
 		scheme = "https"

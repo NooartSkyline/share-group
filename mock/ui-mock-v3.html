@@ -1,0 +1,1652 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Share Group</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#0d1020;--panel:#171a2b;--panel2:#1c2038;--side:#141728;--line:#2a2f4a;
+    --text:#e8eaf3;--mut:#8b91ad;--faint:#6f7594;--accent:#5b7cff;--accent2:#8f6bff;
+    --ok:#3ddc97;--warn:#ffb84d;--bad:#ff6b6b;--input:#12152a;--chip:#252a4a;--shadow:rgba(0,0,0,.5);
+  }
+  #theme:checked ~ .wrap{
+    --bg:#eceef6;--panel:#ffffff;--panel2:#f5f6fc;--side:#eef0f8;--line:#dcdfee;
+    --text:#1a1d33;--mut:#5f6585;--faint:#8b91ad;--input:#eceef7;--chip:#e6e9f8;--shadow:rgba(40,50,100,.18);
+  }
+  #theme{position:absolute;opacity:0;pointer-events:none}
+  body{font-family:-apple-system,"Helvetica Neue","Sukhumvit Set",Arial,sans-serif}
+  button,input,select{font:inherit}
+  button{border:0;cursor:pointer}
+  .hidden{display:none!important}
+
+  .wrap{background:var(--bg);color:var(--text);min-height:100vh;padding:20px 20px 28px;transition:background .2s}
+  .inner{max-width:1360px;margin:0 auto}
+  .head{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:14px}
+  .head h1{font-size:18px}
+  .head p{color:var(--mut);font-size:12px;margin-top:3px}
+  .themebtn{cursor:pointer;background:var(--panel);border:1px solid var(--line);border-radius:99px;padding:8px 14px;font-size:13px;color:var(--text);user-select:none}
+  .ph{font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;background:#1aa3a3;color:#fff}
+  a{color:inherit}
+
+  .btn{display:inline-block;background:var(--accent);color:#fff;border-radius:9px;padding:8px 14px;font-size:13px;font-weight:600}
+  .btn.ghost{background:var(--chip);color:var(--text);font-weight:500}
+  .btn.bad{background:#fff;color:#c62828}
+  .btn.sm{padding:5px 10px;font-size:12px;border-radius:8px}
+  .pill{font-size:11px;padding:3px 9px;border-radius:99px;font-weight:600;white-space:nowrap}
+  .p-owner{background:#8f6bff26;color:#a68bff}
+  .p-usb{background:#3ddc9722;color:var(--ok)}
+  .p-ok{background:#3ddc9722;color:var(--ok)}
+  .bar{height:6px;background:var(--line);border-radius:99px;overflow:hidden}
+  .bar i{display:block;height:100%;background:var(--accent);border-radius:99px}
+  .bar i.ok{background:var(--ok)}
+  .card{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:14px}
+  small,.mut{color:var(--mut)}
+  kbd{font:600 11px ui-monospace,Menlo,monospace;background:var(--input);border:1px solid var(--line);border-radius:6px;padding:1px 6px}
+
+  .win{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 24px 50px var(--shadow)}
+  .tb{height:40px;background:var(--panel2);display:flex;align-items:center;padding:0 14px;gap:8px;border-bottom:1px solid var(--line)}
+  .tb .d{width:12px;height:12px;border-radius:50%}
+  .tb .t{margin:0 auto;font-size:13px;color:var(--mut);transform:translateX(-24px)}
+  .wb{display:flex;min-height:calc(100vh - 120px)}
+  .side{width:244px;background:var(--side);border-right:1px solid var(--line);padding:14px 10px;flex:none}
+  .side h4{font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.08em;margin:10px 8px 8px}
+  .it{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;margin-bottom:3px;font-size:13px;width:100%;text-align:left;background:transparent;color:var(--text)}
+  .it:hover{background:var(--chip)}
+  .it.act{background:var(--chip)}
+  .it .ic{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex:none}
+  .it small{display:block;font-size:11px;margin-top:1px}
+  .main{flex:1;padding:20px;display:flex;flex-direction:column;gap:12px;min-width:0}
+  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line)}
+  .tabs button{padding:8px 14px;font-size:13px;color:var(--mut);border-bottom:2px solid transparent;background:transparent}
+  .tabs button.on{color:var(--text);border-color:var(--accent);font-weight:600}
+  .tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .crumb{flex:1;font-size:13px;font-weight:600;min-width:0}
+  .views{display:flex;gap:2px;background:var(--input);border:1px solid var(--line);border-radius:10px;padding:3px}
+  .views button{padding:5px 10px;border-radius:8px;font-size:12px;color:var(--mut);background:transparent}
+  .views button.on{background:var(--panel);color:var(--text);font-weight:600}
+  .rh{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .rh h3{font-size:18px}
+  .rh .grow{flex:1}
+  .quota{width:180px;font-size:11px;color:var(--mut)}
+  .quota .bar{margin-top:5px}
+  .drop{border:2px dashed var(--line);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:14px;background:var(--panel2);cursor:pointer}
+  .drop:hover{border-color:var(--accent)}
+  .drop .big{font-size:26px}
+  .drop .txt{flex:1;font-size:13px;line-height:1.5}
+  .search{flex:1;min-width:160px;background:var(--input);border:1px solid var(--line);border-radius:9px;padding:7px 12px;font-size:13px;color:var(--text)}
+  .sel{font-size:12px;color:var(--text);background:var(--input);border:1px solid var(--line);border-radius:9px;padding:6px 10px}
+  .xfer{display:flex;flex-direction:column}
+  .xr{display:flex;align-items:center;gap:12px;padding:4px 0;font-size:13px}
+  .xr .fi{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex:none}
+  .xr .meta{flex:1;min-width:0}
+  .xr .st{font-size:12px;color:var(--ok);text-align:right}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;user-select:none}
+  .fc{background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden;font-size:12px;cursor:pointer}
+  .fc.chk{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset}
+  .th{height:92px;position:relative;display:flex;align-items:center;justify-content:center;font-size:30px}
+  .th .play{position:absolute;width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center}
+  .th .ext{position:absolute;left:8px;bottom:8px;padding:2px 8px;border-radius:99px;background:rgba(0,0,0,.4);color:#fff;font-size:11px;font-weight:700}
+  .fc .bd{padding:9px 10px;display:flex;flex-direction:column;gap:4px}
+  .fc .nm{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .fc .sub{color:var(--mut);font-size:11px}
+  .fc .ft{display:flex;gap:6px;align-items:center;justify-content:space-between;font-size:11px;color:var(--faint)}
+  .fc .acts{display:flex;gap:6px;margin-top:2px}
+  .fc .acts .btn{flex:1;text-align:center}
+
+  .flist{list-style:none;display:flex;flex-direction:column;gap:4px;user-select:none}
+  .flist li{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:10px;background:var(--panel2);cursor:pointer}
+  .flist li:hover{background:var(--chip)}
+  .flist li.picked{box-shadow:0 0 0 2px var(--accent) inset;background:var(--chip)}
+  .flist .ic{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;flex:none;background:var(--input)}
+  .flist .nm{flex:1;min-width:0;font-size:13px;font-weight:600}
+  .flist .nm small{display:block;font-size:11px;font-weight:400;color:var(--mut)}
+  .flist.icons{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:10px}
+  .flist.icons li{flex-direction:column;text-align:center;padding:12px 8px}
+  .flist.icons .ic{width:56px;height:56px;font-size:28px;margin:0 auto;border-radius:14px}
+  .flist.icons .nm{flex:none}
+  .flist.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+  .flist.gallery li{flex-direction:column;padding:0;overflow:hidden}
+  .flist.gallery .ic{width:100%;height:110px;border-radius:0;font-size:36px}
+
+  .browse{position:relative;flex:1;display:flex;flex-direction:column;gap:10px;min-height:220px}
+  .busy{position:absolute;inset:0;z-index:8;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:color-mix(in srgb, var(--bg) 72%, transparent);border-radius:12px;font-size:14px;font-weight:600}
+  .spin{width:28px;height:28px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .selbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--accent);color:#fff;border-radius:12px;padding:9px 14px;font-size:13px}
+  .selbar .grow{flex:1;min-width:120px}
+  .selbar .btn{background:#fff;color:#2b3fae}
+  .selbar .btn.ghost{background:rgba(255,255,255,.2);color:#fff}
+  .clipbar{background:var(--panel2);color:var(--text);border:1px solid var(--line)}
+  .clipbar .btn{background:var(--accent);color:#fff}
+  .clipbar .btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
+
+  .preview{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px}
+  .preview .vis{height:140px;border-radius:10px;background:linear-gradient(135deg,#3a4a8f,#8f6bff);display:flex;align-items:center;justify-content:center;font-size:48px}
+  .hex{font:11px/1.5 ui-monospace,Menlo,monospace;background:var(--input);border-radius:8px;padding:8px 10px;color:#8fb4ff;white-space:pre}
+
+  .mask{position:fixed;inset:0;z-index:30;background:rgba(8,10,20,.55);display:flex;align-items:center;justify-content:center;padding:20px}
+  .dlg{width:360px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:0 24px 50px var(--shadow);display:flex;flex-direction:column;gap:12px;font-size:13px}
+  .dlg h4{font-size:15px}
+  .input{background:var(--input);border:1px solid var(--line);border-radius:10px;padding:9px 11px;font-size:13px;color:var(--text);width:100%}
+  .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:40;background:var(--panel);border:1px solid var(--line);border-radius:99px;padding:10px 18px;font-size:13px;font-weight:600;box-shadow:0 12px 30px var(--shadow)}
+  .hint{font-size:12px;color:var(--mut)}
+  .empty{padding:28px 8px;text-align:center;color:var(--mut);font-size:13px}
+  .chat{display:flex;flex-direction:column;gap:10px;flex:1}
+  .msg{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13px;max-width:70%}
+  .msg.me{align-self:flex-end;background:var(--chip)}
+  .ck-row{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line);font-size:13px}
+  .ck-row:first-child{border-top:none}
+  .room-switch{display:flex;flex-direction:column;gap:6px;padding:4px 8px 8px}
+  .room-switch .sel{width:100%}
+  .room-actions{display:flex;gap:6px;flex-wrap:wrap}
+  .room-actions .btn{flex:1}
+  .pending{background:#ffb84d22;border:1px solid #ffb84d55}
+  .pending h4{margin:0 0 8px;font-size:14px}
+  .pend{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+  .owner{display:flex;gap:16px;align-items:start;flex-wrap:wrap}
+  .qrbox{width:118px;height:118px;background:#fff;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#333;font-size:12px;font-weight:700;text-align:center;padding:8px}
+  .owner-info{flex:1;min-width:220px;display:flex;flex-direction:column;gap:8px;font-size:13px}
+  .pin-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .pin-d{font:700 18px ui-monospace,Menlo,monospace;letter-spacing:.2em}
+  .url{font:12px/1.4 ui-monospace,Menlo,monospace;background:var(--input);border:1px solid var(--line);border-radius:8px;padding:6px 8px;word-break:break-all;flex:1}
+  .limits{display:flex;gap:10px;flex-wrap:wrap}
+  .limits label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--mut)}
+  .set-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 0;border-top:1px solid var(--line)}
+  .set-row:first-child{border-top:none}
+  .tabbar{display:none}
+  .fd-hex{font:11px/1.4 ui-monospace,Menlo,monospace;background:var(--input);border-radius:8px;padding:8px;word-break:break-all}
+  .fg{grid-column:1/-1;font-size:12px;color:var(--mut);font-weight:700;padding:4px 2px}
+  .notice{background:#5b7cff22;border:1px solid #5b7cff55;border-radius:12px;padding:10px 12px;font-size:13px}
+  .gate{max-width:400px;margin:40px auto;display:flex;flex-direction:column;gap:12px}
+  .dev-tools{display:flex;gap:6px;flex-wrap:wrap;padding:4px 8px 8px}
+  .xfer .bar{margin-top:6px;width:100%}
+  .xr{flex-wrap:wrap}
+  .drop-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .qrs{display:flex;gap:10px;flex-wrap:wrap}
+  .qrbox small{display:block;margin-top:4px;font-weight:600}
+  .stuck{display:flex;flex-direction:column;gap:8px}
+  .rolebar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--mut)}
+  @media (max-width:820px){
+    .wrap{padding:12px 10px 72px}
+    .side{display:none}
+    .wb{min-height:calc(100vh - 150px)}
+    .tabbar{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:space-around;background:var(--panel);border-top:1px solid var(--line);padding:6px 0 10px;z-index:20}
+    .tabbar button{flex:1;background:transparent;color:var(--faint);font-size:11px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 0}
+    .tabbar button.on{color:var(--accent);font-weight:700}
+    .tabbar button span{font-size:18px}
+    .invite-wifi,.owner{flex-direction:column}
+  }
+</style>
+</head>
+<body>
+<input type="checkbox" id="theme">
+<div class="wrap"><div class="inner">
+
+<div class="head">
+  <div>
+    <h1>Share Group <span class="ph">ทดลองใช้</span></h1>
+    <p>ต้นแบบครบฟีเจอร์หน้า <code>web/</code> — ไม่ต่อเซิร์ฟเวอร์ <a href="ui-mock-v2.html">v2</a></p>
+  </div>
+  <div class="tools">
+    <span class="pill p-ok" id="conn-pill">เชื่อมต่อแล้ว</span>
+    <label class="themebtn" for="theme">🌗 สลับโหมดมืด / สว่าง</label>
+    <button type="button" class="btn ghost sm hidden" id="leave-room">ออกจากห้อง</button>
+  </div>
+</div>
+
+<div id="file-notice" class="notice hidden" style="margin-bottom:12px">
+  <span id="file-notice-text">มีไฟล์ใหม่ในห้อง</span>
+  <button type="button" class="btn ghost sm" id="file-notice-x">✕</button>
+</div>
+
+<div id="screen-join" class="card gate hidden">
+  <h2>เข้าห้องแชร์</h2>
+  <p class="mut">ห้อง: <b id="join-room-label">ห้องหลัก</b></p>
+  <div id="pin-wrap">
+    <label class="mut">PIN 6 หลักจากเจ้าของห้อง</label>
+    <input id="join-pin" class="input" inputmode="numeric" maxlength="6" placeholder="••••••">
+    <p class="mut" style="font-size:12px;margin-top:4px">ต้นแบบใช้ PIN <b>482916</b></p>
+  </div>
+  <p class="mut hidden" id="guest-join-hint">ลิงก์แขก: ส่งไฟล์ได้อย่างเดียว ไม่ต้องใส่ PIN</p>
+  <label class="mut">ชื่ออุปกรณ์ของคุณ</label>
+  <input id="join-name" class="input" value="Pixel ทดลอง" maxlength="40">
+  <p class="mut" id="join-err" style="color:var(--bad)" hidden></p>
+  <button type="button" class="btn" id="join-pin-btn">เข้าห้อง</button>
+</div>
+<div id="screen-wait" class="card gate hidden">
+  <h2>รอเจ้าของห้องอนุมัติ</h2>
+  <p class="mut">เข้าห้องแล้ว แต่ยังใช้ไฟล์และข้อความไม่ได้ จนกว่าเจ้าของจะกดอนุมัติ</p>
+  <button type="button" class="btn" id="wait-approved">จำลองว่าถูกอนุมัติแล้ว</button>
+  <button type="button" class="btn ghost" id="wait-back">กลับ</button>
+</div>
+
+<div class="win" id="app-win">
+  <div class="tb">
+    <div class="d" style="background:#ff5f57"></div>
+    <div class="d" style="background:#febc2e"></div>
+    <div class="d" style="background:#28c840"></div>
+    <div class="t" id="win-title">Share Group • ห้องหลัก</div>
+  </div>
+  <div class="wb">
+    <aside class="side">
+      <div class="it" style="cursor:default">
+        <div class="ic" style="background:#5b7cff30">🏠</div>
+        <div><b id="side-room-name">ห้องหลัก</b><small class="mut" id="side-room-sub">Owner · 3 อุปกรณ์</small></div>
+      </div>
+      <div class="room-switch">
+        <label class="mut" for="room-pick" style="font-size:11px">ห้อง</label>
+        <select id="room-pick" class="sel">
+          <option value="main">ห้องหลัก</option>
+          <option value="design">ทีมออกแบบ</option>
+        </select>
+        <div class="room-actions">
+          <button type="button" class="btn ghost sm" id="room-new">＋ ห้องใหม่</button>
+          <button type="button" class="btn ghost sm" id="room-rename">เปลี่ยนชื่อ</button>
+          <button type="button" class="btn bad sm hidden" id="room-delete">ลบห้อง</button>
+        </div>
+      </div>
+      <h4>Wi-Fi</h4>
+      <button type="button" class="it">
+        <div class="ic" style="background:#8f6bff26">💻</div>
+        <div>MacBook<small class="mut">macOS · เครื่องนี้</small></div>
+        <span class="pill p-owner" style="margin-left:auto">Owner</span>
+      </button>
+      <div class="it" id="wifi-pc" style="flex-wrap:wrap">
+        <div class="ic" style="background:#5b7cff26">🪟</div>
+        <div>PC สำนักงาน<small class="mut">Windows · Wi-Fi</small></div>
+        <div class="dev-tools">
+          <select id="pc-role" class="sel">
+            <option value="member" selected>Member</option>
+            <option value="viewer">Viewer</option>
+            <option value="uploader">Uploader</option>
+          </select>
+          <button type="button" class="btn ghost sm" id="pc-rename">เปลี่ยนชื่อ</button>
+          <button type="button" class="btn ghost sm" id="pc-kick">ถอด</button>
+        </div>
+      </div>
+      <h4>สาย USB</h4>
+      <button type="button" class="it" data-open-dev="galaxy" id="side-galaxy">
+        <div class="ic" style="background:#3ddc9722">🤖</div>
+        <div>Galaxy S23<small class="mut">Android 16 • เสียบสาย</small></div>
+        <span class="pill p-usb" style="margin-left:auto">เปิดไฟล์</span>
+      </button>
+      <button type="button" class="it" data-open-dev="pixel" id="side-pixel">
+        <div class="ic" style="background:#3ddc9722">🤖</div>
+        <div>Pixel 8<small class="mut">Android • เสียบสาย</small></div>
+        <span class="pill p-usb" style="margin-left:auto">เปิดไฟล์</span>
+      </button>
+      <button type="button" class="it" data-open-dev="iphone" id="side-iphone">
+        <div class="ic" style="background:#3ddc9722">📱</div>
+        <div>iPhone ของแอน<small class="mut">iOS • ดูได้เฉพาะแอป Xcode</small></div>
+        <span class="pill p-usb" style="margin-left:auto">เปิดไฟล์</span>
+      </button>
+      <h4>เมนู</h4>
+      <button type="button" class="it" data-menu="upload"><div class="ic">⇅</div>ถ่ายโอน</button>
+      <button type="button" class="it act" data-menu="files"><div class="ic">🗂️</div>ไฟล์</button>
+      <button type="button" class="it" data-menu="chat"><div class="ic">💬</div>ข้อความ / คลิปบอร์ด</button>
+      <button type="button" class="it" data-menu="settings"><div class="ic">⚙️</div>ตั้งค่า</button>
+      <button type="button" class="it" data-menu="diag"><div class="ic">🩺</div>ตรวจปัญหาการเชื่อมต่อ</button>
+      <button type="button" class="it" data-menu="about"><div class="ic">ℹ️</div>เกี่ยวกับระบบ</button>
+    </aside>
+
+    <main class="main">
+      <section id="pane-files">
+        <section class="card pending" id="pending-banner">
+          <h4>อุปกรณ์รออนุมัติ</h4>
+          <div class="pend">
+            <div>iPhone ของแอน<small class="mut"> · iOS · รอเข้าห้อง</small></div>
+            <div class="tools">
+              <button type="button" class="btn sm" id="approve-dev">อนุมัติ</button>
+              <button type="button" class="btn ghost sm" id="reject-dev">ปฏิเสธ</button>
+            </div>
+          </div>
+        </section>
+        <section class="card" id="owner-card">
+          <div class="owner">
+            <div class="qrbox">QR<br>Wi-Fi<small>192.168.1.24</small></div>
+            <div class="owner-info">
+              <h3 style="margin:0">เชิญอุปกรณ์อื่นเข้า <span id="invite-room">ห้องหลัก</span></h3>
+              <p class="mut" style="font-size:12px">สแกน QR หรือเปิดลิงก์ แล้วกรอก PIN บนอุปกรณ์ใน Wi-Fi เดียวกัน</p>
+              <div class="pin-row">
+                <span class="mut">ลิงก์</span>
+                <code class="url" id="join-url">http://192.168.1.24:8080/?r=main</code>
+                <button type="button" class="btn ghost sm" id="copy-url">คัดลอก</button>
+              </div>
+              <div class="pin-row">
+                <span class="mut">PIN</span>
+                <span class="pin-d" id="pin-digits">482916</span>
+                <button type="button" class="btn ghost sm" id="rotate-pin">🔄 สร้างใหม่</button>
+              </div>
+              <div class="pin-row">
+                <label class="mut" for="nic">เครือข่ายที่ใช้</label>
+                <select id="nic" class="sel">
+                  <option>en0 • 192.168.1.24 (Wi-Fi) — แนะนำ</option>
+                  <option>en5 • 172.20.10.1 (USB)</option>
+                </select>
+              </div>
+              <label class="mut" style="display:flex;gap:8px;align-items:center">
+                <input type="checkbox" id="require-approval" checked> อนุมัติอุปกรณ์ใหม่ก่อนเข้าใช้ห้อง
+              </label>
+              <div class="limits">
+                <label>โควตาห้อง
+                  <select id="room-quota" class="sel">
+                    <option>ไม่จำกัด</option>
+                    <option>512 MiB</option>
+                    <option>1 GiB</option>
+                    <option selected>5 GiB</option>
+                    <option>20 GiB</option>
+                  </select>
+                </label>
+                <label>ไฟล์หมดอายุ
+                  <select id="room-ttl" class="sel">
+                    <option>ไม่หมดอายุ</option>
+                    <option>1 ชั่วโมง</option>
+                    <option selected>1 วัน</option>
+                    <option>7 วัน</option>
+                    <option>30 วัน</option>
+                  </select>
+                </label>
+              </div>
+              <div>
+                <div class="mut" style="font-size:12px;margin-bottom:4px">ลิงก์แขก (อัปโหลดอย่างเดียว)</div>
+                <div class="pin-row" id="guest-row">
+                  <code class="url" id="guest-url">http://192.168.1.24:8080/g/a8f3c1</code>
+                  <button type="button" class="btn ghost sm" id="copy-guest">คัดลอก</button>
+                  <button type="button" class="btn ghost sm" id="clear-guest">ปิดลิงก์</button>
+                </div>
+                <p class="mut" style="font-size:12px" id="guest-until">หมดอายุใน 48 นาที</p>
+                <button type="button" class="btn ghost sm hidden" id="make-guest">สร้างลิงก์แขก 1 ชั่วโมง</button>
+              </div>
+              <div class="quota" style="width:100%">
+                <div class="tools"><span>ใช้ไป 1.4 GB จาก 5 GiB</span></div>
+                <div class="bar"><i style="width:28%"></i></div>
+              </div>
+              <div class="stuck" id="stuck-box">
+                <div class="mut" style="font-size:12px">อัปโหลดที่ค้างในห้อง (ไม่โชว์ชื่อไฟล์)</div>
+                <div class="xr">
+                  <div class="fi" style="background:#ffb84d22">⏸</div>
+                  <div class="meta">อุปกรณ์ PC สำนักงาน · ค้างที่ 18%<small class="mut"> · ไม่มี Resume_Key ในหน้านี้</small></div>
+                  <button type="button" class="btn bad sm" id="stuck-cancel">ยกเลิก</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        <div class="tabs">
+          <button type="button" class="on" data-tab="room">ไฟล์ในห้อง</button>
+          <button type="button" data-tab="device">ไฟล์บนเครื่อง</button>
+        </div>
+
+        <section id="pane-upload">
+          <div class="drop" id="drop">
+            <div class="big">⬆️</div>
+            <div class="txt"><b>ลากไฟล์หรือโฟลเดอร์มาวาง หรือกดที่นี่เพื่อเพิ่มไฟล์ทดลอง</b><br>
+              <small class="mut">ส่งตรงในวงแลน ไม่ผ่านอินเทอร์เน็ต • กด ⌘V วางภาพจากคลิปบอร์ด</small></div>
+          </div>
+          <div class="drop-tools">
+            <button type="button" class="btn ghost sm" id="pick-dir">📁 เลือกโฟลเดอร์</button>
+            <label class="mut" style="font-size:12px">ถ้าชื่อซ้ำ:
+              <select id="conflict-policy" class="sel">
+                <option value="ask">ถามทุกครั้ง</option>
+                <option value="rename">เก็บทั้งสองไฟล์</option>
+                <option value="overwrite">เขียนทับ</option>
+                <option value="skip">ข้าม</option>
+              </select>
+            </label>
+          </div>
+          <div class="card" id="xfer-card">
+            <h3 style="font-size:14px;margin-bottom:8px">การถ่ายโอน</h3>
+            <div class="xfer" id="xfer-list"></div>
+          </div>
+        </section>
+        <div id="view-room">
+          <div class="tools">
+            <input id="file-search" class="search" type="search" placeholder="🔍 ค้นหาชื่อไฟล์หรืออุปกรณ์…">
+            <select id="file-sort" class="sel">
+              <option value="newest">ล่าสุด</option>
+              <option value="device">ตามอุปกรณ์</option>
+              <option value="date">ตามวันที่</option>
+            </select>
+            <button type="button" class="btn ghost sm" id="room-all">เลือกทั้งหมด</button>
+          </div>
+          <p class="hint">กดเพื่อเลือก · Shift ช่วง · ⌘ สลับ · ไม่มี checkbox</p>
+          <div id="room-grid" class="grid"></div>
+          <p id="room-empty" class="empty hidden">ยังไม่มีไฟล์ ลากมาวางหรือดึงจากสาย USB</p>
+          <div id="room-selbar" class="selbar hidden">
+            <div class="grow"><b id="room-sel-count">เลือก 0 ไฟล์</b></div>
+            <button type="button" class="btn sm" id="room-zip">⬇ ดาวน์โหลดเป็น .zip</button>
+            <button type="button" class="btn bad sm" id="room-del">🗑 ลบที่เลือก</button>
+            <button type="button" class="btn ghost sm" id="room-clear">ล้าง</button>
+          </div>
+        </div>
+
+        <div id="view-device" class="hidden">
+          <div class="tools">
+            <button type="button" class="btn ghost sm" id="dev-back">ย้อนกลับ</button>
+            <div class="crumb" id="dev-crumb">Galaxy S23</div>
+            <button type="button" class="btn ghost sm" id="dev-all">เลือกทั้งหมด</button>
+            <div class="views" id="dev-layouts">
+              <button type="button" class="on" data-layout="list">รายการ</button>
+              <button type="button" data-layout="icons">ไอคอน</button>
+              <button type="button" data-layout="gallery">แกลเลอรี</button>
+            </div>
+          </div>
+          <p class="hint">กดเพื่อเลือก · ดับเบิลคลิกเข้าโฟลเดอร์ · Shift ช่วง · ⌘ สลับ</p>
+          <p class="hint hidden" id="dev-hint"></p>
+          <p class="hint hidden" id="ios-hint">iPhone: ดูได้เฉพาะแอปจาก Xcode ไม่ลบและไม่สร้างโฟลเดอร์ผ่านสาย แอป Files ของระบบเรียกดูผ่าน USB ไม่ได้</p>
+          <div class="browse">
+            <ul id="dev-list" class="flist"></ul>
+            <div id="dev-selbar" class="selbar hidden">
+              <div class="grow"><b id="dev-sel-count">เลือก 0 รายการ</b></div>
+              <button type="button" class="btn sm" id="dev-copy">คัดลอก ⌘C</button>
+              <button type="button" class="btn sm" id="dev-cut">ตัด ⌘X</button>
+              <button type="button" class="btn sm" id="dev-import">ดึงเข้าห้อง</button>
+              <button type="button" class="btn sm" id="dev-save">⬇ บันทึกลงเครื่อง</button>
+              <button type="button" class="btn bad sm" id="dev-del">🗑 ลบ</button>
+              <button type="button" class="btn ghost sm" id="dev-clear">ล้าง</button>
+            </div>
+            <div id="dev-clipbar" class="selbar clipbar hidden">
+              <div class="grow"><b id="clip-count">คัดลอก 0 รายการ</b> <span class="mut" id="clip-from"></span></div>
+              <button type="button" class="btn ghost sm" id="dev-mkdir">โฟลเดอร์ใหม่</button>
+              <button type="button" class="btn sm" id="dev-paste">วาง ⌘V</button>
+              <button type="button" class="btn ghost sm" id="clip-clear">ล้าง</button>
+            </div>
+            <div id="dev-preview" class="preview hidden">
+              <div class="tools">
+                <div class="crumb" id="pv-name">ไฟล์</div>
+                <span class="mut" id="pv-meta" style="font-size:12px"></span>
+                <button type="button" class="btn ghost sm" id="pv-save">⬇ บันทึกลงเครื่อง</button>
+                <button type="button" class="btn ghost sm" id="pv-import">ดึงเข้าห้อง</button>
+                <button type="button" class="btn bad sm" id="pv-del">🗑 ลบ</button>
+              </div>
+              <div class="views" id="pv-views">
+                <button type="button" class="on" data-pv="preview">พรีวิว</button>
+                <button type="button" data-pv="text">ข้อความ</button>
+                <button type="button" data-pv="hex">ข้อมูลดิบ</button>
+              </div>
+              <div id="pv-visual" class="vis">🖼️</div>
+              <pre id="pv-hex" class="hex hidden"></pre>
+            </div>
+            <div id="dev-busy" class="busy hidden">
+              <span class="spin"></span>
+              <span id="busy-text">กำลังทำงาน…</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="pane-chat" class="chat hidden">
+        <div class="card">
+          <div class="rh"><h3 style="margin:0">📋 คลิปบอร์ดร่วม</h3><small class="mut" id="clip-meta">จาก MacBook · เมื่อสักครู่</small></div>
+          <pre id="clip-text" style="margin:10px 0;white-space:pre-wrap">https://meet.example.com/design-sync</pre>
+          <div class="tools">
+            <button type="button" class="btn sm" id="clip-copy-text">คัดลอกลงเครื่องนี้</button>
+            <button type="button" class="btn ghost sm" id="clip-clear-text">ล้าง</button>
+          </div>
+          <div class="tools" style="margin-top:10px">
+            <input id="clip-input" class="search" placeholder="พิมพ์หรือวางข้อความ/ลิงก์…">
+            <button type="button" class="btn sm" id="clip-share">แชร์ไปคลิปบอร์ดร่วม</button>
+          </div>
+        </div>
+        <div class="card chat">
+          <h3>💬 ข้อความ</h3>
+          <div id="messages">
+            <div class="msg">Pixel 8: ส่งลิงก์ประชุมมาที่ห้องนี้ได้ไหม</div>
+            <div class="msg me">MacBook: วางในคลิปบอร์ดร่วมแล้ว</div>
+          </div>
+          <div class="tools" style="margin-top:10px">
+            <input id="msg-input" class="search" placeholder="พิมพ์ข้อความ…">
+            <button type="button" class="btn" id="msg-send">ส่ง</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="pane-diag" class="hidden">
+        <div class="rh">
+          <h3>ตรวจปัญหาการเชื่อมต่อ</h3>
+          <div class="grow"></div>
+          <button type="button" class="btn ghost sm" id="diag-refresh">ตรวจใหม่</button>
+          <button type="button" class="btn ghost sm" id="diag-copy">คัดลอกรายงาน</button>
+        </div>
+        <p class="mut" style="font-size:12px">ตรวจเมื่อวันนี้ 11:10 (ผลที่เก็บไว้ไม่เกิน 30 วินาที)</p>
+        <div class="card">
+          <div class="ck-row"><span>✅</span><div><b>การ์ดเครือข่าย</b><small class="mut">en0 • 192.168.1.24 (Wi-Fi) พร้อมให้เครื่องอื่นเข้า</small></div></div>
+          <div class="ck-row"><span>⚠️</span><div><b>Firewall</b><small class="mut">macOS Firewall เปิดอยู่ — อนุญาต Share Group ถ้าเครื่องอื่นเข้าไม่ได้</small></div></div>
+          <div class="ck-row"><span>✅</span><div><b>เครื่องที่เคยเข้ามา</b><small class="mut">มีอุปกรณ์เรียกเข้ามาใน 10 นาทีล่าสุด</small></div></div>
+          <div class="ck-row"><span>✅</span><div><b>ย่าน Wi-Fi</b><small class="mut">5 GHz</small></div></div>
+          <div class="ck-row"><span>✅</span><div><b>พื้นที่ดิสก์</b><small class="mut">ว่างเพียงพอ หลังหักอย่างน้อย 1 GiB</small></div></div>
+          <div class="ck-row"><span>✅</span><div><b>กัน Mac หลับ</b><small class="mut">idle — จะทำงานเมื่อมีการถ่ายโอน</small></div></div>
+          <div class="ck-row"><span>⚠️</span><div><b>Secure Context</b><small class="mut">HTTP ใน LAN — PWA และการแจ้งเตือนของระบบใช้ได้บน localhost หรือ HTTPS</small></div></div>
+        </div>
+      </section>
+
+      <section id="pane-settings" class="hidden">
+        <h3>ตั้งค่า</h3>
+        <div class="card">
+          <div class="set-row"><span>ธีม</span>
+            <select id="set-theme" class="sel">
+              <option value="system">ตามระบบ</option>
+              <option value="dark">มืด</option>
+              <option value="light">สว่าง</option>
+            </select>
+          </div>
+          <div class="set-row"><span>ภาษา</span>
+            <select id="set-lang" class="sel">
+              <option value="th" selected>ไทย</option>
+              <option value="en">English</option>
+            </select>
+          </div>
+          <label class="set-row"><span>ย่อรูปใหญ่ก่อนส่ง (ยาวสุด 1920 พิกเซล)</span><input type="checkbox" id="set-resize" checked></label>
+          <label class="set-row"><span>ตรวจ SHA-256 ตอนส่งไฟล์</span><input type="checkbox" id="set-verify" checked></label>
+          <label class="set-row"><span>แจ้งเตือนของระบบเมื่อมีไฟล์ใหม่</span><input type="checkbox" id="set-notify"></label>
+          <label class="set-row"><span>พรีวิวด้วย sips / qlmanage (-system-preview)</span><input type="checkbox" id="set-preview" checked></label>
+          <p class="mut" style="font-size:12px">ต้นแบบนี้ไม่ต่อเซิร์ฟเวอร์ PWA และการแจ้งเตือนจริงต้องใช้ HTTPS หรือ localhost</p>
+        </div>
+        <div class="card" style="margin-top:12px">
+          <h4 style="margin-bottom:8px">บทบาทบนเครื่องนี้ (ทดลองสิทธิ์)</h4>
+          <div class="rolebar">
+            <select id="role-demo" class="sel">
+              <option value="owner">Owner</option>
+              <option value="member">Member</option>
+              <option value="viewer">Viewer</option>
+              <option value="uploader">Uploader</option>
+            </select>
+            <span id="role-help">จัดการห้องได้ทั้งหมด</span>
+          </div>
+        </div>
+        <div class="card" style="margin-top:12px">
+          <h4 style="margin-bottom:8px">เครื่องมือบน Mac</h4>
+          <p class="mut" style="font-size:12px;margin-bottom:8px">มีในโปรแกรมจริง ไม่รันในต้นแบบนี้</p>
+          <div class="tools">
+            <button type="button" class="btn ghost sm" id="mac-menubar">แอป menu bar</button>
+            <button type="button" class="btn ghost sm" id="mac-cli">CLI share send</button>
+            <button type="button" class="btn ghost sm" id="mac-finder">Finder Quick Action</button>
+            <button type="button" class="btn ghost sm" id="mac-shortcuts">HTTP API สำหรับ Shortcuts</button>
+            <button type="button" class="btn ghost sm" id="mac-tls">HTTPS -tls</button>
+          </div>
+        </div>
+        <div class="card" style="margin-top:12px">
+          <button type="button" class="btn ghost sm" id="demo-offline">จำลองขาดการเชื่อมต่อ</button>
+          <button type="button" class="btn ghost sm" id="demo-notice">จำลองไฟล์ใหม่</button>
+        </div>
+      </section>
+
+      <section id="pane-about" class="hidden">
+        <h3>เกี่ยวกับระบบ</h3>
+        <div class="card">
+          <p style="font-size:18px;font-weight:700">Share Group</p>
+          <p class="mut" style="font-size:13px;margin-top:4px">แชร์ไฟล์ในวงแลน รันบน Mac ของเจ้าของเครื่อง</p>
+          <div class="set-row"><span>เวอร์ชัน</span><b>0.1.0</b></div>
+          <div class="set-row"><span>ผู้พัฒนา</span><b>nooartskyline</b></div>
+        </div>
+        <div class="card" style="margin-top:12px">
+          <h4 style="margin-bottom:8px">ระบบนี้ทำงานอย่างไร</h4>
+          <p class="mut" style="font-size:13px;line-height:1.55">เป็นโปรแกรมบน Mac ไม่ใช่เว็บบนคลาวด์ หลังบ้านเป็นเซิร์ฟเวอร์ Go เครื่องอื่นใช้เบราว์เซอร์</p>
+          <p class="mut" style="font-size:13px;line-height:1.55;margin-top:8px">เปิด localhost บน Mac แล้วเป็น Owner อัตโนมัติ อุปกรณ์อื่นเปิดลิงก์หรือสแกน QR แล้วกรอก PIN ไฟล์เก็บบนดิสก์ของ Mac ไม่มีบัญชีผู้ใช้</p>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+</div></div>
+
+<nav class="tabbar hidden" aria-label="เมนูหลัก">
+  <button type="button" data-menu="upload"><span>⇅</span>ถ่ายโอน</button>
+  <button type="button" data-menu="files"><span>🗂️</span>ไฟล์</button>
+  <button type="button" data-menu="chat"><span>💬</span>ข้อความ</button>
+  <button type="button" data-menu="settings"><span>⚙️</span>ตั้งค่า</button>
+  <button type="button" data-menu="diag"><span>🩺</span>ตรวจปัญหา</button>
+  <button type="button" data-menu="about"><span>ℹ️</span>เกี่ยวกับ</button>
+</nav>
+
+<div id="detail-mask" class="mask hidden">
+  <div class="dlg" style="width:420px">
+    <h4 id="fd-title">รายละเอียดไฟล์</h4>
+    <p id="fd-name" style="font-weight:600"></p>
+    <p class="mut" id="fd-meta" style="font-size:12px"></p>
+    <h4 class="mut" style="font-size:12px;margin-top:4px">SHA-256</h4>
+    <div class="fd-hex" id="fd-hex">a3f1c8e2… (ต้นแบบ ไม่คำนวณจริง)</div>
+    <div class="tools">
+      <button type="button" class="btn ghost sm" id="fd-copy">คัดลอก checksum</button>
+      <button type="button" class="btn ghost sm" id="fd-calc">คำนวณ</button>
+    </div>
+    <h4 class="mut" style="font-size:12px">เทียบกับไฟล์ในเครื่อง</h4>
+    <p class="mut" style="font-size:12px">ในโปรแกรมจริงเลือกไฟล์จากเครื่องนี้แล้วเทียบ SHA-256</p>
+    <button type="button" class="btn ghost sm" id="fd-cmp">เลือกไฟล์ในเครื่องเพื่อเทียบ</button>
+    <p id="fd-cmp-out" class="mut" style="font-size:12px"></p>
+    <div style="display:flex;justify-content:flex-end"><button type="button" class="btn sm" id="fd-close">ปิด</button></div>
+  </div>
+</div>
+<div id="conflict-mask" class="mask hidden">
+  <div class="dlg">
+    <h4>มีไฟล์ชื่อนี้อยู่แล้ว</h4>
+    <p class="mut" id="cf-name"></p>
+    <label class="set-row"><span>ข้าม — ไม่ส่งไฟล์นี้</span><input type="radio" name="cf" value="skip"></label>
+    <label class="set-row"><span>เขียนทับ — แทนที่ไฟล์เดิม</span><input type="radio" name="cf" value="overwrite"></label>
+    <label class="set-row"><span>เก็บทั้งสองไฟล์ — ชื่อ (2)</span><input type="radio" name="cf" value="rename" checked></label>
+    <label class="set-row"><span>ทำแบบนี้กับไฟล์ที่เหลือ</span><input type="checkbox" id="cf-all"></label>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button type="button" class="btn ghost sm" id="cf-cancel">ยกเลิก</button>
+      <button type="button" class="btn sm" id="cf-ok">ตกลง</button>
+    </div>
+  </div>
+</div>
+<div id="mkdir-mask" class="mask hidden">
+  <div class="dlg">
+    <h4>โฟลเดอร์ใหม่</h4>
+    <p class="mut">ตั้งชื่อแล้วระบบจะเปิดโฟลเดอร์นั้นให้ กดวางได้เลย</p>
+    <input id="mkdir-name" class="input" placeholder="ชื่อโฟลเดอร์">
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button type="button" class="btn ghost sm" id="mkdir-cancel">ยกเลิก</button>
+      <button type="button" class="btn sm" id="mkdir-ok">สร้าง</button>
+    </div>
+  </div>
+</div>
+<div id="room-mask" class="mask hidden">
+  <div class="dlg">
+    <h4 id="room-dlg-title">ห้องใหม่</h4>
+    <input id="room-dlg-name" class="input" placeholder="ชื่อห้อง" maxlength="40">
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button type="button" class="btn ghost sm" id="room-dlg-cancel">ยกเลิก</button>
+      <button type="button" class="btn sm" id="room-dlg-ok">ตกลง</button>
+    </div>
+  </div>
+</div>
+<div id="offline-mask" class="mask hidden">
+  <div class="dlg">
+    <h4>เชื่อมต่อเซิร์ฟเวอร์ไม่ได้</h4>
+    <p class="mut">เครือข่ายหลุด หรือเซิร์ฟเวอร์ไม่ตอบใน 10 วินาที</p>
+    <div style="display:flex;justify-content:flex-end"><button type="button" class="btn sm" id="offline-retry">ลองใหม่</button></div>
+  </div>
+</div>
+<div id="toast" class="toast hidden"></div>
+
+<script>
+const ICON = { folder:'📁', image:'🖼️', video:'🎬', pdf:'📄', apk:'📦', audio:'🎵', file:'📄', shot:'📸' };
+const GRAD = { video:'linear-gradient(135deg,#3a4a8f,#8f6bff)', image:'linear-gradient(135deg,#c2546d,#ffb84d)', pdf:'linear-gradient(135deg,#555b7a,#2a2f4a)', shot:'linear-gradient(135deg,#2fb98a,#3a8fd6)', apk:'linear-gradient(135deg,#a8741d,#e29a2d)', file:'linear-gradient(135deg,#555b7a,#2a2f4a)', folder:'linear-gradient(135deg,#3a4a8f,#6a4fd0)' };
+
+let nid = 1;
+const id = () => 'n' + (nid++);
+
+function kindOf(name) {
+  const n = name.toLowerCase();
+  if (n.endsWith('.apk')) return 'apk';
+  if (/\.(jpg|jpeg|png|gif|webp|heic)$/.test(n)) return 'image';
+  if (/\.(mp4|mov|mkv)$/.test(n)) return 'video';
+  if (n.endsWith('.pdf')) return 'pdf';
+  if (/\.(mp3|m4a|wav)$/.test(n)) return 'audio';
+  return 'file';
+}
+function extOf(name) {
+  const i = name.lastIndexOf('.');
+  return i > 0 ? name.slice(i + 1).toUpperCase() : '';
+}
+function uniqueName(list, name) {
+  const has = (n) => list.some((x) => x.name === n);
+  if (!has(name)) return name;
+  const i = name.lastIndexOf('.');
+  const stem = i > 0 ? name.slice(0, i) : name;
+  const ext = i > 0 ? name.slice(i) : '';
+  let n = 2;
+  while (has(`${stem} (${n})${ext}`)) n++;
+  return `${stem} (${n})${ext}`;
+}
+function cloneItem(item) {
+  const out = { ...item, id: id(), kids: item.kids ? item.kids.map(cloneItem) : undefined };
+  return out;
+}
+
+function walls() {
+  return Array.from({ length: 18 }, (_, i) => ({
+    id: id(), name: `wall-${String(i + 1).padStart(2, '0')}.jpg`, kind: 'image', size: '3.6 MB',
+  }));
+}
+const devices = {
+  galaxy: {
+    name: 'Galaxy S23',
+    os: 'android',
+    root: [
+      { id: id(), name: 'แอป', kind: 'folder', kids: [
+        { id: id(), name: 'Maps.apk', kind: 'apk', size: '48 MB' },
+      ]},
+      { id: id(), name: 'ดาวน์โหลด', kind: 'folder', kids: [
+        { id: id(), name: '100 Amazing Ultra HD 4K Wallpapers', kind: 'folder', truncated: true, kids: walls() },
+        { id: id(), name: '1697364175759.jpg', kind: 'image', size: '2.1 MB' },
+        { id: id(), name: '1697364176067.jpg', kind: 'image', size: '1.8 MB' },
+        { id: id(), name: '672b67b03d85491daab457367233da75.apk', kind: 'apk', size: '34 MB' },
+        { id: id(), name: 'IMG20230903110116.jpg', kind: 'image', size: '4.8 MB' },
+        { id: id(), name: 'TC_K-eDocument.pdf', kind: 'pdf', size: '188 KB' },
+        { id: id(), name: 'แบบบ้าน', kind: 'folder', kids: [
+          { id: id(), name: 'แบบชั้น1.pdf', kind: 'pdf', size: '2.2 MB' },
+        ]},
+      ]},
+      { id: id(), name: 'รูปภาพ', kind: 'folder', kids: [
+        { id: id(), name: 'ทะเล.jpg', kind: 'image', size: '3.2 MB' },
+      ]},
+      { id: id(), name: 'กล้อง', kind: 'folder', kids: [
+        { id: id(), name: 'IMG_20261022.jpg', kind: 'image', size: '5.1 MB' },
+      ]},
+      { id: id(), name: 'วิดีโอ', kind: 'folder', kids: [
+        { id: id(), name: 'คลิปวันเกิด.mp4', kind: 'video', size: '86 MB' },
+      ]},
+      { id: id(), name: 'เอกสาร', kind: 'folder', kids: [
+        { id: id(), name: 'สัญญา.pdf', kind: 'pdf', size: '420 KB' },
+      ]},
+      { id: id(), name: 'เพลง', kind: 'folder', kids: [
+        { id: id(), name: 'demo.mp3', kind: 'audio', size: '3.4 MB' },
+      ]},
+      { id: id(), name: 'ที่เก็บข้อมูล', kind: 'folder', kids: [] },
+    ],
+  },
+  pixel: {
+    name: 'Pixel 8',
+    os: 'android',
+    root: [
+      { id: id(), name: 'แอป', kind: 'folder', kids: [
+        { id: id(), name: 'Notes.apk', kind: 'apk', size: '12 MB' },
+      ]},
+      { id: id(), name: 'ดาวน์โหลด', kind: 'folder', kids: [] },
+      { id: id(), name: 'รูปภาพ', kind: 'folder', kids: [
+        { id: id(), name: 'ทะเล.jpg', kind: 'image', size: '3.2 MB' },
+        { id: id(), name: 'ทริปเชียงใหม่', kind: 'folder', kids: [] },
+      ]},
+      { id: id(), name: 'กล้อง', kind: 'folder', kids: [] },
+      { id: id(), name: 'วิดีโอ', kind: 'folder', kids: [] },
+      { id: id(), name: 'เอกสาร', kind: 'folder', kids: [] },
+      { id: id(), name: 'เพลง', kind: 'folder', kids: [] },
+      { id: id(), name: 'ที่เก็บข้อมูล', kind: 'folder', kids: [] },
+    ],
+  },
+  iphone: {
+    name: 'iPhone ของแอน',
+    os: 'ios',
+    root: [
+      { id: id(), name: 'แอปจาก Xcode', kind: 'folder', kids: [
+        { id: id(), name: 'MyDevApp', kind: 'folder', kids: [
+          { id: id(), name: 'Documents', kind: 'folder', kids: [
+            { id: id(), name: 'note.txt', kind: 'file', size: '2 KB' },
+          ]},
+          { id: id(), name: 'tmp', kind: 'folder', kids: [] },
+        ]},
+      ]},
+    ],
+  },
+};
+
+const roomFiles = [
+  { id: id(), name: 'trip-2026.mp4', kind: 'video', size: '1.4 GB', from: 'Pixel 8', badge: 'sha', ttl: '⏳ 23 ชม.', day: '22 ต.ค. 2026' },
+  { id: id(), name: 'IMG_2041.jpg', kind: 'image', size: '3.2 MB', from: 'iPhone', badge: 'sha', ttl: '⏳ 23 ชม.', note: 'แปลงจาก HEIC', day: '22 ต.ค. 2026' },
+  { id: id(), name: 'สกรีนช็อต 09.38.png', kind: 'shot', size: '820 KB', from: 'คลิปบอร์ด', badge: 'sha', ttl: '⏳ 21 ชม.', day: '23 ต.ค. 2026' },
+];
+const rooms = { main: 'ห้องหลัก', design: 'ทีมออกแบบ' };
+const defaultRoom = 'main';
+
+const S = {
+  screen: 'app',
+  role: 'owner',
+  meName: 'MacBook',
+  menu: 'files',
+  tab: 'room',
+  device: 'galaxy',
+  path: ['ดาวน์โหลด'],
+  layout: 'list',
+  roomSel: new Set(),
+  roomAnchor: '',
+  roomBase: new Set(),
+  devSel: new Set(),
+  devAnchor: '',
+  devBase: new Set(),
+  clip: null,
+  preview: null,
+  pv: 'preview',
+  busy: '',
+  lastXfer: '',
+  showPending: true,
+  guestJoin: false,
+  pinTries: 0,
+  pinLocked: 0,
+  guestOn: true,
+  conflictPolicy: 'ask',
+  conflictAll: '',
+  roomDlg: '',
+  pcName: 'PC สำนักงาน',
+  pcGone: false,
+  stuck: true,
+  lang: 'th',
+  transfers: [
+    { id: 't1', name: 'brief.pdf', pct: 100, state: 'done', note: 'ตรวจแล้ว SHA-256' },
+    { id: 't2', name: 'clip.mp4', pct: 64, state: 'up', note: '12 MB/s' },
+    { id: 't3', name: 'archive.zip', pct: 40, state: 'paused', note: 'หยุดชั่วคราว' },
+    { id: 't4', name: 'จากสาย USB', pct: 100, state: 'usb', note: '' },
+  ],
+};
+
+const $ = (id) => document.getElementById(id);
+let toastTimer = 0;
+function toast(msg, hold = 2200) {
+  const el = $('toast');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.add('hidden'), hold);
+}
+function busy(msg, ms, after) {
+  S.busy = msg || '';
+  $('busy-text').textContent = msg || 'กำลังทำงาน…';
+  $('dev-busy').classList.toggle('hidden', !S.busy);
+  if (ms) setTimeout(() => { S.busy = ''; $('dev-busy').classList.add('hidden'); if (after) after(); }, ms);
+}
+
+function folderAt(dev, path) {
+  let kids = devices[dev].root;
+  for (const name of path) {
+    const f = kids.find((x) => x.kind === 'folder' && x.name === name);
+    if (!f) return [];
+    if (!f.kids) f.kids = [];
+    kids = f.kids;
+  }
+  return kids;
+}
+function currentKids() { return folderAt(S.device, S.path); }
+function displayedRoom() {
+  const q = $('file-search').value.trim().toLowerCase();
+  const sort = $('file-sort').value;
+  let list = roomFiles.filter((f) => !q || f.name.toLowerCase().includes(q) || f.from.toLowerCase().includes(q));
+  if (sort === 'device') list = [...list].sort((a, b) => a.from.localeCompare(b.from, 'th') || a.name.localeCompare(b.name, 'th'));
+  else if (sort === 'date') list = [...list].sort((a, b) => (a.day || '').localeCompare(b.day || '') || a.name.localeCompare(b.name, 'th'));
+  else list = [...list].reverse();
+  return list;
+}
+
+function pickSet(set, ids, id, ev, anchorKey, baseKey) {
+  const idx = ids.indexOf(id);
+  const cmd = ev.metaKey || ev.ctrlKey;
+  const shift = ev.shiftKey;
+  if (shift && S[anchorKey] && ids.includes(S[anchorKey]) && idx >= 0) {
+    if (!cmd) {
+      set.clear();
+      S[baseKey].forEach((x) => set.add(x));
+    }
+    const a = ids.indexOf(S[anchorKey]);
+    const [lo, hi] = a < idx ? [a, idx] : [idx, a];
+    for (let i = lo; i <= hi; i++) set.add(ids[i]);
+  } else if (cmd) {
+    if (set.has(id)) set.delete(id); else set.add(id);
+    S[anchorKey] = id;
+    S[baseKey] = new Set(set);
+  } else {
+    set.clear();
+    set.add(id);
+    S[anchorKey] = id;
+    S[baseKey] = new Set(set);
+  }
+}
+
+function isDesktop() { return window.matchMedia('(min-width:821px)').matches; }
+function canUpload() { return ['owner', 'member', 'uploader'].includes(S.role); }
+function canDownload() { return ['owner', 'member', 'viewer'].includes(S.role); }
+function canChat() { return ['owner', 'member'].includes(S.role); }
+function canChatRead() { return ['owner', 'member', 'viewer'].includes(S.role); }
+function isOwner() { return S.role === 'owner'; }
+function isIOS() { return devices[S.device] && devices[S.device].os === 'ios'; }
+
+function renderScreen() {
+  $('screen-join').classList.toggle('hidden', S.screen !== 'join');
+  $('screen-wait').classList.toggle('hidden', S.screen !== 'wait');
+  $('app-win').classList.toggle('hidden', S.screen !== 'app');
+  $('leave-room').classList.toggle('hidden', S.screen !== 'app');
+  document.querySelector('.tabbar').classList.toggle('hidden', S.screen !== 'app');
+  if (S.screen !== 'app') $('file-notice').classList.add('hidden');
+}
+
+function renderRole() {
+  $('side-room-sub').textContent = `${S.role === 'owner' ? 'Owner' : S.role === 'member' ? 'Member' : S.role === 'viewer' ? 'Viewer' : 'Uploader'} · ${S.pcGone ? 2 : 3} อุปกรณ์`;
+  $('role-demo').value = S.role;
+  $('role-help').textContent = S.role === 'owner' ? 'จัดการห้องได้ทั้งหมด'
+    : S.role === 'member' ? 'ส่ง รับ ข้อความได้ ไม่จัดการห้อง'
+    : S.role === 'viewer' ? 'ดูและดาวน์โหลดได้อย่างเดียว'
+    : 'อัปโหลดอย่างเดียว ไม่ดูไฟล์และข้อความ';
+  const ownerOnly = !isOwner() || S.tab !== 'room' || (S.menu !== 'files' && S.menu !== 'upload');
+  $('owner-card').classList.toggle('hidden', ownerOnly);
+  $('pending-banner').classList.toggle('hidden', !S.showPending || ownerOnly);
+  document.querySelector('.room-switch').classList.toggle('hidden', !isOwner());
+  $('wifi-pc').classList.toggle('hidden', S.pcGone);
+  document.querySelector('#wifi-pc .dev-tools').classList.toggle('hidden', !isOwner());
+  document.querySelectorAll('[data-open-dev]').forEach((b) => b.classList.toggle('hidden', !isOwner()));
+  const filesTabs = document.querySelector('.tabs');
+  if (filesTabs) filesTabs.classList.toggle('hidden', !isOwner() || (S.menu !== 'files' && S.menu !== 'upload'));
+  $('drop').classList.toggle('hidden', !canUpload());
+  document.querySelector('.drop-tools').classList.toggle('hidden', !canUpload());
+  $('room-del').classList.toggle('hidden', S.role === 'viewer' || S.role === 'uploader');
+  $('room-zip').classList.toggle('hidden', !canDownload());
+  $('pane-chat').querySelectorAll('input, textarea, #clip-share, #msg-send, #clip-clear-text').forEach((el) => {
+    el.disabled = !canChat();
+  });
+  if (!canChatRead() && S.menu === 'chat') S.menu = canUpload() ? 'upload' : 'files';
+}
+
+function renderMenu() {
+  document.querySelectorAll('[data-menu]').forEach((b) => {
+    const on = b.dataset.menu === S.menu;
+    b.classList.toggle('act', on);
+    b.classList.toggle('on', on);
+  });
+  const desktop = isDesktop();
+  const filesish = S.menu === 'files' || S.menu === 'upload';
+  $('pane-files').classList.toggle('hidden', !filesish);
+  $('pane-upload').classList.toggle('hidden',
+    S.tab === 'device' || (desktop ? !filesish : S.menu !== 'upload') || !canUpload());
+  $('pane-chat').classList.toggle('hidden', S.menu !== 'chat' || !canChatRead());
+  $('pane-diag').classList.toggle('hidden', S.menu !== 'diag' || !isOwner());
+  $('pane-settings').classList.toggle('hidden', S.menu !== 'settings');
+  $('pane-about').classList.toggle('hidden', S.menu !== 'about');
+  document.querySelectorAll('[data-menu="diag"]').forEach((b) => b.classList.toggle('hidden', !isOwner()));
+  document.querySelectorAll('[data-menu="chat"]').forEach((b) => b.classList.toggle('hidden', !canChatRead()));
+  document.querySelectorAll('[data-menu="upload"]').forEach((b) => b.classList.toggle('hidden', !canUpload() || desktop));
+}
+
+function renderTabs() {
+  document.querySelectorAll('[data-tab]').forEach((b) => b.classList.toggle('on', b.dataset.tab === S.tab));
+  const mobileUpload = !isDesktop() && S.menu === 'upload';
+  $('view-room').classList.toggle('hidden', S.tab !== 'room' || mobileUpload);
+  $('view-device').classList.toggle('hidden', S.tab !== 'device' || mobileUpload);
+  const room = rooms[$('room-pick').value] || 'ห้องหลัก';
+  $('win-title').textContent = S.tab === 'device'
+    ? 'Share Group • ' + devices[S.device].name
+    : 'Share Group • ' + room;
+  const ownerChrome = isOwner() && S.tab === 'room' && (S.menu === 'files' || (isDesktop() && S.menu === 'upload'));
+  $('owner-card').classList.toggle('hidden', !ownerChrome);
+  $('pending-banner').classList.toggle('hidden', !S.showPending || !ownerChrome);
+  $('room-delete').classList.toggle('hidden', !isOwner() || $('room-pick').value === defaultRoom);
+}
+
+function renderRoom() {
+  const list = displayedRoom();
+  const grid = $('room-grid');
+  grid.replaceChildren();
+  $('room-empty').classList.toggle('hidden', list.length > 0);
+  const sort = $('file-sort').value;
+  let lastGroup = '';
+  list.forEach((f) => {
+    const group = sort === 'device' ? f.from : sort === 'date' ? (f.day || '') : '';
+    if (group && group !== lastGroup) {
+      lastGroup = group;
+      const h = document.createElement('div');
+      h.className = 'fg';
+      h.textContent = group;
+      grid.append(h);
+    }
+    const card = document.createElement('div');
+    card.className = 'fc' + (S.roomSel.has(f.id) ? ' chk' : '');
+    const sub = f.note ? `${f.size} • จาก ${f.from} (${f.note})` : `${f.size} • จาก ${f.from}`;
+    const badge = f.badge === 'usb' ? '<span class="pill p-usb">ดึงจากสาย</span>' : '<span class="pill p-ok">ตรวจแล้ว</span>';
+    card.innerHTML = `
+      <div class="th" style="background:${GRAD[f.kind] || GRAD.file}">${ICON[f.kind] || ICON.file}${f.kind === 'video' ? '<div class="play">▶</div>' : ''}<div class="ext">${extOf(f.name) || 'FILE'}</div></div>
+      <div class="bd">
+        <div class="nm">${f.name}</div>
+        <div class="sub">${sub}</div>
+        <div class="ft">${badge}<span>${f.ttl || ''}</span></div>
+        <div class="acts">${canDownload() ? `<button type="button" class="btn sm" data-open="${f.id}">เปิดไฟล์</button><button type="button" class="btn ghost sm" data-dl="${f.id}">ดาวน์โหลด</button>` : ''}<button type="button" class="btn ghost sm" data-detail="${f.id}">รายละเอียด</button></div>
+      </div>`;
+    card.addEventListener('pointerdown', (ev) => {
+      if (ev.button !== 0 || ev.target.closest('.acts')) return;
+      pickSet(S.roomSel, list.map((x) => x.id), f.id, ev, 'roomAnchor', 'roomBase');
+      renderRoom();
+    });
+    grid.append(card);
+  });
+  const n = S.roomSel.size;
+  $('room-selbar').classList.toggle('hidden', n === 0);
+  $('room-sel-count').textContent = n ? `เลือก ${n} ไฟล์` : '';
+  renderTransfers();
+}
+
+function renderTransfers() {
+  const box = $('xfer-list');
+  box.replaceChildren();
+  const items = S.transfers.slice();
+  if (S.lastXfer) items.unshift({ id: 'usb', name: S.lastXfer, pct: 100, state: 'usb', note: 'ดึงเข้าห้องแล้ว' });
+  $('xfer-card').classList.toggle('hidden', items.length === 0);
+  items.forEach((t) => {
+    const row = document.createElement('div');
+    row.className = 'xr';
+    const st = t.state === 'done' || t.state === 'usb' ? 'เสร็จ' : t.state === 'paused' ? 'หยุดชั่วคราว' : t.state === 'up' ? (t.note || 'กำลังส่ง') : t.note || '';
+    row.innerHTML = `
+      <div class="fi" style="background:${t.state === 'usb' ? '#3ddc9722' : '#5b7cff26'}">${t.state === 'usb' ? '🔌' : '📄'}</div>
+      <div class="meta">${t.name}<div class="bar"><i class="${t.state === 'done' || t.state === 'usb' ? 'ok' : ''}" style="width:${t.pct}%"></i></div><small class="mut">${t.pct}% · ${st}</small></div>
+      <div class="st"></div>`;
+    const actions = document.createElement('div');
+    actions.className = 'tools';
+    if (t.state === 'up') {
+      const p = document.createElement('button');
+      p.className = 'btn ghost sm';
+      p.textContent = 'หยุด';
+      p.onclick = () => { t.state = 'paused'; t.note = 'หยุดชั่วคราว'; renderTransfers(); toast('หยุดชั่วคราว'); };
+      actions.append(p);
+    }
+    if (t.state === 'paused') {
+      const r = document.createElement('button');
+      r.className = 'btn sm';
+      r.textContent = 'ต่อ';
+      r.onclick = () => { t.state = 'up'; t.note = 'กำลังเชื่อมต่อใหม่'; renderTransfers(); toast('ส่งต่อแล้ว'); };
+      actions.append(r);
+    }
+    if (t.state === 'up' || t.state === 'paused') {
+      const c = document.createElement('button');
+      c.className = 'btn bad sm';
+      c.textContent = 'ยกเลิก';
+      c.onclick = () => { S.transfers = S.transfers.filter((x) => x.id !== t.id); renderTransfers(); toast('ยกเลิกแล้ว'); };
+      actions.append(c);
+    }
+    row.append(actions);
+    box.append(row);
+  });
+}
+
+function renderDevice() {
+  const kids = currentKids();
+  const folder = (() => {
+    let kids0 = devices[S.device].root;
+    let node = null;
+    for (const name of S.path) {
+      node = kids0.find((x) => x.kind === 'folder' && x.name === name);
+      if (!node) return null;
+      kids0 = node.kids || [];
+    }
+    return node;
+  })();
+  $('dev-crumb').textContent = [devices[S.device].name, ...S.path].join(' / ');
+  $('dev-back').disabled = S.path.length === 0;
+  $('dev-hint').classList.toggle('hidden', !(folder && folder.truncated));
+  $('dev-hint').textContent = folder && folder.truncated
+    ? `แสดง ${kids.length} รายการแรก (โปรแกรมจริงสูงสุด 400) — บันทึกทั้งโฟลเดอร์เป็น zip ยังเดินต่อได้ถึง 5000 ไฟล์`
+    : '';
+  $('ios-hint').classList.toggle('hidden', !isIOS());
+  $('dev-mkdir').classList.toggle('hidden', isIOS());
+  $('dev-del').classList.toggle('hidden', isIOS());
+  $('dev-cut').classList.toggle('hidden', isIOS());
+  $('pv-del').classList.toggle('hidden', isIOS());
+  const ul = $('dev-list');
+  ul.className = 'flist' + (S.layout === 'list' ? '' : ' ' + S.layout);
+  ul.replaceChildren();
+  kids.forEach((e) => {
+    const li = document.createElement('li');
+    if (S.devSel.has(e.id)) li.classList.add('picked');
+    const label = e.kind === 'folder' ? 'โฟลเดอร์' : (e.size || '');
+    li.innerHTML = `<div class="ic">${ICON[e.kind] || ICON.file}</div><div class="nm">${e.name}<small>${label}</small></div>`;
+    li.addEventListener('pointerdown', (ev) => {
+      if (ev.button !== 0) return;
+      pickSet(S.devSel, kids.map((x) => x.id), e.id, ev, 'devAnchor', 'devBase');
+      if (e.kind !== 'folder') S.preview = e;
+      else if (S.preview && S.preview.id === e.id) S.preview = null;
+      renderDevice();
+    });
+    li.addEventListener('dblclick', () => {
+      if (e.kind === 'folder') {
+        S.path = [...S.path, e.name];
+        S.devSel.clear();
+        S.devAnchor = '';
+        S.devBase = new Set();
+        S.preview = null;
+        renderDevice();
+      }
+    });
+    ul.append(li);
+  });
+  const n = S.devSel.size;
+  $('dev-selbar').classList.toggle('hidden', n === 0 || !!S.busy);
+  $('dev-sel-count').textContent = n ? `เลือก ${n} รายการ` : '';
+  const clip = S.clip;
+  $('dev-clipbar').classList.toggle('hidden', !clip);
+  if (clip) {
+    $('clip-count').textContent = `${clip.mode === 'cut' ? 'ตัด' : 'คัดลอก'} ${clip.items.length} รายการ`;
+    $('clip-from').textContent = 'จาก ' + devices[clip.device].name;
+  }
+  const pv = S.preview && kids.some((x) => x.id === S.preview.id) ? S.preview : null;
+  S.preview = pv;
+  $('dev-preview').classList.toggle('hidden', !pv);
+  if (pv) {
+    $('pv-name').textContent = pv.name;
+    $('pv-meta').textContent = [extOf(pv.name), pv.size].filter(Boolean).join(' · ');
+    document.querySelectorAll('#pv-views [data-pv]').forEach((b) => b.classList.toggle('on', b.dataset.pv === S.pv));
+    const vis = $('pv-visual');
+    const hex = $('pv-hex');
+    if (S.pv === 'hex') {
+      vis.classList.add('hidden');
+      hex.classList.remove('hidden');
+      hex.textContent = `0000  25 50 44 46 2d 31 2e 34   ${pv.name}\n0010  0a 25 e2 e3 cf d3 0a 31   mock bytes`;
+    } else if (S.pv === 'text') {
+      vis.classList.remove('hidden');
+      hex.classList.add('hidden');
+      vis.textContent = pv.kind === 'pdf' || pv.kind === 'file' ? 'ตัวอย่างข้อความของไฟล์นี้' : 'ไฟล์นี้ไม่ใช่ข้อความ';
+      vis.style.fontSize = '16px';
+    } else {
+      vis.classList.remove('hidden');
+      hex.classList.add('hidden');
+      vis.textContent = ICON[pv.kind] || ICON.file;
+      vis.style.fontSize = '48px';
+    }
+  }
+}
+
+function render() {
+  renderScreen();
+  renderRole();
+  renderMenu();
+  renderTabs();
+  renderRoom();
+  renderDevice();
+}
+
+function selectedRoom() { return roomFiles.filter((f) => S.roomSel.has(f.id)); }
+function selectedDev() { return currentKids().filter((e) => S.devSel.has(e.id)); }
+
+function copyDev(cut) {
+  if (isIOS() && cut) { toast('iPhone ไม่ตัดไฟล์ผ่านสาย'); return; }
+  const items = selectedDev();
+  if (!items.length) return;
+  if (cut && items.some((x) => x.kind === 'apk')) {
+    toast('แอปตัดไม่ได้ คัดลอกไปติดตั้งบนเครื่องอื่น');
+    return;
+  }
+  S.clip = {
+    mode: cut ? 'cut' : 'copy',
+    device: S.device,
+    path: [...S.path],
+    items: items.map((x) => x.id),
+    kind: items.every((x) => x.kind === 'apk') ? 'apps' : 'files',
+  };
+  toast(cut ? `ตัด ${items.length} รายการ ไปเปิดหน้าที่จะวาง` : `คัดลอก ${items.length} รายการ ไปเปิดหน้าที่จะวาง`);
+  render();
+}
+
+function pasteDev() {
+  const clip = S.clip;
+  if (!clip || S.busy) return;
+  if (isIOS()) {
+    toast('iPhone ไม่รองรับวางหรือสร้างโฟลเดอร์ผ่านสาย');
+    return;
+  }
+  if (clip.kind === 'apps' && clip.device === S.device) {
+    toast('แอปวางได้เฉพาะเครื่องอื่น');
+    return;
+  }
+  if (clip.kind === 'apps' && clip.device !== S.device) {
+    busy('กำลังติดตั้ง APK…', 900, () => {
+      toast('ติดตั้ง APK บน ' + devices[S.device].name + ' แล้ว');
+      S.clip = null;
+      render();
+    });
+    return;
+  }
+  if (!S.path.length) {
+    toast('เปิดโฟลเดอร์ก่อนแล้วค่อยวาง');
+    return;
+  }
+  const dest = currentKids();
+  const sameFolder = clip.device === S.device && clip.path.join('/') === S.path.join('/');
+  const srcKids = folderAt(clip.device, clip.path);
+  const picked = srcKids.filter((x) => clip.items.includes(x.id));
+  busy(clip.mode === 'cut' ? 'กำลังตัดและวาง…' : 'กำลังวาง…', 700, () => {
+    picked.forEach((item) => {
+      const copy = cloneItem(item);
+      copy.name = uniqueName(dest, copy.name);
+      dest.push(copy);
+    });
+    if (clip.mode === 'cut' && !sameFolder) {
+      for (let i = srcKids.length - 1; i >= 0; i--) {
+        if (clip.items.includes(srcKids[i].id)) srcKids.splice(i, 1);
+      }
+      S.clip = null;
+    } else if (clip.mode === 'cut' && sameFolder) {
+      toast('วางในโฟลเดอร์เดิมเป็นสำเนา ต้นฉบับยังอยู่');
+    } else {
+      toast(`วางแล้ว ${picked.length} รายการ`);
+    }
+    render();
+  });
+}
+
+function importDev(items) {
+  const list = items && items.length ? items : selectedDev();
+  if (!list.length) return;
+  busy('กำลังดึงเข้าห้อง…', 800, () => {
+    list.forEach((e) => {
+      if (e.kind === 'folder') {
+        (e.kids || []).forEach((k) => {
+          roomFiles.push({ id: id(), name: k.name, kind: k.kind === 'folder' ? 'file' : k.kind, size: k.size || 'โฟลเดอร์', from: devices[S.device].name, badge: 'usb', ttl: 'เพิ่งเข้า' });
+        });
+      } else {
+        roomFiles.push({ id: id(), name: e.name, kind: e.kind, size: e.size || '', from: devices[S.device].name, badge: 'usb', ttl: 'เพิ่งเข้า' });
+      }
+    });
+    S.lastXfer = `${list[0].name} <small class="mut">• จาก ${devices[S.device].name} → ห้อง</small>`;
+    S.tab = 'room';
+    S.devSel.clear();
+    S.roomSel.clear();
+    toast(`ดึงเข้าห้องแล้ว ${list.length} รายการ`);
+    render();
+  });
+}
+
+function saveDev(items) {
+  const list = items && items.length ? items : selectedDev();
+  if (!list.length) return;
+  const folders = list.filter((x) => x.kind === 'folder');
+  if (folders.some((f) => !(f.kids && f.kids.length))) {
+    toast('โฟลเดอร์ว่าง บันทึกไม่ได้');
+    return;
+  }
+  busy('กำลังบันทึกลงเครื่อง…', 1200, () => toast(folders.length ? `บันทึก ${folders[0].name}.zip แล้ว` : `บันทึก ${list[0].name} แล้ว`));
+}
+
+function deleteDev() {
+  if (isIOS()) { toast('iPhone ไม่ลบไฟล์ผ่านสาย'); return; }
+  const ids = new Set(selectedDev().map((x) => x.id));
+  if (!ids.size) return;
+  const kids = currentKids();
+  for (let i = kids.length - 1; i >= 0; i--) if (ids.has(kids[i].id)) kids.splice(i, 1);
+  S.devSel.clear();
+  S.preview = null;
+  toast('ลบแล้ว');
+  render();
+}
+
+function mkdirDev(name) {
+  if (isIOS()) { toast('iPhone ไม่สร้างโฟลเดอร์ผ่านสาย'); return; }
+  name = (name || '').trim();
+  if (!name) return;
+  if (!S.path.length) {
+    toast('เปิดโฟลเดอร์ปลายทางก่อน');
+    return;
+  }
+  const kids = currentKids();
+  const final = uniqueName(kids, name);
+  kids.push({ id: id(), name: final, kind: 'folder', kids: [] });
+  S.path = [...S.path, final];
+  S.devSel.clear();
+  toast('สร้างแล้ว เปิดโฟลเดอร์นี้ กดวางได้เลย');
+  render();
+}
+
+function openDevice(dev) {
+  S.menu = 'files';
+  S.tab = 'device';
+  S.device = dev;
+  S.path = [];
+  S.devSel.clear();
+  S.devAnchor = '';
+  S.devBase = new Set();
+  S.preview = null;
+  render();
+}
+
+document.querySelectorAll('[data-menu]').forEach((b) => b.addEventListener('click', () => { S.menu = b.dataset.menu; render(); }));
+document.querySelectorAll('[data-open-dev]').forEach((b) => b.addEventListener('click', () => openDevice(b.dataset.openDev)));
+document.querySelectorAll('[data-tab]').forEach((b) => b.addEventListener('click', () => { S.tab = b.dataset.tab; render(); }));
+document.querySelectorAll('#dev-layouts [data-layout]').forEach((b) => {
+  b.addEventListener('click', () => {
+    S.layout = b.dataset.layout;
+    document.querySelectorAll('#dev-layouts [data-layout]').forEach((x) => x.classList.toggle('on', x === b));
+    renderDevice();
+  });
+});
+document.querySelectorAll('#pv-views [data-pv]').forEach((b) => b.addEventListener('click', () => { S.pv = b.dataset.pv; renderDevice(); }));
+
+$('file-search').addEventListener('input', renderRoom);
+$('file-sort').addEventListener('change', renderRoom);
+$('room-all').addEventListener('click', () => {
+  displayedRoom().forEach((f) => S.roomSel.add(f.id));
+  S.roomBase = new Set(S.roomSel);
+  renderRoom();
+});
+$('room-clear').addEventListener('click', () => { S.roomSel.clear(); renderRoom(); });
+$('room-zip').addEventListener('click', () => toast(`กำลังดาวน์โหลด zip ${S.roomSel.size} ไฟล์…`, 2600));
+$('room-del').addEventListener('click', () => {
+  for (let i = roomFiles.length - 1; i >= 0; i--) if (S.roomSel.has(roomFiles[i].id)) roomFiles.splice(i, 1);
+  S.roomSel.clear();
+  toast('ลบออกจากห้องแล้ว');
+  renderRoom();
+});
+function showDetail(f) {
+  $('fd-name').textContent = f.name;
+  $('fd-meta').textContent = `${f.size} • จาก ${f.from}` + (f.note ? ' • ' + f.note : '');
+  $('fd-hex').textContent = 'a3f1c8e29b0d4e17c6a8f0b1d2e3456789abcdef0123456789abcdef01234567';
+  $('fd-cmp-out').textContent = '';
+  $('detail-mask').classList.remove('hidden');
+  S.detail = f;
+}
+$('room-grid').addEventListener('click', (ev) => {
+  const open = ev.target.closest('[data-open]');
+  const dl = ev.target.closest('[data-dl]');
+  const det = ev.target.closest('[data-detail]');
+  if (open) toast('เปิด ' + roomFiles.find((f) => f.id === open.dataset.open).name);
+  if (dl) toast('ดาวน์โหลด ' + roomFiles.find((f) => f.id === dl.dataset.dl).name);
+  if (det) showDetail(roomFiles.find((f) => f.id === det.dataset.detail));
+});
+function finishAddRoom(name, kind, from) {
+  roomFiles.push({ id: id(), name, kind, size: '420 KB', from: from || S.meName, badge: 'sha', ttl: 'เพิ่งเข้า', day: '23 ต.ค. 2026' });
+  S.transfers.unshift({ id: id(), name, pct: 100, state: 'done', note: 'ตรวจแล้ว SHA-256' });
+}
+function addRoomFile(name, kind, from) {
+  if (!canUpload()) { toast('บทบาทนี้ส่งไฟล์ไม่ได้'); return; }
+  const policy = S.conflictAll || $('conflict-policy').value;
+  const hit = roomFiles.find((f) => f.name === name);
+  if (hit) {
+    if (policy === 'skip') { toast('ข้ามไฟล์นี้'); return; }
+    if (policy === 'overwrite') { toast('เขียนทับ ' + name); return; }
+    if (policy === 'rename') {
+      const n = uniqueName(roomFiles, name);
+      finishAddRoom(n, kind, from);
+      toast('เก็บทั้งสองไฟล์เป็น ' + n);
+      render();
+      return;
+    }
+    S.pendingFile = { name, kind, from };
+    $('cf-name').textContent = name;
+    $('conflict-mask').classList.remove('hidden');
+    return;
+  }
+  finishAddRoom(name, kind, from);
+  toast('เพิ่มไฟล์ทดลองในห้องแล้ว');
+  render();
+}
+$('drop').addEventListener('click', () => {
+  const n = new Date();
+  const name = `สกรีนช็อต ${String(n.getHours()).padStart(2,'0')}.${String(n.getMinutes()).padStart(2,'0')}.png`;
+  addRoomFile(name, 'shot');
+});
+
+$('dev-back').addEventListener('click', () => {
+  if (!S.path.length) return;
+  S.path = S.path.slice(0, -1);
+  S.devSel.clear();
+  S.preview = null;
+  renderDevice();
+});
+$('dev-all').addEventListener('click', () => {
+  currentKids().forEach((e) => S.devSel.add(e.id));
+  S.devBase = new Set(S.devSel);
+  renderDevice();
+});
+$('dev-clear').addEventListener('click', () => { S.devSel.clear(); S.preview = null; renderDevice(); });
+$('dev-copy').addEventListener('click', () => copyDev(false));
+$('dev-cut').addEventListener('click', () => copyDev(true));
+$('dev-import').addEventListener('click', () => importDev());
+$('dev-save').addEventListener('click', () => saveDev());
+$('dev-del').addEventListener('click', deleteDev);
+$('dev-paste').addEventListener('click', pasteDev);
+$('clip-clear').addEventListener('click', () => { S.clip = null; renderDevice(); });
+$('pv-save').addEventListener('click', () => { if (S.preview) saveDev([S.preview]); });
+$('pv-import').addEventListener('click', () => { if (S.preview) importDev([S.preview]); });
+$('pv-del').addEventListener('click', () => {
+  if (!S.preview) return;
+  S.devSel = new Set([S.preview.id]);
+  deleteDev();
+});
+$('dev-mkdir').addEventListener('click', () => {
+  $('mkdir-name').value = '';
+  $('mkdir-mask').classList.remove('hidden');
+  $('mkdir-name').focus();
+});
+$('mkdir-cancel').addEventListener('click', () => $('mkdir-mask').classList.add('hidden'));
+$('mkdir-ok').addEventListener('click', () => {
+  const name = $('mkdir-name').value;
+  $('mkdir-mask').classList.add('hidden');
+  mkdirDev(name);
+});
+$('mkdir-name').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); $('mkdir-ok').click(); }
+  if (e.key === 'Escape') $('mkdir-mask').classList.add('hidden');
+});
+$('clip-copy-text').addEventListener('click', () => toast('คัดลอกลงเครื่องนี้แล้ว'));
+$('clip-clear-text').addEventListener('click', () => { $('clip-text').textContent = ''; toast('ล้างคลิปบอร์ดแล้ว'); });
+$('clip-share').addEventListener('click', () => {
+  const v = $('clip-input').value.trim();
+  if (!v) return;
+  $('clip-text').textContent = v;
+  $('clip-input').value = '';
+  toast('แชร์ไปคลิปบอร์ดร่วมแล้ว');
+});
+$('msg-send').addEventListener('click', () => {
+  const v = $('msg-input').value.trim();
+  if (!v) return;
+  const row = document.createElement('div');
+  row.className = 'msg me';
+  row.textContent = 'MacBook: ' + v;
+  $('messages').append(row);
+  $('msg-input').value = '';
+});
+$('room-pick').addEventListener('change', () => {
+  const name = rooms[$('room-pick').value];
+  $('side-room-name').textContent = name;
+  $('invite-room').textContent = name;
+  renderTabs();
+});
+function openRoomDlg(mode) {
+  S.roomDlg = mode;
+  $('room-dlg-title').textContent = mode === 'new' ? 'ห้องใหม่' : 'เปลี่ยนชื่อห้อง';
+  $('room-dlg-name').value = mode === 'rename' ? rooms[$('room-pick').value] : '';
+  $('room-mask').classList.remove('hidden');
+  $('room-dlg-name').focus();
+}
+$('room-new').addEventListener('click', () => openRoomDlg('new'));
+$('room-rename').addEventListener('click', () => openRoomDlg('rename'));
+$('room-delete').addEventListener('click', () => {
+  const key = $('room-pick').value;
+  if (key === defaultRoom) { toast('ลบห้องเริ่มต้นไม่ได้'); return; }
+  delete rooms[key];
+  $('room-pick').querySelector(`option[value="${key}"]`).remove();
+  $('room-pick').value = defaultRoom;
+  $('room-pick').dispatchEvent(new Event('change'));
+  toast('ลบห้องแล้ว');
+});
+$('room-dlg-cancel').addEventListener('click', () => $('room-mask').classList.add('hidden'));
+$('room-dlg-ok').addEventListener('click', () => {
+  const name = $('room-dlg-name').value.trim();
+  $('room-mask').classList.add('hidden');
+  if (!name) return;
+  if (S.roomDlg === 'new') {
+    const key = 'r' + Date.now();
+    rooms[key] = name;
+    const opt = document.createElement('option');
+    opt.value = key;
+    opt.textContent = name;
+    $('room-pick').append(opt);
+    $('room-pick').value = key;
+    $('room-pick').dispatchEvent(new Event('change'));
+    toast('สร้างห้องแล้ว — PIN และไฟล์แยกจากห้องอื่น');
+  } else {
+    const key = $('room-pick').value;
+    rooms[key] = name;
+    $('room-pick').selectedOptions[0].textContent = name;
+    $('side-room-name').textContent = name;
+    $('invite-room').textContent = name;
+    renderTabs();
+    toast('เปลี่ยนชื่อห้องแล้ว');
+  }
+});
+$('copy-url').addEventListener('click', () => toast('คัดลอกลิงก์แล้ว'));
+$('copy-guest').addEventListener('click', () => toast('คัดลอกลิงก์แขกแล้ว'));
+$('guest-url').addEventListener('click', () => showJoin('guest'));
+$('guest-url').style.cursor = 'pointer';
+$('guest-url').title = 'เปิดหน้าเข้าด้วยลิงก์แขก';
+$('rotate-pin').addEventListener('click', () => { $('pin-digits').textContent = String(Math.floor(100000 + Math.random() * 900000)); toast('สร้าง PIN ใหม่แล้ว'); });
+$('clear-guest').addEventListener('click', () => {
+  $('guest-row').classList.add('hidden');
+  $('guest-until').classList.add('hidden');
+  $('make-guest').classList.remove('hidden');
+  toast('ปิดลิงก์แขกแล้ว');
+});
+$('make-guest').addEventListener('click', () => {
+  $('guest-row').classList.remove('hidden');
+  $('guest-until').classList.remove('hidden');
+  $('make-guest').classList.add('hidden');
+  toast('สร้างลิงก์แขก 1 ชั่วโมงแล้ว');
+});
+$('approve-dev').addEventListener('click', () => { S.showPending = false; toast('อนุมัติแล้ว'); render(); });
+$('reject-dev').addEventListener('click', () => { S.showPending = false; toast('ปฏิเสธแล้ว'); render(); });
+$('diag-refresh').addEventListener('click', () => toast('ตรวจใหม่แล้ว (ต้นแบบใช้ผลเดิม)'));
+$('diag-copy').addEventListener('click', () => toast('คัดลอกรายงานแล้ว'));
+$('set-theme').addEventListener('change', () => {
+  $('theme').checked = $('set-theme').value === 'light';
+  toast('ธีม: ' + $('set-theme').selectedOptions[0].textContent);
+});
+$('set-lang').addEventListener('change', () => { S.lang = $('set-lang').value; applyLang(); });
+$('fd-close').addEventListener('click', () => $('detail-mask').classList.add('hidden'));
+$('fd-copy').addEventListener('click', () => toast('คัดลอก checksum แล้ว'));
+$('fd-calc').addEventListener('click', () => toast('คำนวณแล้ว (ต้นแบบใช้ค่าเดิม)'));
+$('fd-cmp').addEventListener('click', () => { $('fd-cmp-out').textContent = 'ตรงกับไฟล์ในเครื่อง (ต้นแบบ)'; toast('เทียบแล้ว'); });
+$('cf-cancel').addEventListener('click', () => { $('conflict-mask').classList.add('hidden'); S.pendingFile = null; });
+$('cf-ok').addEventListener('click', () => {
+  const mode = document.querySelector('input[name="cf"]:checked').value;
+  const p = S.pendingFile;
+  if ($('cf-all').checked) S.conflictAll = mode;
+  $('conflict-mask').classList.add('hidden');
+  if (!p) return;
+  if (mode === 'skip') toast('ข้ามไฟล์นี้');
+  else if (mode === 'overwrite') toast('เขียนทับ ' + p.name);
+  else {
+    const name = uniqueName(roomFiles, p.name);
+    finishAddRoom(name, p.kind, p.from || 'คลิปบอร์ด');
+    toast('เก็บทั้งสองไฟล์เป็น ' + name);
+    render();
+  }
+  S.pendingFile = null;
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  ['detail-mask', 'conflict-mask', 'mkdir-mask', 'room-mask', 'offline-mask'].forEach((id) => $(id).classList.add('hidden'));
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.target.matches('input, textarea, select')) return;
+  if (['mkdir-mask', 'detail-mask', 'conflict-mask'].some((id) => $(id) && !$(id).classList.contains('hidden'))) return;
+  const cmd = e.metaKey || e.ctrlKey;
+  if (cmd && e.code === 'KeyA') {
+    e.preventDefault();
+    if (S.menu !== 'files') return;
+    if (S.tab === 'device') $('dev-all').click();
+    else $('room-all').click();
+  }
+  if (S.menu !== 'files' || S.tab !== 'device' || S.busy) return;
+  if (cmd && e.code === 'KeyC') { e.preventDefault(); copyDev(false); }
+  if (cmd && e.code === 'KeyX') { e.preventDefault(); copyDev(true); }
+  if (cmd && e.code === 'KeyV') { e.preventDefault(); pasteDev(); }
+});
+
+function showJoin(mode) {
+  S.screen = 'join';
+  S.guestJoin = mode === 'guest';
+  $('pin-wrap').classList.toggle('hidden', S.guestJoin);
+  $('guest-join-hint').classList.toggle('hidden', !S.guestJoin);
+  $('join-pin-btn').textContent = S.guestJoin ? (S.lang === 'en' ? 'Join as guest' : 'เข้าด้วยลิงก์แขก') : (S.lang === 'en' ? 'Join' : 'เข้าห้อง');
+  $('join-err').hidden = true;
+  renderScreen();
+}
+function enterApp(role, name) {
+  S.screen = 'app';
+  S.role = role;
+  S.meName = name || $('join-name').value.trim() || 'อุปกรณ์';
+  $('role-demo').value = role;
+  toast(role === 'owner' ? 'เข้าเป็น Owner จาก localhost แล้ว' : role === 'uploader' ? 'เข้าด้วยลิงก์แขกแล้ว' : 'เข้าห้องแล้ว');
+  render();
+}
+$('join-pin-btn').addEventListener('click', () => {
+  if (S.guestJoin) {
+    enterApp('uploader');
+    return;
+  }
+  if (S.pinLocked && Date.now() < S.pinLocked) {
+    $('join-err').hidden = false;
+    $('join-err').textContent = 'ถูกล็อกชั่วคราว ลองใหม่ในอีกสักครู่ (5 ครั้ง / 5 นาที)';
+    return;
+  }
+  const pin = $('join-pin').value.trim();
+  if (pin !== $('pin-digits').textContent) {
+    S.pinTries += 1;
+    $('join-err').hidden = false;
+    if (S.pinTries >= 5) {
+      S.pinLocked = Date.now() + 5 * 60 * 1000;
+      $('join-err').textContent = 'กรอก PIN ผิดเกินกำหนด ล็อก 5 นาที';
+    } else {
+      $('join-err').textContent = `PIN ไม่ถูกต้อง (เหลืออีก ${5 - S.pinTries} ครั้ง)`;
+    }
+    return;
+  }
+  S.pinTries = 0;
+  $('join-err').hidden = true;
+  if ($('require-approval').checked) {
+    S.screen = 'wait';
+    renderScreen();
+    return;
+  }
+  enterApp('member');
+});
+$('wait-approved').addEventListener('click', () => enterApp('member'));
+$('wait-back').addEventListener('click', () => showJoin());
+$('leave-room').addEventListener('click', () => showJoin());
+$('role-demo').addEventListener('change', () => { S.role = $('role-demo').value; if (S.menu === 'diag' && !isOwner()) S.menu = 'files'; render(); });
+$('pc-role').addEventListener('change', () => toast('เปลี่ยนบทบาทเป็น ' + $('pc-role').selectedOptions[0].textContent));
+$('pc-rename').addEventListener('click', () => {
+  const n = prompt('ชื่ออุปกรณ์', S.pcName);
+  if (!n) return;
+  S.pcName = n;
+  $('wifi-pc').querySelector('div:nth-child(2)').innerHTML = `${n}<small class="mut">Windows · Wi-Fi</small>`;
+  toast('ตั้งชื่ออุปกรณ์แล้ว');
+});
+$('pc-kick').addEventListener('click', () => { S.pcGone = true; toast('ถอดอุปกรณ์แล้ว'); render(); });
+$('pick-dir').addEventListener('click', () => {
+  if (!canUpload()) return;
+  addRoomFile('โฟลเดอร์งาน.zip', 'file', S.meName);
+});
+$('conflict-policy').addEventListener('change', () => { S.conflictPolicy = $('conflict-policy').value; S.conflictAll = $('conflict-policy').value === 'ask' ? '' : $('conflict-policy').value; });
+$('stuck-cancel').addEventListener('click', () => { S.stuck = false; $('stuck-box').classList.add('hidden'); toast('ยกเลิกอัปโหลดที่ค้างแล้ว'); });
+$('file-notice-x').addEventListener('click', () => $('file-notice').classList.add('hidden'));
+$('demo-notice').addEventListener('click', () => { $('file-notice').classList.remove('hidden'); $('file-notice-text').textContent = 'มีไฟล์ใหม่ในห้อง: brief.pdf จาก Pixel 8'; toast('แจ้งในหน้าแล้ว (บน HTTP ไม่มี notification ของระบบ)'); });
+$('demo-offline').addEventListener('click', () => $('offline-mask').classList.remove('hidden'));
+$('offline-retry').addEventListener('click', () => { $('offline-mask').classList.add('hidden'); toast('เชื่อมต่อแล้ว'); });
+$('mac-menubar').addEventListener('click', () => toast('แอป menu bar: PIN, เครือข่าย, จำนวนอุปกรณ์, รออนุมัติ'));
+$('mac-cli').addEventListener('click', () => toast('go run ./cmd/share send <ไฟล์> อัปโหลดเป็น Owner ผ่าน localhost'));
+$('mac-finder').addEventListener('click', () => toast('คลิกขวาไฟล์ใน Finder → ส่งไป Share Group'));
+$('mac-shortcuts').addEventListener('click', () => toast('HTTP API เรียกได้เฉพาะ 127.0.0.1 ไม่ต้อง PIN'));
+$('mac-tls').addEventListener('click', () => toast('เปิด HTTPS ด้วย -tls (ใบรับรอง self-signed)'));
+$('set-preview').addEventListener('change', () => toast($('set-preview').checked ? 'ใช้ sips/qlmanage วาดพรีวิว' : 'ปิด -system-preview แล้ว'));
+$('set-notify').addEventListener('change', () => toast($('set-notify').checked ? 'เปิดแจ้งเตือน (ต้อง Secure_Context)' : 'ปิดแจ้งเตือน'));
+$('nic').addEventListener('change', () => {
+  const usb = $('nic').selectedIndex === 1;
+  $('join-url').textContent = usb ? 'http://172.20.10.1:8080/?r=main' : 'http://192.168.1.24:8080/?r=main';
+  toast(usb ? 'ใช้เส้นทางสาย USB' : 'ใช้เส้นทาง Wi-Fi');
+});
+
+function applyLang() {
+  const en = S.lang === 'en';
+  document.documentElement.lang = en ? 'en' : 'th';
+  toast(en ? 'Language: English (prototype labels stay mixed)' : 'ภาษา: ไทย');
+  if (S.screen === 'join') showJoin(S.guestJoin ? 'guest' : '');
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.target.matches('input, textarea, select')) return;
+  if ((e.metaKey || e.ctrlKey) && e.code === 'KeyV' && S.menu !== 'files') return;
+  if ((e.metaKey || e.ctrlKey) && e.code === 'KeyV' && S.tab === 'room' && canUpload()) {
+    e.preventDefault();
+    const n = new Date();
+    addRoomFile(`สกรีนช็อต ${String(n.getHours()).padStart(2,'0')}.${String(n.getMinutes()).padStart(2,'0')}.png`, 'shot', 'คลิปบอร์ด');
+  }
+});
+['room-mask', 'offline-mask'].forEach((id) => {
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') $(id).classList.add('hidden');
+  });
+});
+
+render();
+</script>
+</body>
+</html>

@@ -413,7 +413,7 @@
   // ไม่ใส่ฟิลด์อื่นของ Check_Result (เช่น reason) จึงไม่มีข้อมูลลับนอกจากที่อยู่ในข้อความที่แสดง
   function buildReport(results, opts) {
     const rows = buildDiagnosticRows(results, opts);
-    const lines = ['รายงานตรวจปัญหาการเชื่อมต่อ LAN Share'];
+    const lines = ['รายงานตรวจปัญหาการเชื่อมต่อ Share Group'];
     const at = opts ? opts.generatedAt : undefined;
     if (at instanceof Date && !Number.isNaN(at.getTime())) lines.push('เวลาที่ตรวจ: ' + at.toISOString());
     else if (typeof at === 'string' && at !== '') lines.push('เวลาที่ตรวจ: ' + scrub(at, opts && opts.secrets));

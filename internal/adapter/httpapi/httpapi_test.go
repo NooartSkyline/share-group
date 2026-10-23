@@ -407,7 +407,7 @@ func TestWebSocketPresenceAndEvents(t *testing.T) {
 func TestSecurityHeadersAndStaticUI(t *testing.T) {
 	ts, _ := newServer(t)
 	res, body := do(t, newClient(t), "GET", ts.URL+"/", nil, nil)
-	if res.StatusCode != 200 || !bytes.Contains(body, []byte("LAN Share")) {
+	if res.StatusCode != 200 || !bytes.Contains(body, []byte("Share Group")) {
 		t.Fatalf("index = %d", res.StatusCode)
 	}
 	if res.Header.Get("X-Content-Type-Options") != "nosniff" || !strings.Contains(res.Header.Get("Content-Security-Policy"), "script-src 'self'") {

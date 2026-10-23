@@ -21,7 +21,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         if let btn = status.button {
             btn.title = "📡"
-            btn.toolTip = "LAN Share"
+            btn.toolTip = "Share Group"
         }
         roomItem.isEnabled = false
         nicItem.isEnabled = false

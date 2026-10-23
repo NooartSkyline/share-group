@@ -92,6 +92,8 @@ function formatTime(iso) {
 const KIND_ICON = { image: '🖼️', video: '🎬', audio: '🎵', document: '📄', archive: '📦', app: '📦', other: '📄' };
 const PLATFORM_ICON = { iOS: '📱', Android: '🤖', Windows: '🖥️', macOS: '💻', Linux: '🐧', Web: '🌐' };
 const ROLE_LABEL = { owner: 'Owner', member: 'Member', viewer: 'Viewer', uploader: 'Uploader' };
+const APP_VERSION = '0.1.0';
+const APP_AUTHOR = 'nooartskyline';
 
 const I18N = {
   th: {
@@ -175,6 +177,13 @@ const I18N = {
     ttl_none: 'ไม่หมดอายุ', ttl_1h: '1 ชั่วโมง', ttl_1d: '1 วัน', ttl_7d: '7 วัน', ttl_30d: '30 วัน',
     rename: 'เปลี่ยนชื่อ', you: ' (คุณ)', details: 'รายละเอียด', download: '⬇ ดาวน์โหลด', open_file: 'เปิด', del: 'ลบ',
     rename_prompt: 'ชื่ออุปกรณ์ใหม่', code_fail: 'เปิดไฟล์ข้อความไม่สำเร็จ',
+    about_nav: 'เกี่ยวกับระบบ', about_tab: 'เกี่ยวกับ', about_title: 'เกี่ยวกับระบบ',
+    about_tagline: 'แชร์ไฟล์ในวงแลน รันบน Mac ของเจ้าของเครื่อง',
+    about_version: 'เวอร์ชัน', about_author: 'ผู้พัฒนา',
+    about_sys_h: 'ระบบนี้ทำงานอย่างไร',
+    about_sys_1: 'Share Group เป็นโปรแกรมบน Mac ไม่ใช่เว็บบนคลาวด์ หลังบ้านเป็นเซิร์ฟเวอร์ Go เปิด HTTP และ WebSocket หน้าที่เห็นคือหน้าเว็บในเบราว์เซอร์',
+    about_sys_2: 'เปิด localhost บน Mac แล้วเป็น Owner อัตโนมัติ ไม่ต้องใส่ PIN อุปกรณ์อื่นอยู่ในวง LAN หรือเสียบสาย USB แล้วเปิดลิงก์หรือสแกน QR แล้วกรอก PIN',
+    about_sys_3: 'ไฟล์และสถานะห้องเก็บบนดิสก์ของ Mac ไม่มีบัญชีผู้ใช้และไม่ส่งขึ้นอินเทอร์เน็ต',
   },
   en: {
     join_title: 'Join room', join_room_label: 'Room:', join_pin_label: 'PIN',
@@ -257,6 +266,13 @@ const I18N = {
     ttl_none: 'Never', ttl_1h: '1 hour', ttl_1d: '1 day', ttl_7d: '7 days', ttl_30d: '30 days',
     rename: 'Rename', you: ' (you)', details: 'Details', download: '⬇ Download', open_file: 'Open', del: 'Delete',
     rename_prompt: 'New device name', code_fail: 'Could not open this text file',
+    about_nav: 'About', about_tab: 'About', about_title: 'About this system',
+    about_tagline: 'Share files on the LAN from the owner\'s Mac',
+    about_version: 'Version', about_author: 'Developer',
+    about_sys_h: 'How it works',
+    about_sys_1: 'Share Group is a Mac program, not a cloud site. A Go server on this Mac serves HTTP and WebSocket. Everyone else uses a browser.',
+    about_sys_2: 'Opening localhost on the Mac signs you in as Owner with no PIN. Other devices on the same LAN or a USB cable open the link or scan the QR code, then enter the PIN.',
+    about_sys_3: 'Files and room state stay on this Mac. There is no user account and nothing is sent to the internet.',
   },
 };
 
@@ -573,7 +589,7 @@ async function enter(me) {
   $('side-room-sub').textContent = ROLE_LABEL[me.device.role] || '';
   $('room-name').textContent = '"' + me.room.name + '"';
   resetUnseen(); // a title left over from the unseen count must not become the "original" one
-  document.title = me.room.name + ' • LAN Share';
+  document.title = me.room.name + ' • Share Group';
 
   setupNav();
   setupUploads();
@@ -585,6 +601,7 @@ async function enter(me) {
     await setupRooms();
   }
   setupSettings();
+  setupAbout();
   connectWS();
   resumeAfterRejoin(); // uploads paused by a 401 carry on without asking for the files again
   await Promise.all([refreshDevices(), refreshFiles(), refreshChat()]);
@@ -745,7 +762,7 @@ function showSystemNotification(group, isNew) {
     try { notifyState.sys.close(); } catch { /* already gone */ }
   }
   try {
-    const n = new Notification('LAN Share', { body: group.message, tag: 'lanshare-' + group.startAt });
+    const n = new Notification('Share Group', { body: group.message, tag: 'lanshare-' + group.startAt });
     n.onclick = () => {
       window.focus();
       setView('files');
@@ -4004,6 +4021,44 @@ function setupSettings() {
   setupNotifySetting();
 }
 
+function setupAbout() {
+  if (setupAbout.done) return;
+  setupAbout.done = true;
+
+  const pane = el('section', { id: 'pane-about', class: 'pane', 'aria-labelledby': 'about-title' },
+    el('h2', { id: 'about-title' }, t('about_title')),
+    el('div', { class: 'card about-card' },
+      el('p', { class: 'about-name' }, 'Share Group'),
+      el('p', {}, t('about_tagline')),
+      el('dl', { class: 'about-meta' },
+        el('div', {}, el('dt', {}, t('about_version')), el('dd', {}, APP_VERSION)),
+        el('div', {}, el('dt', {}, t('about_author')), el('dd', {}, APP_AUTHOR)))),
+    el('div', { class: 'card about-card' },
+      el('h3', {}, t('about_sys_h')),
+      el('p', {}, t('about_sys_1')),
+      el('p', {}, t('about_sys_2')),
+      el('p', {}, t('about_sys_3'))));
+
+  const navBtn = el('button', { class: 'nav', type: 'button', id: 'nav-about', onclick: () => setView('about') },
+    el('span', { 'aria-hidden': 'true' }, 'ℹ️'), ' ' + t('about_nav'));
+  navBtn.dataset.go = 'about';
+  const tabBtn = el('button', { type: 'button', id: 'tab-about', onclick: () => setView('about') },
+    el('span', { 'aria-hidden': 'true' }, 'ℹ️'), t('about_tab'));
+  tabBtn.dataset.go = 'about';
+
+  $('pane-chat').after(pane);
+  $$('.side-nav')[0].append(navBtn);
+  $('tabbar').append(tabBtn);
+  pinAboutLast();
+}
+
+function pinAboutLast() {
+  const nav = $('nav-about');
+  const tab = $('tab-about');
+  if (nav && nav.parentNode) nav.parentNode.append(nav);
+  if (tab && tab.parentNode) tab.parentNode.append(tab);
+}
+
 // Registers the Service Worker once per page load, after `load`, and only where the browser
 // allows it. A failure is ignored on purpose: the page works the same without a Service Worker.
 function registerServiceWorker() {
@@ -4179,7 +4234,7 @@ function applyRoomName(name) {
   state.room.name = name;
   $('side-room-name').textContent = name;
   if ($('room-name')) $('room-name').textContent = '"' + name + '"';
-  document.title = name + ' • LAN Share';
+  document.title = name + ' • Share Group';
 }
 
 function renderPin(pin) {
@@ -4358,6 +4413,7 @@ function setupOwnerTools() {
   $('pane-chat').after(pane);
   $$('.side-nav')[0].append(navBtn);
   $('tabbar').append(tabBtn);
+  pinAboutLast();
 
   function say(text, bad) {
     live.textContent = text;

@@ -1,5 +1,5 @@
 #!/bin/sh
-# ส่งไฟล์เข้า LAN Share บนเครื่องนี้ ใช้เป็นต้นทางของ Finder Quick Action ได้:
+# ส่งไฟล์เข้า Share Group บนเครื่องนี้ ใช้เป็นต้นทางของ Finder Quick Action ได้:
 # Automator → Quick Action → "Run Shell Script" (Pass input: as arguments)
 # แล้วเรียกสคริปต์นี้พร้อม "$@"
 set -e

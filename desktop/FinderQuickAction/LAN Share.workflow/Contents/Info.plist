@@ -5,14 +5,14 @@
 	<key>CFBundleIdentifier</key>
 	<string>app.lanshare.quickaction</string>
 	<key>CFBundleName</key>
-	<string>ส่งไป LAN Share</string>
+	<string>ส่งไป Share Group</string>
 	<key>NSServices</key>
 	<array>
 		<dict>
 			<key>NSMenuItem</key>
 			<dict>
 				<key>default</key>
-				<string>ส่งไป LAN Share</string>
+				<string>ส่งไป Share Group</string>
 			</dict>
 			<key>NSMessage</key>
 			<string>runWorkflowAsService</string>
