@@ -782,6 +782,10 @@ func TestOwnerCreatesAndSwitchesRooms(t *testing.T) {
 		t.Fatalf("renamed = %s", b)
 	}
 
+	if res, _ := do(t, owner, "DELETE", ts.URL+"/api/admin/rooms/main", nil, nil); res.StatusCode != 400 {
+		t.Fatalf("delete default room = %d, want 400", res.StatusCode)
+	}
+
 	res, b = do(t, owner, "DELETE", ts.URL+"/api/admin/rooms/"+rm.ID, nil, nil)
 	if res.StatusCode != 200 {
 		t.Fatalf("delete current room = %d %s", res.StatusCode, b)

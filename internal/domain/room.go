@@ -14,6 +14,9 @@ import (
 // PINLength is the number of digits in a room PIN.
 const PINLength = 6
 
+// DefaultRoomID is the room created at first start. It cannot be deleted.
+const DefaultRoomID RoomID = "main"
+
 // RoomID identifies a room. Every file and device belongs to exactly one room.
 type RoomID string
 

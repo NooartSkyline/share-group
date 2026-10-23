@@ -176,6 +176,7 @@ const I18N = {
     room_rename: 'เปลี่ยนชื่อ', room_delete: 'ลบห้อง',
     room_rename_prompt: 'ชื่อห้องใหม่', room_delete_confirm: 'ลบห้องนี้ รวมไฟล์ทั้งหมด? ยกเลิกไม่ได้',
     last_room: 'ต้องเหลืออย่างน้อยหนึ่งห้อง',
+    default_room: 'ลบห้องหลักไม่ได้',
     approve: 'อนุมัติ', reject: 'ปฏิเสธ', pending_pill: 'รออนุมัติ',
     copied: 'คัดลอกแล้ว', copy_fail: 'คัดลอกไม่สำเร็จ ให้เลือกข้อความแล้วคัดลอกเอง',
     theme: 'ธีม', theme_system: 'ตามระบบ', theme_dark: 'มืด', theme_light: 'สว่าง',
@@ -270,6 +271,7 @@ const I18N = {
     room_rename: 'Rename', room_delete: 'Delete room',
     room_rename_prompt: 'New room name', room_delete_confirm: 'Delete this room and all of its files? This cannot be undone.',
     last_room: 'Keep at least one room',
+    default_room: 'The default room cannot be deleted',
     approve: 'Approve', reject: 'Reject', pending_pill: 'Pending',
     copied: 'Copied', copy_fail: 'Could not copy. Select the text and copy it yourself.',
     theme: 'Theme', theme_system: 'System', theme_dark: 'Dark', theme_light: 'Light',
@@ -419,9 +421,24 @@ async function bootRequest(path, opts = {}) {
   }
 }
 
+function inviteQuery() {
+  const q = new URLSearchParams(location.search);
+  return { room: q.get('r') || '', guest: (q.get('g') || '').toLowerCase() };
+}
+
+// A cookie from another room (or a member cookie on a guest link) must not skip
+// the PIN/guest screen. Same host, different ?r= used to reopen the old room.
+function sessionMatchesInvite(me, invite) {
+  if (!me || !me.device) return false;
+  if (invite.guest) return false;
+  if (invite.room && (!me.room || me.room.id !== invite.room)) return false;
+  return true;
+}
+
 async function boot() {
   applyTheme();
   applyI18n();
+  const invite = inviteQuery();
   let me = null;
   try {
     me = await bootRequest('/api/me');
@@ -429,7 +446,7 @@ async function boot() {
     if (e.offline) return showOffline();
     if (e.status !== 401) return fatal(e);
   }
-  if (me) {
+  if (sessionMatchesInvite(me, invite)) {
     try {
       await enter(me);
       return;
@@ -437,9 +454,12 @@ async function boot() {
       if (e.status !== 401) return fatal(e);
     }
   }
-  if (isLocalhost()) {
+  if (isLocalhost() && !invite.guest) {
     try {
-      await enter(await api('/api/owner/session', { method: 'POST' }));
+      const opts = invite.room
+        ? jsonBody('POST', { roomId: invite.room })
+        : { method: 'POST' };
+      await enter(await api('/api/owner/session', opts));
       return;
     } catch { /* fall back to PIN */ }
   }
@@ -4265,7 +4285,8 @@ async function setupRooms() {
   try { rooms = await api('/api/admin/rooms'); } catch { return; }
   const pick = $('room-pick');
   pick.replaceChildren(...rooms.map((r) => el('option', { value: r.id, selected: r.current }, r.name)));
-  $('room-delete').hidden = rooms.length < 2;
+  const current = rooms.find((r) => r.current) || {};
+  $('room-delete').hidden = rooms.length < 2 || current.id === 'main';
   if (setupRooms.bound) return;
   setupRooms.bound = true;
   pick.addEventListener('change', async () => {
@@ -4294,6 +4315,10 @@ async function setupRooms() {
     } catch (e) { toast('เปลี่ยนชื่อห้องไม่สำเร็จ: ' + e.message); }
   });
   $('room-delete').addEventListener('click', async () => {
+    if (state.room && state.room.id === 'main') {
+      toast(t('default_room'));
+      return;
+    }
     if ($('room-pick').options.length < 2) {
       toast(t('last_room'));
       return;

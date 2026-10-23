@@ -28,6 +28,18 @@ func TestCreateAndGuestLink(t *testing.T) {
 	if rm.Name != "ทีม B" || rm.ID == "main" || !domain.ValidRoomID(string(rm.ID)) {
 		t.Fatalf("created = %+v", rm)
 	}
+	if rm.RequireApproval {
+		t.Fatalf("new room copied approval from main = %+v", rm)
+	}
+
+	needApprove := fake.NewRooms(domain.Room{ID: "main", Name: "Main", PIN: "482917", RequireApproval: true, CreatedAt: clock.Now()})
+	gated, err := room.NewService(needApprove, clock, nil).Create(ctx, owner, "ทีม C")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !gated.RequireApproval {
+		t.Fatalf("new room must keep RequireApproval of the current room: %+v", gated)
+	}
 
 	g, err := svc.RotateGuest(ctx, owner, time.Hour, 0)
 	if err != nil {
@@ -58,6 +70,9 @@ func TestDeleteRoomKeepsAtLeastOne(t *testing.T) {
 	other, err := svc.Create(ctx, owner, "ทีม B")
 	if err != nil {
 		t.Fatal(err)
+	}
+	if _, err := svc.Delete(ctx, owner, domain.DefaultRoomID); !errors.Is(err, domain.ErrInvalidInput) {
+		t.Fatalf("delete default while extras exist: %v", err)
 	}
 	if _, err := svc.Delete(ctx, domain.Device{ID: "m", RoomID: "main", Role: domain.RoleMember}, other.ID); !errors.Is(err, domain.ErrForbidden) {
 		t.Fatalf("member delete: %v", err)

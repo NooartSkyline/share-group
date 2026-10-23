@@ -46,7 +46,8 @@ func (s *Service) EnsureDefault(ctx context.Context, id domain.RoomID, name stri
 }
 
 // Create makes a new room. Only an Owner may do that; the new room is empty
-// and has its own PIN.
+// and has its own PIN. RequireApproval follows the owner's current room so a
+// second room does not skip the approval gate the first one uses.
 func (s *Service) Create(ctx context.Context, actor domain.Device, name string) (domain.Room, error) {
 	if !actor.CanManage() {
 		return domain.Room{}, domain.ErrForbidden
@@ -59,11 +60,16 @@ func (s *Service) Create(ctx context.Context, actor domain.Device, name string) 
 	if err != nil {
 		return domain.Room{}, err
 	}
+	current, err := s.rooms.Get(ctx, actor.RoomID)
+	if err != nil {
+		return domain.Room{}, err
+	}
 	r := domain.Room{
-		ID:        id,
-		Name:      domain.NormalizeRoomName(name),
-		PIN:       pin,
-		CreatedAt: s.clock.Now(),
+		ID:              id,
+		Name:            domain.NormalizeRoomName(name),
+		PIN:             pin,
+		CreatedAt:       s.clock.Now(),
+		RequireApproval: current.RequireApproval,
 	}
 	if err := s.rooms.Save(ctx, r); err != nil {
 		return domain.Room{}, err
@@ -147,14 +153,17 @@ func (s *Service) UpdateSettings(ctx context.Context, actor domain.Device, in Se
 	return r, nil
 }
 
-// Delete removes a room. The last remaining room cannot be deleted.
-// The returned room is the one the Owner should switch to afterwards.
+// Delete removes a room. The default room and the last remaining room cannot
+// be deleted. The returned room is the one the Owner should switch to afterwards.
 func (s *Service) Delete(ctx context.Context, actor domain.Device, id domain.RoomID) (domain.Room, error) {
 	if !actor.CanManage() {
 		return domain.Room{}, domain.ErrForbidden
 	}
 	if !domain.ValidRoomID(string(id)) {
 		return domain.Room{}, domain.ErrInvalidInput
+	}
+	if id == domain.DefaultRoomID {
+		return domain.Room{}, fmt.Errorf("default room: %w", domain.ErrInvalidInput)
 	}
 	list, err := s.rooms.List(ctx)
 	if err != nil {
