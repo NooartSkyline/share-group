@@ -20,7 +20,9 @@ cp "$APP_SRC/Info.plist" "$OUT/Contents/Info.plist"
 swiftc -O \
   -o "$MACOS/Share Group" \
   "$APP_SRC/Sources/main.swift" \
-  -framework AppKit
+  "$APP_SRC/Sources/DashboardWindow.swift" \
+  -framework AppKit \
+  -framework WebKit
 cp "$BIN/lanshare" "$RES/lanshare"
 cp "$BIN/share" "$RES/share"
 if [ -d "$APP_SRC/Resources" ]; then

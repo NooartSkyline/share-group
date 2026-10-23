@@ -2,9 +2,10 @@
 # สร้าง Share Group.app แล้วแพ็กเป็น .dmg สำหรับลากไป Applications
 set -e
 APP_SRC="$(CDPATH= cd -- "$(dirname "$0")" && pwd)"
+ROOT="$(CDPATH= cd -- "$APP_SRC/../.." && pwd)"
 VERSION="${VERSION:-0.1.0}"
 APP="$APP_SRC/build/Share Group.app"
-DMG="${1:-$APP_SRC/build/Share Group-$VERSION.dmg}"
+DMG="${1:-$ROOT/Share Group-$VERSION.dmg}"
 VOL="Share Group"
 STAGE="$(mktemp -d "${TMPDIR:-/tmp}/share-group-dmg.XXXXXX")"
 

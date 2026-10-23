@@ -8,6 +8,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var poll: Timer?
     private var info = Info()
     private var launching = false
+    private let dashboard = DashboardWindow()
 
     private let roomItem = NSMenuItem(title: "ห้อง: —", action: nil, keyEquivalent: "")
     private let pinItem = NSMenuItem(title: "PIN: —", action: #selector(copyPIN), keyEquivalent: "")
@@ -31,11 +32,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             menu.addItem(item)
         }
         menu.addItem(.separator())
-        let dash = NSMenuItem(title: "เปิดแดชบอร์ด", action: #selector(openDashboard), keyEquivalent: "o")
+        let dash = NSMenuItem(title: "เปิดโปรแกรม", action: #selector(openDashboard), keyEquivalent: "o")
+        let web = NSMenuItem(title: "เปิดในเบราว์เซอร์", action: #selector(openInBrowser), keyEquivalent: "b")
         let quit = NSMenuItem(title: "ออก", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
-        for item in [dash, toggleItem, loginItem] { item.target = self }
+        for item in [dash, web, toggleItem, loginItem] { item.target = self }
         quit.target = NSApp
         menu.addItem(dash)
+        menu.addItem(web)
         menu.addItem(toggleItem)
         menu.addItem(loginItem)
         menu.addItem(.separator())
@@ -43,8 +46,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         pinItem.target = self
         urlItem.target = self
         status.menu = menu
+        dashboard.onClose = { [weak self] in self?.hideAppWindow() }
         refreshLoginState()
         startServerIfNeeded()
+        if ProcessInfo.processInfo.environment["LAUNCHED_AT_LOGIN"] != "1" {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
+                self?.openDashboard()
+            }
+        }
         poll = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
             self?.refresh()
         }
@@ -88,9 +97,35 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSPasteboard.general.setString(info.url, forType: .string)
     }
 
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        openDashboard()
+        return true
+    }
+
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        false
+    }
+
     @objc private func openDashboard() {
-        let url = URL(string: "http://127.0.0.1:\(port())/")!
-        NSWorkspace.shared.open(url)
+        startServerIfNeeded()
+        showAppWindow()
+        dashboard.show(port: port())
+    }
+
+    @objc private func openInBrowser() {
+        startServerIfNeeded()
+        NSWorkspace.shared.open(URL(string: "http://127.0.0.1:\(port())/")!)
+    }
+
+    private func showAppWindow() {
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    private func hideAppWindow() {
+        if !dashboard.isVisible {
+            NSApp.setActivationPolicy(.accessory)
+        }
     }
 
     @objc private func toggleServer() {
@@ -259,6 +294,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             <key>ProgramArguments</key>
             <array><string>\(exe)</string></array>
             <key>RunAtLoad</key><true/>
+            <key>EnvironmentVariables</key>
+            <dict>
+                <key>LAUNCHED_AT_LOGIN</key>
+                <string>1</string>
+            </dict>
         </dict>
         </plist>
         """

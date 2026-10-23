@@ -4,6 +4,11 @@
 // textContent / text nodes, never innerHTML. Links are built as anchor elements
 // and only for http(s) URLs.
 
+if (new URLSearchParams(location.search).get('app') === '1') {
+  document.documentElement.classList.add('app-frame');
+  document.body.classList.add('app-frame');
+}
+
 const $ = (id) => document.getElementById(id);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 const MAX_PARALLEL_UPLOADS_WIDE = 4;
