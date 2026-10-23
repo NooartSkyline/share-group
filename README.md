@@ -136,6 +136,14 @@ sh desktop/FinderQuickAction/install.sh
 sh desktop/LanShareMenu/install.sh
 ```
 
+แพ็กเป็นไฟล์ติดตั้ง `.dmg` (มีแอปและลิงก์ไป Applications):
+
+```bash
+sh desktop/LanShareMenu/dmg.sh
+```
+
+ได้ไฟล์ที่ `desktop/LanShareMenu/build/Share Group-0.1.0.dmg` เปิดแล้วลากแอปไป Applications แอปยังไม่ลงนาม เครื่องอื่นอาจต้องคลิกขวาแล้วเลือกเปิด
+
 เมนูแสดงห้อง, PIN, เครือข่าย, จำนวนอุปกรณ์ และอุปกรณ์ที่รออนุมัติ กดเปิดแดชบอร์ดหรือเปิดเมื่อเข้าสู่ระบบได้จากเมนู
 
 ## Shortcuts และ HTTP บนเครื่องนี้

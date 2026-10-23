@@ -5,19 +5,20 @@
       "name": "ห้องหลัก",
       "pin": "058644",
       "createdAt": "2026-10-22T20:11:51.81193+07:00",
+      "requireApproval": true,
       "guestUntil": "0001-01-01T00:00:00Z"
     }
   ],
   "files": null,
   "devices": [
     {
-      "id": "3cd42b53c6859e99cffa958858f172c1",
+      "id": "a7a621d1275f87fc56033c0089270e4c",
       "roomId": "main",
       "name": "iOS ของฉัน",
       "platform": "iOS",
-      "role": "viewer",
+      "role": "member",
       "remoteAddr": "10.88.121.180",
-      "joinedAt": "2026-10-23T11:11:44.084609+07:00"
+      "joinedAt": "2026-10-23T12:08:22.048882+07:00"
     },
     {
       "id": "owner-main",

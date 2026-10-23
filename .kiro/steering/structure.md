@@ -34,7 +34,7 @@ internal/
     config/                 CLI flag -> Config (config.go, size.go)
     system/                 Clock และ IDGenerator ตัวจริง
 web/                        UI บนเบราว์เซอร์ ฝังด้วย embed.go (ดูรายการไฟล์ใน tech.md) web/test/ ห้ามฝัง
-tools/genicons/             เครื่องมือสร้างไอคอน PWA (main.go แยกจากตัว server)
+tools/genicons/             เครื่องมือสร้างไอคอน PWA และไอคอนแอป Mac (โลโก้ไฟล์กลางวงกลุ่ม)
 docs/project-scope.md       ขอบเขต การตัดสินใจ เฟส สถานะ ระบบ นักพัฒนา และ Mock UI (ภาษาไทย หัวข้อ 12–15)
 mock/                       ต้นแบบ UI แบบ HTML (ui-mock-v3.html คือตัวปัจจุบัน; v2 เก็บเทียบ; ui-mock.html เลิกใช้แล้ว)
 ```

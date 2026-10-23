@@ -111,6 +111,8 @@ const I18N = {
     cable_open_fail: 'เปิดบนมือถือไม่สำเร็จ',
     cable_open_ios_help: 'สแกน QR หรือเปิดลิงก์ใน Safari บน iPhone/iPad ที่เสียบสาย',
     files_tab_room: 'ไฟล์ในห้อง', files_tab_device: 'ไฟล์บนเครื่อง',
+    pick_hint_room: 'กดเพื่อเลือก · Shift ช่วง · ⌘ สลับ · ไม่มี checkbox',
+    pick_hint_device: 'กดเพื่อเลือก · ดับเบิลคลิกเข้าโฟลเดอร์ · Shift ช่วง · ⌘ สลับ',
     cable_fs_title: 'ไฟล์บนเครื่อง', cable_fs_empty: 'โฟลเดอร์นี้ว่าง',
     cable_fs_import: 'ดึงเข้าห้อง', cable_fs_imported: 'ดึงเข้าห้องแล้ว',
     cable_fs_imported_n: 'ดึงเข้าห้องแล้ว {n} รายการ',
@@ -177,6 +179,8 @@ const I18N = {
     ttl_none: 'ไม่หมดอายุ', ttl_1h: '1 ชั่วโมง', ttl_1d: '1 วัน', ttl_7d: '7 วัน', ttl_30d: '30 วัน',
     rename: 'เปลี่ยนชื่อ', you: ' (คุณ)', details: 'รายละเอียด', download: '⬇ ดาวน์โหลด', open_file: 'เปิด', del: 'ลบ',
     rename_prompt: 'ชื่ออุปกรณ์ใหม่', code_fail: 'เปิดไฟล์ข้อความไม่สำเร็จ',
+    kick: 'ถอด', kick_confirm: 'ถอด "{name}" ออกจากห้อง? เครื่องนั้นต้องเข้าใหม่ด้วย PIN',
+    kick_ok: 'ถอดอุปกรณ์แล้ว', kick_fail: 'ถอดอุปกรณ์ไม่สำเร็จ',
     about_nav: 'เกี่ยวกับระบบ', about_tab: 'เกี่ยวกับ', about_title: 'เกี่ยวกับระบบ',
     about_tagline: 'แชร์ไฟล์ในวงแลน รันบน Mac ของเจ้าของเครื่อง',
     about_version: 'เวอร์ชัน', about_author: 'ผู้พัฒนา',
@@ -200,6 +204,8 @@ const I18N = {
     cable_open_fail: 'Could not open on the phone',
     cable_open_ios_help: 'Scan the QR code or open the link in Safari on the plugged-in iPhone/iPad',
     files_tab_room: 'Room files', files_tab_device: 'On device',
+    pick_hint_room: 'Click to select · Shift for a range · ⌘ to toggle · no checkbox',
+    pick_hint_device: 'Click to select · double-click a folder · Shift for a range · ⌘ to toggle',
     cable_fs_title: 'Files on device', cable_fs_empty: 'This folder is empty',
     cable_fs_import: 'Add to room', cable_fs_imported: 'Added to the room',
     cable_fs_imported_n: 'Added {n} items to the room',
@@ -266,6 +272,8 @@ const I18N = {
     ttl_none: 'Never', ttl_1h: '1 hour', ttl_1d: '1 day', ttl_7d: '7 days', ttl_30d: '30 days',
     rename: 'Rename', you: ' (you)', details: 'Details', download: '⬇ Download', open_file: 'Open', del: 'Delete',
     rename_prompt: 'New device name', code_fail: 'Could not open this text file',
+    kick: 'Remove', kick_confirm: 'Remove "{name}" from the room? That device will need the PIN to join again.',
+    kick_ok: 'Device removed', kick_fail: 'Could not remove the device',
     about_nav: 'About', about_tab: 'About', about_title: 'About this system',
     about_tagline: 'Share files on the LAN from the owner\'s Mac',
     about_version: 'Version', about_author: 'Developer',
@@ -291,6 +299,7 @@ function applyI18n() {
   document.documentElement.lang = currentLang() === 'en' ? 'en' : 'th';
   for (const n of $$('[data-i18n]')) n.textContent = t(n.dataset.i18n);
   for (const n of $$('[data-i18n-placeholder]')) n.placeholder = t(n.dataset.i18nPlaceholder);
+  if (typeof labelCableClipKeys === 'function') labelCableClipKeys();
 }
 
 function applyTheme() {
@@ -338,6 +347,7 @@ function toastHold(msg) {
 function show(id) {
   for (const v of ['loading', 'join', 'wait-approve', 'app']) $(v).hidden = v !== id;
   $('tabbar').hidden = id !== 'app';
+  document.body.classList.toggle('in-app', id === 'app');
 }
 
 function debounce(fn, ms) {
@@ -836,8 +846,14 @@ function setView(v) {
   state.view = v;
   $('app').dataset.view = v;
   const sideActive = v === 'upload' ? 'files' : v; // on wide screens upload is always visible
-  for (const b of $$('.side [data-go]')) b.setAttribute('aria-current', b.dataset.go === sideActive ? 'page' : 'false');
-  for (const b of $$('#tabbar [data-go]')) b.setAttribute('aria-current', b.dataset.go === v ? 'page' : 'false');
+  for (const b of $$('.side [data-go]')) {
+    if (b.dataset.go === sideActive) b.setAttribute('aria-current', 'page');
+    else b.removeAttribute('aria-current');
+  }
+  for (const b of $$('#tabbar [data-go]')) {
+    if (b.dataset.go === v) b.setAttribute('aria-current', 'page');
+    else b.removeAttribute('aria-current');
+  }
   if (v === 'chat') {
     state.unread = 0;
     renderUnread();
@@ -855,6 +871,8 @@ function setFilesSrc(src) {
     else b.removeAttribute('aria-current');
   }
   if (state.filesSrc === 'device') loadCableFS(cableFS.path);
+  const tabs = $('files-tabs');
+  if (tabs && !tabs.hidden) tabs.scrollIntoView({ block: 'start', behavior: 'instant' });
 }
 
 function syncFilesTabs() {
@@ -919,7 +937,13 @@ function renderCablePhone(phone) {
   const tools = el('div', { class: 'dev-tools' },
     el('button', { class: 'btn sm', type: 'button', onclick: () => openCablePhone(phone) }, t('cable_open')),
   );
-  return el('li', { class: 'cable-dev' }, head, tools);
+  const row = el('li', { class: 'cable-dev openable' }, head, tools);
+  row.addEventListener('click', (ev) => {
+    if (ev.target.closest('button, select, a')) return;
+    const p = cableDeviceFSPath(phone.device);
+    if (p) openCableFiles(p);
+  });
+  return row;
 }
 
 function renderDeviceRow(d, isOwner) {
@@ -936,7 +960,13 @@ function renderDeviceRow(d, isOwner) {
       ? el('span', { class: 'pill pending' }, t('pending_pill'))
       : el('span', { class: 'pill ' + d.role }, ROLE_LABEL[d.role] || d.role));
   }
-  const row = el('li', { class: (d.me ? 'me' : '') + (d.pending ? ' wait' : '') + (usb ? ' cable-dev' : '') }, head);
+  const row = el('li', { class: (d.me ? 'me' : '') + (d.pending ? ' wait' : '') + (usb ? ' cable-dev openable' : '') }, head);
+  if (usb) {
+    row.addEventListener('click', (ev) => {
+      if (ev.target.closest('button, select, a')) return;
+      openCableFiles(cableDeviceFSPath(d.platform));
+    });
+  }
   if (isOwner && !d.pending) {
     const tools = el('div', { class: 'dev-tools' });
     tools.append(el('button', { class: 'btn ghost sm', type: 'button', onclick: () => renameDevice(d) }, t('rename')));
@@ -949,6 +979,7 @@ function renderDeviceRow(d, isOwner) {
         sel.append(el('option', { value: r, selected: d.role === r }, ROLE_LABEL[r]));
       }
       tools.append(sel);
+      tools.append(el('button', { class: 'btn ghost sm', type: 'button', onclick: () => kickDevice(d) }, t('kick')));
     }
     row.append(tools);
   }
@@ -1133,9 +1164,18 @@ function labelCableClipKeys() {
   const copy = $('cable-fs-copy');
   const cut = $('cable-fs-cut');
   const paste = $('cable-fs-paste');
-  if (copy) copy.title = t('cable_fs_copy') + ' (' + mod + 'C)';
-  if (cut) cut.title = t('cable_fs_cut') + ' (' + mod + 'X)';
-  if (paste) paste.title = t('cable_fs_paste') + ' (' + mod + 'V)';
+  if (copy) {
+    copy.title = t('cable_fs_copy') + ' (' + mod + 'C)';
+    copy.textContent = t('cable_fs_copy') + ' ' + mod + 'C';
+  }
+  if (cut) {
+    cut.title = t('cable_fs_cut') + ' (' + mod + 'X)';
+    cut.textContent = t('cable_fs_cut') + ' ' + mod + 'X';
+  }
+  if (paste) {
+    paste.title = t('cable_fs_paste') + ' (' + mod + 'V)';
+    paste.textContent = t('cable_fs_paste') + ' ' + mod + 'V';
+  }
 }
 
 function cableTypingTarget(el) {
@@ -1995,6 +2035,15 @@ async function renameDevice(d) {
     await api('/api/admin/devices/' + encodeURIComponent(d.id), jsonBody('PATCH', { name }));
     refreshDevices();
   } catch (e) { toast('เปลี่ยนชื่อไม่สำเร็จ: ' + e.message); }
+}
+
+async function kickDevice(d) {
+  if (!confirm(t('kick_confirm').replace('{name}', d.name))) return;
+  try {
+    await api('/api/admin/devices/' + encodeURIComponent(d.id), { method: 'DELETE' });
+    refreshDevices();
+    toast(t('kick_ok'));
+  } catch (e) { toast(t('kick_fail') + ': ' + e.message); }
 }
 
 // ---------- files ----------
@@ -4028,7 +4077,9 @@ function setupAbout() {
   const pane = el('section', { id: 'pane-about', class: 'pane', 'aria-labelledby': 'about-title' },
     el('h2', { id: 'about-title' }, t('about_title')),
     el('div', { class: 'card about-card' },
-      el('p', { class: 'about-name' }, 'Share Group'),
+      el('div', { class: 'about-brand' },
+        el('img', { src: '/icons/icon-192.png', width: '48', height: '48', alt: '' }),
+        el('p', { class: 'about-name' }, 'Share Group')),
       el('p', {}, t('about_tagline')),
       el('dl', { class: 'about-meta' },
         el('div', {}, el('dt', {}, t('about_version')), el('dd', {}, APP_VERSION)),

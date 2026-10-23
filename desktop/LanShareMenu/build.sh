@@ -23,6 +23,13 @@ swiftc -O \
   -framework AppKit
 cp "$BIN/lanshare" "$RES/lanshare"
 cp "$BIN/share" "$RES/share"
+if [ -d "$APP_SRC/Resources" ]; then
+  cp "$APP_SRC/Resources/MenuTemplate.png" "$RES/" 2>/dev/null || true
+  cp "$APP_SRC/Resources/MenuTemplate@2x.png" "$RES/" 2>/dev/null || true
+fi
+if [ -d "$APP_SRC/icon.iconset" ]; then
+  iconutil -c icns "$APP_SRC/icon.iconset" -o "$RES/AppIcon.icns"
+fi
 chmod +x "$MACOS/Share Group" "$RES/lanshare" "$RES/share"
 
 echo "เสร็จ: $OUT"

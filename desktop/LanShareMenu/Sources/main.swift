@@ -20,8 +20,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         if let btn = status.button {
-            btn.title = "📡"
             btn.toolTip = "Share Group"
+            applyStatusIcon(btn, running: true)
         }
         roomItem.isEnabled = false
         nicItem.isEnabled = false
@@ -139,9 +139,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }.resume()
     }
 
+    private func applyStatusIcon(_ btn: NSStatusBarButton, running: Bool) {
+        if let url = Bundle.main.url(forResource: "MenuTemplate", withExtension: "png"),
+           let img = NSImage(contentsOf: url) {
+            img.isTemplate = true
+            img.size = NSSize(width: 18, height: 18)
+            btn.image = img
+            btn.imagePosition = .imageOnly
+            btn.title = ""
+            btn.appearsDisabled = !running
+            return
+        }
+        btn.image = nil
+        btn.title = running ? "▢" : "—"
+        btn.appearsDisabled = false
+    }
+
     private func applyMenu() {
         let running = serverRunning() || info.ok
-        status.button?.title = running ? "📡" : "📴"
+        if let btn = status.button {
+            applyStatusIcon(btn, running: running)
+        }
         roomItem.title = "ห้อง: \(info.roomName.isEmpty ? "—" : info.roomName)"
         pinItem.title = info.pin.isEmpty ? "PIN: —" : "PIN: \(info.pin)  (คัดลอก)"
         urlItem.isEnabled = !info.url.isEmpty
