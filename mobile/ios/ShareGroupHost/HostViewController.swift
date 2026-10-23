@@ -1,21 +1,39 @@
+import UniformTypeIdentifiers
 import UIKit
 import WebKit
 
 /// Loads the embedded Go dashboard at 127.0.0.1. Room rules stay in Go.
-final class HostViewController: UIViewController, WKNavigationDelegate, WKDownloadDelegate {
+final class HostViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate, UIDocumentPickerDelegate {
     private var web: WKWebView!
     private var wait: UILabel!
     private var retries = 0
     private var retryWork: DispatchWorkItem?
+    private var openPanel: (([URL]?) -> Void)?
 
     override func loadView() {
+        let root = UIView()
+        root.backgroundColor = .systemBackground
+        view = root
+
         let conf = WKWebViewConfiguration()
         conf.defaultWebpagePreferences.allowsContentJavaScript = true
         let web = WKWebView(frame: .zero, configuration: conf)
         web.navigationDelegate = self
+        web.uiDelegate = self
+        if #available(iOS 16.4, *) {
+            web.isInspectable = true
+        }
         web.allowsBackForwardNavigationGestures = true
+        web.scrollView.contentInsetAdjustmentBehavior = .never
+        web.translatesAutoresizingMaskIntoConstraints = false
+        root.addSubview(web)
+        NSLayoutConstraint.activate([
+            web.topAnchor.constraint(equalTo: root.safeAreaLayoutGuide.topAnchor),
+            web.leadingAnchor.constraint(equalTo: root.leadingAnchor),
+            web.trailingAnchor.constraint(equalTo: root.trailingAnchor),
+            web.bottomAnchor.constraint(equalTo: root.bottomAnchor),
+        ])
         self.web = web
-        view = web
 
         let wait = UILabel()
         wait.text = "กำลังเปิดเซิร์ฟเวอร์…"
@@ -41,6 +59,11 @@ final class HostViewController: UIViewController, WKNavigationDelegate, WKDownlo
         super.viewWillDisappear(animated)
         retryWork?.cancel()
         retryWork = nil
+    }
+
+    func resumeHost() {
+        startHost()
+        loadDashboard()
     }
 
     private func startHost() {
@@ -85,6 +108,74 @@ final class HostViewController: UIViewController, WKNavigationDelegate, WKDownlo
         }
         retryWork = work
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4, execute: work)
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        runJavaScriptAlertPanelWithMessage message: String,
+        initiatedByFrame frame: WKFrameInfo,
+        completionHandler: @escaping () -> Void
+    ) {
+        let ac = UIAlertController(title: nil, message: message, preferredStyle: .alert)
+        ac.addAction(UIAlertAction(title: "ตกลง", style: .default) { _ in completionHandler() })
+        present(ac, animated: true)
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        runJavaScriptConfirmPanelWithMessage message: String,
+        initiatedByFrame frame: WKFrameInfo,
+        completionHandler: @escaping (Bool) -> Void
+    ) {
+        let ac = UIAlertController(title: nil, message: message, preferredStyle: .alert)
+        ac.addAction(UIAlertAction(title: "ยกเลิก", style: .cancel) { _ in completionHandler(false) })
+        ac.addAction(UIAlertAction(title: "ตกลง", style: .default) { _ in completionHandler(true) })
+        present(ac, animated: true)
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        runJavaScriptTextInputPanelWithPrompt prompt: String,
+        defaultText: String?,
+        initiatedByFrame frame: WKFrameInfo,
+        completionHandler: @escaping (String?) -> Void
+    ) {
+        let ac = UIAlertController(title: nil, message: prompt, preferredStyle: .alert)
+        ac.addTextField { $0.text = defaultText }
+        ac.addAction(UIAlertAction(title: "ยกเลิก", style: .cancel) { _ in completionHandler(nil) })
+        ac.addAction(UIAlertAction(title: "ตกลง", style: .default) { _ in
+            completionHandler(ac.textFields?.first?.text)
+        })
+        present(ac, animated: true)
+    }
+
+    @available(iOS 18.4, *)
+    func webView(
+        _ webView: WKWebView,
+        runOpenPanelWith parameters: WKOpenPanelParameters,
+        initiatedByFrame frame: WKFrameInfo,
+        completionHandler: @escaping ([URL]?) -> Void
+    ) {
+        openPanel?(nil)
+        openPanel = completionHandler
+        var types: [UTType] = [.item]
+        if parameters.allowsDirectories {
+            types.append(.folder)
+        }
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: types, asCopy: true)
+        picker.allowsMultipleSelection = parameters.allowsMultipleSelection
+        picker.delegate = self
+        present(picker, animated: true)
+    }
+
+    func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+        openPanel?(stagePicked(urls))
+        openPanel = nil
+    }
+
+    func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+        openPanel?(nil)
+        openPanel = nil
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
@@ -141,6 +232,35 @@ final class HostViewController: UIViewController, WKNavigationDelegate, WKDownlo
         let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         let name = suggestedFilename.isEmpty ? "download" : suggestedFilename
         completionHandler(uniqueURL(in: dir, name: name))
+    }
+
+    func downloadDidFinish(_ download: WKDownload) {}
+
+    func download(_ download: WKDownload, didFailWithError error: Error, resumeData: Data?) {}
+
+    private func stagePicked(_ urls: [URL]) -> [URL] {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("open-panel", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        var out: [URL] = []
+        for url in urls {
+            let access = url.startAccessingSecurityScopedResource()
+            defer {
+                if access {
+                    url.stopAccessingSecurityScopedResource()
+                }
+            }
+            let dest = uniqueURL(in: dir, name: url.lastPathComponent)
+            do {
+                if FileManager.default.fileExists(atPath: dest.path) {
+                    try FileManager.default.removeItem(at: dest)
+                }
+                try FileManager.default.copyItem(at: url, to: dest)
+                out.append(dest)
+            } catch {
+                out.append(url)
+            }
+        }
+        return out
     }
 
     private func uniqueURL(in dir: URL, name: String) -> URL {

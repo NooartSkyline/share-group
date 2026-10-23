@@ -15,6 +15,15 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         return true
     }
 
+    func applicationWillEnterForeground(_ application: UIApplication) {
+        application.isIdleTimerDisabled = true
+        (window?.rootViewController as? HostViewController)?.resumeHost()
+    }
+
+    func applicationDidBecomeActive(_ application: UIApplication) {
+        application.isIdleTimerDisabled = true
+    }
+
     func applicationDidEnterBackground(_ application: UIApplication) {
         application.isIdleTimerDisabled = false
         GoHost.stop()
