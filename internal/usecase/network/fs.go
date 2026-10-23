@@ -11,15 +11,16 @@ import (
 )
 
 const (
-	cableListTimeout    = 8 * time.Second
-	cablePeekTimeout    = 8 * time.Second
-	cablePullTimeout    = 3 * time.Minute
-	cableDeleteTimeout  = 1 * time.Minute
-	maxCableFSEntries   = 400
-	maxCableZipFiles    = 5000
-	maxCableZipDepth    = 24
-	cableZipListTimeout = 30 * time.Second
-	cablePeekLimit      = 16 << 10
+	cableListTimeout     = 8 * time.Second
+	cablePeekTimeout     = 8 * time.Second
+	cablePullTimeout     = 3 * time.Minute
+	cableTreePullTimeout = 45 * time.Minute
+	cableDeleteTimeout   = 1 * time.Minute
+	maxCableFSEntries    = 400
+	maxCableZipFiles     = 5000
+	maxCableZipDepth     = 24
+	cableZipListTimeout  = 30 * time.Second
+	cablePeekLimit       = 16 << 10
 )
 
 // CablePeek is the start of a file on the plugged-in phone, for hex preview
@@ -128,6 +129,12 @@ func (s *Service) loadCableFS(ctx context.Context, actor domain.Device, loc stri
 // CableZipFile is one file to store in a zip pulled from the phone.
 type CableZipFile struct {
 	Loc  string
+	Name string
+}
+
+// CableZipLocal is a file already on this Mac, ready to put in a zip.
+type CableZipLocal struct {
+	Path string
 	Name string
 }
 

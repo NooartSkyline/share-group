@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
 
 	"lanshare/internal/domain"
@@ -223,18 +224,15 @@ func (s *Service) pullAndroid(ctx context.Context, device, rootID, rel string) (
 	if err != nil {
 		return CableFile{}, err
 	}
-	if s.findADB(ctx) == "" || !s.androidReady(ctx) {
-		return CableFile{}, domain.ErrUnsupported
-	}
 	dir, err := os.MkdirTemp("", "lanshare-cable-*")
 	if err != nil {
 		return CableFile{}, err
 	}
 	name := pathBase(rel)
 	dst := filepath.Join(dir, name)
-	if _, err := s.adbCmd(ctx, cablePullTimeout, device, "pull", "--", abs, dst); err != nil {
+	if err := s.pullAndroidAbs(ctx, device, abs, dst, cablePullTimeout); err != nil {
 		_ = os.RemoveAll(dir)
-		return CableFile{}, domain.ErrNotFound
+		return CableFile{}, err
 	}
 	f, err := os.Open(dst)
 	if err != nil {
@@ -247,7 +245,143 @@ func (s *Service) pullAndroid(ctx context.Context, device, rootID, rel string) (
 		_ = os.RemoveAll(dir)
 		return CableFile{}, err
 	}
+	if st.IsDir() {
+		f.Close()
+		_ = os.RemoveAll(dir)
+		return CableFile{}, domain.ErrInvalidInput
+	}
 	return CableFile{Name: name, Size: st.Size(), Content: &removeOnClose{File: f, dir: dir}}, nil
+}
+
+func (s *Service) pullAndroidAbs(ctx context.Context, device, abs, dst string, d time.Duration) error {
+	if s.findADB(ctx) == "" || !s.androidReady(ctx) {
+		return domain.ErrUnsupported
+	}
+	if _, err := s.adbCmd(ctx, d, device, "pull", "--", abs, dst); err != nil {
+		return domain.ErrNotFound
+	}
+	if _, err := os.Stat(dst); err != nil {
+		return domain.ErrNotFound
+	}
+	return nil
+}
+
+func cableLocCovered(loc string, folders []string) bool {
+	for _, folder := range folders {
+		if loc == folder || strings.HasPrefix(loc, folder+"/") {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *Service) pullAndroidSelection(ctx context.Context, files, folders []string, destDir string) error {
+	folderLocs, err := SanitizeCableZipPaths(folders)
+	if err != nil {
+		return err
+	}
+	fileLocs, err := SanitizeCableZipPaths(files)
+	if err != nil {
+		return err
+	}
+	if len(folderLocs)+len(fileLocs) == 0 {
+		return domain.ErrInvalidInput
+	}
+	for _, loc := range folderLocs {
+		if err := s.pullAndroidLoc(ctx, loc, destDir, zipFolderPrefix(loc), true); err != nil {
+			return err
+		}
+	}
+	for _, loc := range fileLocs {
+		if cableLocCovered(loc, folderLocs) {
+			continue
+		}
+		if err := s.pullAndroidLoc(ctx, loc, destDir, path.Base(loc), false); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *Service) pullAndroidLoc(ctx context.Context, loc, destDir, relName string, tree bool) error {
+	device, rootID, rel, err := splitCablePath(loc)
+	if err != nil || rootID == "" || rootID == androidAppsRoot {
+		return domain.ErrInvalidInput
+	}
+	if device == domain.CableiPhone || device == domain.CableiPad {
+		return domain.ErrUnsupported
+	}
+	abs, err := s.androidRemoteAbs(ctx, device, rootID, rel)
+	if err != nil {
+		return err
+	}
+	dst := filepath.Join(destDir, filepath.FromSlash(relName))
+	if err := os.MkdirAll(filepath.Dir(dst), 0o700); err != nil {
+		return err
+	}
+	wait := cablePullTimeout
+	if tree {
+		wait = cableTreePullTimeout
+	}
+	return s.pullAndroidAbs(ctx, device, abs, dst, wait)
+}
+
+func walkStagedZip(dir string) ([]CableZipLocal, error) {
+	var out []CableZipLocal
+	err := filepath.WalkDir(dir, func(p string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		if strings.HasPrefix(d.Name(), ".") {
+			return nil
+		}
+		rel, err := filepath.Rel(dir, p)
+		if err != nil {
+			return err
+		}
+		name := filepath.ToSlash(rel)
+		if name == "" || name == "." {
+			return nil
+		}
+		if len(out) >= maxCableZipFiles {
+			return domain.ErrTooManyItems
+		}
+		out = append(out, CableZipLocal{Path: p, Name: name})
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// StageCableZip pulls selected Android files and folders in as few adb pull
+// calls as possible, then returns local paths to zip. Caller must RemoveAll dir.
+func (s *Service) StageCableZip(ctx context.Context, actor domain.Device, files, folders []string) (string, []CableZipLocal, error) {
+	if !actor.CanManage() {
+		return "", nil, domain.ErrForbidden
+	}
+	dir, err := os.MkdirTemp("", "lanshare-zip-*")
+	if err != nil {
+		return "", nil, err
+	}
+	if err := s.pullAndroidSelection(ctx, files, folders, dir); err != nil {
+		_ = os.RemoveAll(dir)
+		return "", nil, err
+	}
+	items, err := walkStagedZip(dir)
+	if err != nil {
+		_ = os.RemoveAll(dir)
+		return "", nil, err
+	}
+	if len(items) == 0 {
+		_ = os.RemoveAll(dir)
+		return "", nil, domain.ErrInvalidInput
+	}
+	return dir, items, nil
 }
 
 func parseAndroidLs(text, parent string) []CableFSEntry {
@@ -586,45 +720,14 @@ func (s *Service) copyCableFiles(ctx context.Context, actor domain.Device, files
 	if err != nil {
 		return CableClipboard{}, err
 	}
-	copied := make([]cableClipFile, 0, len(items))
-	names := make([]string, 0, len(items))
-	for _, it := range items {
-		if ctx.Err() != nil {
-			_ = os.RemoveAll(dir)
-			return CableClipboard{}, ctx.Err()
-		}
-		dst, err := clipLocalPath(dir, it.Name)
-		if err != nil {
-			_ = os.RemoveAll(dir)
-			return CableClipboard{}, err
-		}
-		if err := os.MkdirAll(filepath.Dir(dst), 0o700); err != nil {
-			_ = os.RemoveAll(dir)
-			return CableClipboard{}, err
-		}
-		cf, err := s.OpenCableFile(ctx, actor, it.Loc)
-		if err != nil {
-			_ = os.RemoveAll(dir)
-			return CableClipboard{}, err
-		}
-		f, err := os.Create(dst)
-		if err != nil {
-			_ = cf.Content.Close()
-			_ = os.RemoveAll(dir)
-			return CableClipboard{}, err
-		}
-		_, copyErr := io.Copy(f, cf.Content)
-		closeErr := f.Close()
-		_ = cf.Content.Close()
-		if copyErr != nil || closeErr != nil {
-			_ = os.RemoveAll(dir)
-			if copyErr != nil {
-				return CableClipboard{}, copyErr
-			}
-			return CableClipboard{}, closeErr
-		}
-		copied = append(copied, cableClipFile{Name: it.Name, Path: dst})
-		names = append(names, pathBase(it.Name))
+	copied, names, err := s.stageClipFiles(ctx, actor, files, folders, items, dir)
+	if err != nil {
+		_ = os.RemoveAll(dir)
+		return CableClipboard{}, err
+	}
+	if len(copied) == 0 {
+		_ = os.RemoveAll(dir)
+		return CableClipboard{}, domain.ErrInvalidInput
 	}
 	origins := append(append([]string(nil), files...), folders...)
 	next := &cableAppClip{kind: cableClipFiles, source: source, names: names, files: copied, dir: dir, cut: cut, origins: origins}
@@ -636,6 +739,61 @@ func (s *Service) copyCableFiles(ctx context.Context, actor domain.Device, files
 		_ = os.RemoveAll(old.dir)
 	}
 	return s.CableClipboard(ctx, actor)
+}
+
+func (s *Service) stageClipFiles(ctx context.Context, actor domain.Device, files, folders []string, items []CableZipFile, dir string) ([]cableClipFile, []string, error) {
+	if err := s.pullAndroidSelection(ctx, files, folders, dir); err == nil {
+		locals, err := walkStagedZip(dir)
+		if err != nil {
+			return nil, nil, err
+		}
+		copied := make([]cableClipFile, 0, len(locals))
+		names := make([]string, 0, len(locals))
+		for _, l := range locals {
+			copied = append(copied, cableClipFile{Name: l.Name, Path: l.Path})
+			names = append(names, pathBase(l.Name))
+		}
+		return copied, names, nil
+	}
+	_ = os.RemoveAll(dir)
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return nil, nil, err
+	}
+	copied := make([]cableClipFile, 0, len(items))
+	names := make([]string, 0, len(items))
+	for _, it := range items {
+		if ctx.Err() != nil {
+			return nil, nil, ctx.Err()
+		}
+		dst, err := clipLocalPath(dir, it.Name)
+		if err != nil {
+			return nil, nil, err
+		}
+		if err := os.MkdirAll(filepath.Dir(dst), 0o700); err != nil {
+			return nil, nil, err
+		}
+		cf, err := s.OpenCableFile(ctx, actor, it.Loc)
+		if err != nil {
+			return nil, nil, err
+		}
+		f, err := os.Create(dst)
+		if err != nil {
+			_ = cf.Content.Close()
+			return nil, nil, err
+		}
+		_, copyErr := io.Copy(f, cf.Content)
+		closeErr := f.Close()
+		_ = cf.Content.Close()
+		if copyErr != nil {
+			return nil, nil, copyErr
+		}
+		if closeErr != nil {
+			return nil, nil, closeErr
+		}
+		copied = append(copied, cableClipFile{Name: it.Name, Path: dst})
+		names = append(names, pathBase(it.Name))
+	}
+	return copied, names, nil
 }
 
 func clipLocalPath(dir, name string) (string, error) {

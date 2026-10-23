@@ -7,6 +7,7 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"os"
 	"path"
 	"path/filepath"
 	"strconv"
@@ -648,32 +649,63 @@ func (s *Server) cableFSZip(w http.ResponseWriter, r *http.Request, actor domain
 	h.Set("Content-Disposition", mime.FormatMediaType("attachment",
 		map[string]string{"filename": cableZipFilename(q["folder"], q["path"], time.Now())}))
 	h.Set("Cache-Control", "private, no-store")
+	w.WriteHeader(http.StatusOK)
+	if f, ok := w.(http.Flusher); ok {
+		f.Flush()
+	}
 	bw := bufio.NewWriterSize(w, 4<<20)
 	zw := zip.NewWriter(bw)
 	used := map[string]int{}
-	for _, item := range items {
-		if r.Context().Err() != nil {
-			_ = zw.Close()
-			panic(http.ErrAbortHandler)
-		}
-		cf, err := s.Network.OpenCableFile(r.Context(), actor, item.Loc)
-		if err != nil {
-			continue
-		}
-		hdr := &zip.FileHeader{Name: zipEntryName(item.Name, used), Method: zip.Store}
+	add := func(name string, src io.Reader) error {
+		hdr := &zip.FileHeader{Name: zipEntryName(name, used), Method: zip.Store}
 		dst, err := zw.CreateHeader(hdr)
 		if err != nil {
-			_ = cf.Content.Close()
-			_ = zw.Close()
-			s.Log.Warn("cable zip aborted", "err", err)
-			panic(http.ErrAbortHandler)
+			return err
 		}
-		_, copyErr := io.Copy(dst, cf.Content)
-		_ = cf.Content.Close()
-		if copyErr != nil {
-			_ = zw.Close()
-			s.Log.Warn("cable zip aborted", "err", copyErr)
-			panic(http.ErrAbortHandler)
+		_, err = io.Copy(dst, src)
+		return err
+	}
+	abortZip := func(err error) {
+		_ = zw.Close()
+		s.Log.Warn("cable zip aborted", "err", err)
+		panic(http.ErrAbortHandler)
+	}
+	dir, locals, stageErr := s.Network.StageCableZip(r.Context(), actor, q["path"], q["folder"])
+	if dir != "" {
+		defer os.RemoveAll(dir)
+	}
+	if stageErr != nil && !errors.Is(stageErr, domain.ErrUnsupported) {
+		abortZip(stageErr)
+	}
+	if stageErr == nil {
+		for _, item := range locals {
+			if r.Context().Err() != nil {
+				abortZip(r.Context().Err())
+			}
+			f, err := os.Open(item.Path)
+			if err != nil {
+				continue
+			}
+			copyErr := add(item.Name, f)
+			_ = f.Close()
+			if copyErr != nil {
+				abortZip(copyErr)
+			}
+		}
+	} else {
+		for _, item := range items {
+			if r.Context().Err() != nil {
+				abortZip(r.Context().Err())
+			}
+			cf, err := s.Network.OpenCableFile(r.Context(), actor, item.Loc)
+			if err != nil {
+				continue
+			}
+			copyErr := add(item.Name, cf.Content)
+			_ = cf.Content.Close()
+			if copyErr != nil {
+				abortZip(copyErr)
+			}
 		}
 	}
 	if err := zw.Close(); err != nil {

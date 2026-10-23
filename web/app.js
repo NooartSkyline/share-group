@@ -123,7 +123,7 @@ const I18N = {
     cable_fs_picked: 'เลือก {n} รายการ',
     cable_fs_save_need: 'เลือกรายการก่อน', cable_fs_save_limit: 'บันทึกได้ไม่เกิน 5000 ไฟล์ต่อครั้ง',
     cable_fs_save_busy: 'กำลังบันทึกลงเครื่อง…',
-    cable_fs_saved: 'เริ่มบันทึกลงเครื่องแล้ว',
+    cable_fs_saved: 'บันทึกลงเครื่องแล้ว',
     cable_fs_save_empty: 'โฟลเดอร์นี้ว่าง ไม่มีไฟล์ให้บันทึก',
     cable_fs_save_unreadable: 'อ่านโฟลเดอร์นี้จากมือถือไม่ได้',
     cable_fs_copy: 'คัดลอก', cable_fs_copy_need: 'เลือกรายการก่อน',
@@ -205,7 +205,7 @@ const I18N = {
     cable_fs_picked: 'Selected {n} items',
     cable_fs_save_need: 'Select items first', cable_fs_save_limit: 'Save up to 5000 files at a time',
     cable_fs_save_busy: 'Saving to this Mac…',
-    cable_fs_saved: 'Started saving to this Mac',
+    cable_fs_saved: 'Saved to this Mac',
     cable_fs_save_empty: 'This folder is empty, so there is nothing to save',
     cable_fs_save_unreadable: 'Could not read this folder from the phone',
     cable_fs_copy: 'Copy', cable_fs_copy_need: 'Select items first',
@@ -1680,6 +1680,28 @@ function triggerDownload(href, name) {
   setTimeout(() => a.remove(), 2000);
 }
 
+function toastCableSaveError(err) {
+  if (err && err.status === 404) toast(t('cable_fs_save_unreadable'));
+  else if (err && err.body && err.body.error === 'too_many_files') toast(t('cable_fs_save_limit'));
+  else if (err && err.status === 400) toast(t('cable_fs_save_empty'));
+  else toast(t('cable_open_fail') + ': ' + ((err && err.message) || ''));
+}
+
+async function saveCableZipToHandle(handle, zipUrl) {
+  const res = await fetch(zipUrl, { credentials: 'same-origin', headers: { 'X-LanShare-Client': '1' } });
+  const ct = res.headers.get('content-type') || '';
+  if (!res.ok || ct.includes('json')) {
+    let body = null;
+    if (ct.includes('json')) body = await res.json().catch(() => null);
+    const err = new Error((body && body.error) || res.statusText);
+    err.status = res.status;
+    err.body = body;
+    throw err;
+  }
+  if (!res.body) throw new Error(res.statusText || 'empty');
+  await res.body.pipeTo(await handle.createWritable());
+}
+
 async function saveCableFiles(files) {
   const list = (files || []).filter((f) => f && f.path);
   if (!list.length) {
@@ -1698,16 +1720,31 @@ async function saveCableFiles(files) {
   if (cableClipBusy) return;
   const q = list.map((f) => (f.dir ? 'folder=' : 'path=') + encodeURIComponent(f.path)).join('&');
   const zipName = only && only.dir ? (only.name || 'folder') + '.zip' : 'phone.zip';
+  const zipUrl = '/api/admin/cable/fs/zip?' + q;
+  if (typeof window.showSaveFilePicker !== 'function') {
+    triggerDownload(zipUrl, zipName);
+    toastHold(t('cable_fs_save_busy'));
+    return;
+  }
+  let handle;
+  try {
+    handle = await window.showSaveFilePicker({
+      suggestedName: zipName,
+      types: [{ description: 'ZIP', accept: { 'application/zip': ['.zip'] } }],
+    });
+  } catch (err) {
+    if (err && err.name === 'AbortError') return;
+    triggerDownload(zipUrl, zipName);
+    toastHold(t('cable_fs_save_busy'));
+    return;
+  }
   setCableClipBusy('save');
   try {
-    await api('/api/admin/cable/fs/zip?' + q + '&plan=1');
-    triggerDownload('/api/admin/cable/fs/zip?' + q, zipName);
+    await saveCableZipToHandle(handle, zipUrl);
     toast(t('cable_fs_saved'));
   } catch (err) {
-    if (err.status === 404) toast(t('cable_fs_save_unreadable'));
-    else if (err.body && err.body.error === 'too_many_files') toast(t('cable_fs_save_limit'));
-    else if (err.status === 400) toast(t('cable_fs_save_empty'));
-    else toast(t('cable_open_fail') + ': ' + err.message);
+    if (err && err.name === 'AbortError') return;
+    toastCableSaveError(err);
   } finally {
     setCableClipBusy('');
   }

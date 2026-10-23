@@ -361,6 +361,92 @@ func TestPlanCableZipManyFiles(t *testing.T) {
 	}
 }
 
+type pullToDiskRunner struct {
+	inner *fake.Runner
+}
+
+func (r *pullToDiskRunner) Run(ctx context.Context, name string, args ...string) ([]byte, error) {
+	out, err := r.inner.Run(ctx, name, args...)
+	if err != nil {
+		return out, err
+	}
+	if name != "adb" && !strings.HasSuffix(name, "/adb") {
+		return out, err
+	}
+	local := ""
+	for i, a := range args {
+		if a == "pull" && i+2 < len(args) {
+			local = args[len(args)-1]
+			break
+		}
+	}
+	if local == "" {
+		return out, err
+	}
+	if err := os.MkdirAll(local, 0o700); err != nil {
+		return out, err
+	}
+	if err := os.WriteFile(filepath.Join(local, "a.jpg"), []byte("aa"), 0o600); err != nil {
+		return out, err
+	}
+	sub := filepath.Join(local, "sub")
+	if err := os.MkdirAll(sub, 0o700); err != nil {
+		return out, err
+	}
+	if err := os.WriteFile(filepath.Join(sub, "b.jpg"), []byte("bb"), 0o600); err != nil {
+		return out, err
+	}
+	return out, err
+}
+
+func TestStageCableZipPullsFolderOnce(t *testing.T) {
+	inner := fake.NewRunner()
+	inner.On("/usr/sbin/networksetup -listallhardwareports", fake.RunResult{Out: []byte("Hardware Port: Wi-Fi\nDevice: en0\n")})
+	inner.On("/usr/sbin/ioreg -r -c IOUSBHostDevice -l -d 1 -w 0", fake.RunResult{Out: []byte(ioregPixel)})
+	inner.On("adb version", fake.RunResult{Out: []byte("Android Debug Bridge version 1.0.41")})
+	inner.On("adb devices", fake.RunResult{Out: []byte("List of devices attached\nR58M123\tdevice\n")})
+	inner.On("adb reverse tcp:8080 tcp:8080", fake.RunResult{})
+	inner.On("adb", fake.RunResult{})
+	svc := NewService(netList{{Name: "en0", IP: "192.168.1.23", Kind: domain.NetPhysical}}, 8080, "")
+	svc.SetRunner(&pullToDiskRunner{inner: inner})
+
+	dir, items, err := svc.StageCableZip(context.Background(), owner(), nil, []string{"android/download"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(dir) })
+	if len(items) != 2 {
+		t.Fatalf("items=%d %+v", len(items), items)
+	}
+	pulls := 0
+	for _, c := range inner.Calls() {
+		line := strings.Join(append([]string{c.Name}, c.Args...), " ")
+		if !strings.Contains(line, " pull ") {
+			continue
+		}
+		pulls++
+		if !strings.Contains(line, "/sdcard/Download") {
+			t.Fatalf("pull = %s", line)
+		}
+		if strings.Contains(line, "a.jpg") {
+			t.Fatalf("pulled a file instead of the folder: %s", line)
+		}
+	}
+	if pulls != 1 {
+		t.Fatalf("pulls=%d, want 1", pulls)
+	}
+}
+
+func TestCableLocCovered(t *testing.T) {
+	folders := []string{"android/download/album"}
+	if !cableLocCovered("android/download/album/a.jpg", folders) {
+		t.Fatal("child")
+	}
+	if cableLocCovered("android/pictures/a.jpg", folders) {
+		t.Fatal("other")
+	}
+}
+
 func TestPeekCableFileAndroid(t *testing.T) {
 	run := fake.NewRunner()
 	run.On("/usr/sbin/networksetup -listallhardwareports", fake.RunResult{Out: []byte("Hardware Port: Wi-Fi\nDevice: en0\n")})
