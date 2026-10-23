@@ -755,7 +755,7 @@ gofmt -l .
 
 ### ไฟล์ติดตั้ง
 
-เวอร์ชันปัจจุบันอ่านจากไฟล์ `VERSION` ที่รากโปรเจกต์ (ตอนนี้ `0.2.0`) ไฟล์ติดตั้งอยู่ที่ `dist/<เวอร์ชัน>/` รุ่นเก่าเช่น `dist/0.1.0/` ไม่ถูกลบเวลาแพ็กรุ่นใหม่
+เวอร์ชันปัจจุบันอ่านจากไฟล์ `VERSION` ที่รากโปรเจกต์ (ตอนนี้ `0.2.0`) ไฟล์ติดตั้งอยู่ที่ `dist/<เวอร์ชัน>/` รุ่นเก่าเช่น `dist/0.1.0/` ไม่ถูกลบเวลาแพ็กรุ่นใหม่ ลิงก์โหลดอยู่ที่ [GitHub Releases](https://github.com/NooartSkyline/share-group/releases) และหน้า [`dist/index.html`](../dist/index.html)
 
 ```bash
 sh scripts/package-hosts.sh          # Mac .dmg, Android .apk, Windows .zip → dist/<เวอร์ชัน>/

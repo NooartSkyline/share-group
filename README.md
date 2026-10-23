@@ -4,20 +4,22 @@
 
 เวอร์ชัน `0.2.0` · ผู้พัฒนา `nooartskyline`
 
-ไฟล์ติดตั้งอยู่ที่ [`dist/`](dist/) แยกโฟลเดอร์ตามเวอร์ชัน รุ่นเก่าไม่ถูกลบ
+[โหลด 0.2.0](https://github.com/NooartSkyline/share-group/releases/latest) · รุ่นเก่าเก็บใน [`dist/`](dist/) และหน้า [Releases](https://github.com/NooartSkyline/share-group/releases)
 
 ค่าเริ่มต้นเป็น HTTP ธรรมดา ใช้ในวงที่ไว้ใจกันได้ ถ้าจะเปิดให้คนอื่นเข้า ให้ใช้ `-tls` และเปิดอนุมัติอุปกรณ์ในหน้า Owner
 
 ภาพรวมระบบ ข้อมูลนักพัฒนา และต้นแบบ UI อยู่ที่ [`docs/project-scope.md`](docs/project-scope.md) หัวข้อ 13–15
 
-## ไฟล์ติดตั้ง
+## โหลด
 
-ลูกข่ายยังใช้เบราว์เซอร์ ติดตั้งเฉพาะเครื่องที่จะเป็นโฮสต์ ไฟล์ยังไม่ลงนาม
+ลูกข่ายยังใช้เบราว์เซอร์ ติดตั้งเฉพาะเครื่องที่จะเป็นโฮสต์ ไฟล์ยังไม่ลงนาม กดแล้วได้ไฟล์จาก [GitHub Releases](https://github.com/NooartSkyline/share-group/releases)
+
+หน้าปุ่มโหลด: [`dist/index.html`](dist/index.html)
 
 | เวอร์ชัน | macOS | Android | Windows (amd64) |
 |---|---|---|---|
-| **0.2.0** (ปัจจุบัน) | [Share Group-0.2.0.dmg](dist/0.2.0/Share%20Group-0.2.0.dmg) | [Share-Group-0.2.0-android.apk](dist/0.2.0/Share-Group-0.2.0-android.apk) | [Share-Group-0.2.0-windows-amd64.zip](dist/0.2.0/Share-Group-0.2.0-windows-amd64.zip) |
-| 0.1.0 | [Share Group-0.1.0.dmg](dist/0.1.0/Share%20Group-0.1.0.dmg) | — | — |
+| **0.2.0** (ปัจจุบัน) | [โหลด .dmg](https://github.com/NooartSkyline/share-group/releases/download/v0.2.0/Share-Group-0.2.0-macos.dmg) | [โหลด .apk](https://github.com/NooartSkyline/share-group/releases/download/v0.2.0/Share-Group-0.2.0-android.apk) | [โหลด .zip](https://github.com/NooartSkyline/share-group/releases/download/v0.2.0/Share-Group-0.2.0-windows-amd64.zip) |
+| 0.1.0 | [โหลด .dmg](https://github.com/NooartSkyline/share-group/releases/download/v0.1.0/Share-Group-0.1.0-macos.dmg) | — | — |
 
 - **macOS:** เปิด `.dmg` แล้วลาก Share Group ไป Applications ไอคอนอยู่บน menu bar ไม่โผล่ที่ Dock ถ้าเครื่องเตือนผู้พัฒนาที่ไม่รู้จัก ให้คลิกขวาแล้วเลือกเปิด
 - **Android:** เปิด `.apk` บนเครื่อง (sideload) อนุญาตติดตั้งจากไฟล์ แดชบอร์ดในแอป ใช้ได้ขณะแอปเปิดหรือมี foreground service
