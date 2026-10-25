@@ -21,7 +21,7 @@
 | **0.2.0** (ปัจจุบัน) | [โหลด .dmg](https://github.com/NooartSkyline/share-group/releases/download/v0.2.0/Share-Group-0.2.0-macos.dmg) | [โหลด .apk](https://github.com/NooartSkyline/share-group/releases/download/v0.2.0/Share-Group-0.2.0-android.apk) | [โหลด .zip](https://github.com/NooartSkyline/share-group/releases/download/v0.2.0/Share-Group-0.2.0-windows-amd64.zip) |
 | 0.1.0 | [โหลด .dmg](https://github.com/NooartSkyline/share-group/releases/download/v0.1.0/Share-Group-0.1.0-macos.dmg) | — | — |
 
-- **macOS:** เปิด `.dmg` แล้วลาก Share Group ไป Applications ไอคอนอยู่บน menu bar ไม่โผล่ที่ Dock ถ้าเครื่องเตือนผู้พัฒนาที่ไม่รู้จัก ให้คลิกขวาแล้วเลือกเปิด
+- **macOS:** เปิด `.dmg` แล้วลาก Share Group ไป Applications ไอคอนอยู่บน menu bar ไม่โผล่ที่ Dock ถ้าขึ้นว่าแอปเสียหาย (damaged) อย่าทิ้งไฟล์ — คลิกขวาแล้วเลือกเปิด หรือรัน `xattr -dr com.apple.quarantine "/Applications/Share Group.app"` รายละเอียดอยู่ใน `วิธีติดตั้ง.txt` ใน `.dmg`
 - **Android:** เปิด `.apk` บนเครื่อง (sideload) อนุญาตติดตั้งจากไฟล์ แดชบอร์ดในแอป ใช้ได้ขณะแอปเปิดหรือมี foreground service
 - **Windows:** แตก zip แล้วเปิด `ShareGroup.exe` ให้ `lanshare.exe` กับ `share.exe` อยู่โฟลเดอร์เดียวกัน แดชบอร์ดเปิดในเบราว์เซอร์ที่ `http://127.0.0.1:8080` ยังไม่มีเครื่องเทสบน Windows จริง
 - **iOS:** ยังไม่มีไฟล์ IPA ใน `dist/` เปิด `mobile/ios/ShareGroupHost.xcodeproj` ใน Xcode แล้ว Run บนเครื่อง

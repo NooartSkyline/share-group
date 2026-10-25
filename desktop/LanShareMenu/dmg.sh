@@ -25,10 +25,18 @@ Share Group $VERSION
 
 1. ลาก Share Group ไปโฟลเดอร์ Applications
 2. เปิดแอปจาก Applications (ไอคอนอยู่บน menu bar ไม่โผล่ที่ Dock)
-3. ถ้า macOS เตือนว่าแอปมาจากผู้พัฒนาที่ไม่รู้จัก ให้คลิกขวาที่แอปแล้วเลือก เปิด
+3. ถ้า macOS ขึ้นว่าแอปเสียหาย (damaged) หรือมาจากผู้พัฒนาที่ไม่รู้จัก:
+   - อย่ากด Move to Trash ไฟล์ไม่ได้พัง
+   - คลิกขวาที่ Share Group แล้วเลือก เปิด
+   - หรือเปิด Terminal แล้ววางคำสั่งนี้ แล้วเปิดแอปอีกครั้ง:
+
+     xattr -dr com.apple.quarantine "/Applications/Share Group.app"
+
+   - หรือไป System Settings → Privacy & Security แล้วกดเปิดแอปที่ถูกบล็อก
 
 เซิร์ฟเวอร์เปิดที่พอร์ต 8080 ข้อมูลอยู่ที่ ~/LANShare
-ยังไม่ได้ลงนาม (unsigned) จึงยังไม่ผ่าน Gatekeeper ของเครื่องอื่นโดยอัตโนมัติ
+ยังไม่ได้ลงนาม (unsigned) เครื่องที่โหลดจากอินเทอร์เน็ตหรือ GitHub
+(รวมเครื่องที่ build เอง) จะเจอ Gatekeeper เพราะ Chrome ติด quarantine ให้
 EOF
 
 echo "create DMG → $DMG"
