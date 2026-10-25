@@ -100,212 +100,34 @@ const ROLE_LABEL = { owner: 'Owner', member: 'Member', viewer: 'Viewer', uploade
 const APP_VERSION = '0.2.0';
 const APP_AUTHOR = 'nooartskyline';
 
-const I18N = {
-  th: {
-    join_title: 'เข้าห้องแชร์', join_room_label: 'ห้อง:', join_pin_label: 'PIN',
-    join_pin_from: 'หลักจากเจ้าของห้อง', join_name: 'ชื่ออุปกรณ์ของคุณ', join_btn: 'เข้าห้อง',
-    guest_hint: 'ลิงก์แขก: ส่งไฟล์ได้อย่างเดียว ไม่ต้องใส่ PIN', guest_btn: 'เข้าด้วยลิงก์แขก',
-    wait_title: 'รอเจ้าของห้องอนุมัติ', wait_body: 'เข้าห้องแล้ว แต่ยังใช้ไฟล์และข้อความไม่ได้ จนกว่าเจ้าของจะกดอนุมัติอุปกรณ์นี้',
-    rooms_label: 'ห้อง', room_new: '＋ ห้องใหม่', devices_title: 'อุปกรณ์ในห้องนี้',
-    devices_wifi: 'Wi-Fi', devices_usb: 'สาย USB',
-    pending_title: 'อุปกรณ์รออนุมัติ', invite_nav: 'เชิญ', invite_tab: 'เชิญ',
-    invite_title: 'เชิญอุปกรณ์อื่นเข้าห้อง', upload_nav: 'ถ่ายโอน', upload_tab: 'ถ่ายโอน',
-    invite_help: 'สแกน QR หรือเปิดลิงก์ แล้วกรอก PIN บนอุปกรณ์ที่อยู่ใน Wi-Fi วงเดียวกัน',
-    path_wifi: 'Wi-Fi', via_wifi: 'Wi-Fi', via_usb: 'สาย USB',
-    cable_plugged_pill: 'เสียบสาย', cable_not_joined: 'ยังไม่เข้าห้อง', cable_idle: 'ยังไม่พบสาย',
-    cable_open: 'เปิดไฟล์', cable_open_ok: 'เปิดหน้าไฟล์บนมือถือแล้ว',
-    cable_open_fail: 'เปิดบนมือถือไม่สำเร็จ',
-    cable_open_ios_help: 'สแกน QR หรือเปิดลิงก์ใน Safari บน iPhone/iPad ที่เสียบสาย',
-    files_tab_room: 'ไฟล์ในห้อง', files_tab_device: 'ไฟล์บนเครื่อง',
-    pick_hint_room: 'กดเพื่อเลือก · Shift ช่วง · ⌘ สลับ · ไม่มี checkbox',
-    pick_hint_device: 'กดเพื่อเลือก · ดับเบิลคลิกเข้าโฟลเดอร์ · Shift ช่วง · ⌘ สลับ',
-    cable_fs_title: 'ไฟล์บนเครื่อง', cable_fs_empty: 'โฟลเดอร์นี้ว่าง',
-    cable_fs_import: 'ดึงเข้าห้อง', cable_fs_imported: 'ดึงเข้าห้องแล้ว',
-    cable_fs_imported_n: 'ดึงเข้าห้องแล้ว {n} รายการ',
-    cable_fs_back: 'ย้อนกลับ', cable_fs_hint_idle: 'ยังไม่พบเครื่องที่เสียบสาย',
-    cable_fs_hex: 'ข้อมูลดิบ', cable_fs_hex_trunc: 'แสดงเฉพาะต้นไฟล์',
-    cable_fs_preview_load: 'กำลังดึงไฟล์จากเครื่อง…',
-    cable_fs_view_preview: 'พรีวิว', cable_fs_view_text: 'ข้อความ', cable_fs_view_hex: 'ข้อมูลดิบ',
-    cable_fs_no_preview: 'ไม่มีภาพตัวอย่างสำหรับไฟล์นี้',
-    cable_fs_layout_list: 'รายการ', cable_fs_layout_icons: 'ไอคอน', cable_fs_layout_gallery: 'แกลเลอรี',
-    cable_fs_select_all: 'เลือกทั้งหมด', cable_fs_select_none: 'ยกเลิกทั้งหมด',
-    cable_fs_save: '⬇ บันทึกลงเครื่อง', cable_fs_clear: 'ล้าง',
-    cable_fs_picked: 'เลือก {n} รายการ',
-    cable_fs_save_need: 'เลือกรายการก่อน', cable_fs_save_limit: 'บันทึกได้ไม่เกิน 5000 ไฟล์ต่อครั้ง',
-    cable_fs_save_busy: 'กำลังบันทึกลงเครื่อง…',
-    cable_fs_saved: 'บันทึกลงเครื่องแล้ว',
-    cable_fs_save_empty: 'โฟลเดอร์นี้ว่าง ไม่มีไฟล์ให้บันทึก',
-    cable_fs_save_unreadable: 'อ่านโฟลเดอร์นี้จากมือถือไม่ได้',
-    cable_fs_copy: 'คัดลอก', cable_fs_copy_need: 'เลือกรายการก่อน',
-    cable_fs_copy_ok: 'คัดลอก {n} รายการแล้ว · เปิดหน้าที่จะวาง แล้วกดวาง',
-    cable_fs_copy_busy: 'กำลังคัดลอก…',
-    cable_fs_cut: 'ตัด',
-    cable_fs_cut_ok: 'ตัด {n} รายการแล้ว · เปิดหน้าที่จะวาง แล้วกดวาง',
-    cable_fs_cut_busy: 'กำลังตัด…',
-    cable_fs_cut_apps: 'ตัดแอปไม่ได้ ใช้คัดลอกเพื่อติดตั้งบนเครื่องอื่น',
-    cable_fs_copy_limit: 'คัดลอกได้ไม่เกิน 8 แอปต่อครั้ง',
-    cable_fs_copy_mixed: 'เลือกแอปกับไฟล์พร้อมกันไม่ได้',
-    cable_fs_paste: 'วาง',
-    cable_fs_paste_busy: 'กำลังวาง…',
-    cable_fs_paste_need: 'เปิดหน้าที่จะวาง แล้วกดวาง',
-    cable_fs_paste_need_device: 'เสียบ Android ที่เปิด USB debugging ก่อน',
-    cable_fs_paste_need_folder: 'เปิดโฟลเดอร์ที่จะวาง แล้วกดวาง',
-    cable_fs_paste_same: 'วางในโฟลเดอร์ที่ตัดมาไม่ได้',
-    cable_fs_pasted_copy: 'วางสำเนาแล้ว {n} รายการ',
-    cable_fs_mkdir: 'โฟลเดอร์ใหม่',
-    cable_fs_mkdir_prompt: 'ชื่อโฟลเดอร์ใหม่',
-    cable_fs_mkdir_ok: 'สร้างโฟลเดอร์แล้ว',
-    cable_fs_mkdir_ios: 'สร้างโฟลเดอร์บน iPhone ผ่านสายยังไม่ได้',
-    cable_fs_pasted: 'ติดตั้งแล้ว {n} แอป',
-    cable_fs_pasted_files: 'วางแล้ว {n} รายการ',
-    cable_fs_clip_from: 'จาก {name}',
-    cable_fs_clip_count: 'คัดลอก {n} รายการ',
-    cable_fs_clip_cut: 'ตัด {n} รายการ',
-    cable_fs_moved: 'ย้ายแล้ว {n} รายการ',
-    cable_fs_del: '🗑 ลบ',
-    cable_fs_del_confirm: 'ลบ {n} รายการออกจากเครื่องที่เสียบสาย?\nลบแล้วกู้คืนไม่ได้',
-    cable_fs_deleted: 'ลบแล้ว',
-    cable_fs_del_root: 'ลบโฟลเดอร์หลักไม่ได้',
-    cable_fs_del_ios: 'ลบไฟล์บน iPhone ผ่านสายยังไม่ได้ ให้ลบในแอป Files',
-    cable_fs_need_adb: 'เปิด USB debugging แล้วกด Trust บนเครื่องนี้ จึงจะดูไฟล์ได้',
-    copy: 'คัดลอก', rotate_pin: '🔄 สร้างใหม่', network_used: 'เครือข่ายที่ใช้:',
-    require_approval: 'อนุมัติอุปกรณ์ใหม่ก่อนเข้าใช้ห้อง',
-    guest_title: 'ลิงก์แขก (อัปโหลดอย่างเดียว)', guest_clear: 'ปิดลิงก์', guest_make: 'สร้างลิงก์แขก 1 ชั่วโมง',
-    search_ph: 'ค้นหาชื่อไฟล์หรืออุปกรณ์…', sort_newest: 'ล่าสุด', sort_device: 'ตามอุปกรณ์', sort_date: 'ตามวันที่',
-    guest_expired: 'ลิงก์แขกนี้หมดอายุหรือไม่ถูกต้อง', new_room_name: 'ชื่อห้องใหม่',
-    room_rename: 'เปลี่ยนชื่อ', room_delete: 'ลบห้อง',
-    room_rename_prompt: 'ชื่อห้องใหม่', room_delete_confirm: 'ลบห้องนี้ รวมไฟล์ทั้งหมด? ยกเลิกไม่ได้',
-    last_room: 'ต้องเหลืออย่างน้อยหนึ่งห้อง',
-    default_room: 'ลบห้องหลักไม่ได้',
-    approve: 'อนุมัติ', reject: 'ปฏิเสธ', pending_pill: 'รออนุมัติ',
-    copied: 'คัดลอกแล้ว', copy_fail: 'คัดลอกไม่สำเร็จ ให้เลือกข้อความแล้วคัดลอกเอง',
-    theme: 'ธีม', theme_system: 'ตามระบบ', theme_dark: 'มืด', theme_light: 'สว่าง',
-    language: 'ภาษา', resize: 'ย่อรูปใหญ่ก่อนส่ง (ยาวสุด 1920 พิกเซล)',
-    conn_on: 'เชื่อมต่อแล้ว', conn_off: 'ขาดการเชื่อมต่อ กำลังลองใหม่…',
-    quota_label: 'โควตาห้อง', quota_none: 'ไม่จำกัด', ttl_label: 'ไฟล์หมดอายุ',
-    ttl_none: 'ไม่หมดอายุ', ttl_1h: '1 ชั่วโมง', ttl_1d: '1 วัน', ttl_7d: '7 วัน', ttl_30d: '30 วัน',
-    rename: 'เปลี่ยนชื่อ', you: ' (คุณ)', details: 'รายละเอียด', download: '⬇ ดาวน์โหลด', open_file: 'เปิด', del: 'ลบ',
-    rename_prompt: 'ชื่ออุปกรณ์ใหม่', code_fail: 'เปิดไฟล์ข้อความไม่สำเร็จ',
-    kick: 'ถอด', kick_confirm: 'ถอด "{name}" ออกจากห้อง? เครื่องนั้นต้องเข้าใหม่ด้วย PIN',
-    kick_ok: 'ถอดอุปกรณ์แล้ว', kick_fail: 'ถอดอุปกรณ์ไม่สำเร็จ',
-    about_nav: 'เกี่ยวกับระบบ', about_tab: 'เกี่ยวกับ', about_title: 'เกี่ยวกับระบบ',
-    about_tagline: 'แชร์ไฟล์ในวงแลน รันบน Mac ของเจ้าของเครื่อง',
-    about_version: 'เวอร์ชัน', about_author: 'ผู้พัฒนา',
-    about_sys_h: 'ระบบนี้ทำงานอย่างไร',
-    about_sys_1: 'Share Group เป็นโปรแกรมบน Mac ไม่ใช่เว็บบนคลาวด์ หลังบ้านเป็นเซิร์ฟเวอร์ Go เปิด HTTP และ WebSocket หน้าที่เห็นคือหน้าเว็บในเบราว์เซอร์',
-    about_sys_2: 'เปิด localhost บน Mac แล้วเป็น Owner อัตโนมัติ ไม่ต้องใส่ PIN อุปกรณ์อื่นอยู่ในวง LAN หรือเสียบสาย USB แล้วเปิดลิงก์หรือสแกน QR แล้วกรอก PIN',
-    about_sys_3: 'ไฟล์และสถานะห้องเก็บบนดิสก์ของ Mac ไม่มีบัญชีผู้ใช้และไม่ส่งขึ้นอินเทอร์เน็ต',
-  },
-  en: {
-    join_title: 'Join room', join_room_label: 'Room:', join_pin_label: 'PIN',
-    join_pin_from: 'digits from the room owner', join_name: 'Your device name', join_btn: 'Join',
-    guest_hint: 'Guest link: upload only, no PIN', guest_btn: 'Join as guest',
-    wait_title: 'Waiting for approval', wait_body: 'You joined, but files and chat stay locked until the owner approves this device.',
-    rooms_label: 'Room', room_new: '+ New room', devices_title: 'Devices in this room',
-    devices_wifi: 'Wi-Fi', devices_usb: 'USB',
-    pending_title: 'Devices waiting for approval', invite_nav: 'Invite', invite_tab: 'Invite',
-    invite_title: 'Invite others to', upload_nav: 'Transfer', upload_tab: 'Transfer',
-    invite_help: 'Scan the QR code or open the link, then enter the PIN on a device on the same Wi-Fi.',
-    path_wifi: 'Wi-Fi', via_wifi: 'Wi-Fi', via_usb: 'USB',
-    cable_plugged_pill: 'Plugged', cable_not_joined: 'not in the room yet', cable_idle: 'No USB device',
-    cable_open: 'Open files', cable_open_ok: 'Opened the files page on the phone',
-    cable_open_fail: 'Could not open on the phone',
-    cable_open_ios_help: 'Scan the QR code or open the link in Safari on the plugged-in iPhone/iPad',
-    files_tab_room: 'Room files', files_tab_device: 'On device',
-    pick_hint_room: 'Click to select · Shift for a range · ⌘ to toggle · no checkbox',
-    pick_hint_device: 'Click to select · double-click a folder · Shift for a range · ⌘ to toggle',
-    cable_fs_title: 'Files on device', cable_fs_empty: 'This folder is empty',
-    cable_fs_import: 'Add to room', cable_fs_imported: 'Added to the room',
-    cable_fs_imported_n: 'Added {n} items to the room',
-    cable_fs_back: 'Back', cable_fs_hint_idle: 'No USB device is plugged in',
-    cable_fs_hex: 'Raw bytes', cable_fs_hex_trunc: 'Showing the start of the file',
-    cable_fs_preview_load: 'Pulling the file from the device…',
-    cable_fs_view_preview: 'Preview', cable_fs_view_text: 'Text', cable_fs_view_hex: 'Hex',
-    cable_fs_no_preview: 'No picture preview for this file',
-    cable_fs_layout_list: 'List', cable_fs_layout_icons: 'Icons', cable_fs_layout_gallery: 'Gallery',
-    cable_fs_select_all: 'Select all', cable_fs_select_none: 'Clear all',
-    cable_fs_save: '⬇ Save to this Mac', cable_fs_clear: 'Clear',
-    cable_fs_picked: 'Selected {n} items',
-    cable_fs_save_need: 'Select items first', cable_fs_save_limit: 'Save up to 5000 files at a time',
-    cable_fs_save_busy: 'Saving to this Mac…',
-    cable_fs_saved: 'Saved to this Mac',
-    cable_fs_save_empty: 'This folder is empty, so there is nothing to save',
-    cable_fs_save_unreadable: 'Could not read this folder from the phone',
-    cable_fs_copy: 'Copy', cable_fs_copy_need: 'Select items first',
-    cable_fs_copy_ok: 'Copied {n} items · open the destination, then paste',
-    cable_fs_copy_busy: 'Copying…',
-    cable_fs_cut: 'Cut',
-    cable_fs_cut_ok: 'Cut {n} items · open the destination, then paste',
-    cable_fs_cut_busy: 'Cutting…',
-    cable_fs_cut_apps: 'Apps cannot be cut. Copy them to install on another phone',
-    cable_fs_copy_limit: 'Copy up to 8 apps at a time',
-    cable_fs_copy_mixed: 'Apps and files cannot be copied together',
-    cable_fs_paste: 'Paste',
-    cable_fs_paste_busy: 'Pasting…',
-    cable_fs_paste_need: 'Open the destination, then paste',
-    cable_fs_paste_need_device: 'Plug in an Android with USB debugging first',
-    cable_fs_paste_need_folder: 'Open the folder to paste into, then paste',
-    cable_fs_paste_same: 'Cannot paste into a folder that was cut',
-    cable_fs_pasted_copy: 'Pasted {n} copies',
-    cable_fs_mkdir: 'New folder',
-    cable_fs_mkdir_prompt: 'New folder name',
-    cable_fs_mkdir_ok: 'Folder created',
-    cable_fs_mkdir_ios: 'Creating folders on iPhone over USB is not available',
-    cable_fs_pasted: 'Installed {n} apps',
-    cable_fs_pasted_files: 'Pasted {n} items',
-    cable_fs_clip_from: 'from {name}',
-    cable_fs_clip_count: '{n} items copied',
-    cable_fs_clip_cut: '{n} items cut',
-    cable_fs_moved: 'Moved {n} items',
-    cable_fs_del: '🗑 Delete',
-    cable_fs_del_confirm: 'Delete {n} items from the plugged-in device?\nThis cannot be undone',
-    cable_fs_deleted: 'Deleted',
-    cable_fs_del_root: 'The top folders cannot be deleted',
-    cable_fs_del_ios: 'USB delete is not available on iPhone. Delete in the Files app',
-    cable_fs_need_adb: 'Turn on USB debugging and tap Trust on this phone to browse files',
-    copy: 'Copy', rotate_pin: '🔄 New PIN', network_used: 'Network:',
-    require_approval: 'Approve new devices before they can use the room',
-    guest_title: 'Guest link (upload only)', guest_clear: 'Turn off', guest_make: 'Create 1-hour guest link',
-    search_ph: 'Search files or devices…', sort_newest: 'Newest', sort_device: 'By device', sort_date: 'By date',
-    guest_expired: 'This guest link is expired or invalid', new_room_name: 'New room name',
-    room_rename: 'Rename', room_delete: 'Delete room',
-    room_rename_prompt: 'New room name', room_delete_confirm: 'Delete this room and all of its files? This cannot be undone.',
-    last_room: 'Keep at least one room',
-    default_room: 'The default room cannot be deleted',
-    approve: 'Approve', reject: 'Reject', pending_pill: 'Pending',
-    copied: 'Copied', copy_fail: 'Could not copy. Select the text and copy it yourself.',
-    theme: 'Theme', theme_system: 'System', theme_dark: 'Dark', theme_light: 'Light',
-    language: 'Language', resize: 'Shrink large photos before upload (max edge 1920 px)',
-    conn_on: 'Connected', conn_off: 'Disconnected, retrying…',
-    quota_label: 'Room quota', quota_none: 'No limit', ttl_label: 'File expiry',
-    ttl_none: 'Never', ttl_1h: '1 hour', ttl_1d: '1 day', ttl_7d: '7 days', ttl_30d: '30 days',
-    rename: 'Rename', you: ' (you)', details: 'Details', download: '⬇ Download', open_file: 'Open', del: 'Delete',
-    rename_prompt: 'New device name', code_fail: 'Could not open this text file',
-    kick: 'Remove', kick_confirm: 'Remove "{name}" from the room? That device will need the PIN to join again.',
-    kick_ok: 'Device removed', kick_fail: 'Could not remove the device',
-    about_nav: 'About', about_tab: 'About', about_title: 'About this system',
-    about_tagline: 'Share files on the LAN from the owner\'s Mac',
-    about_version: 'Version', about_author: 'Developer',
-    about_sys_h: 'How it works',
-    about_sys_1: 'Share Group is a Mac program, not a cloud site. A Go server on this Mac serves HTTP and WebSocket. Everyone else uses a browser.',
-    about_sys_2: 'Opening localhost on the Mac signs you in as Owner with no PIN. Other devices on the same LAN or a USB cable open the link or scan the QR code, then enter the PIN.',
-    about_sys_3: 'Files and room state stay on this Mac. There is no user account and nothing is sent to the internet.',
-  },
-};
+const I18N = {};
+
+if (typeof I18N_MORE === 'object' && I18N_MORE) Object.assign(I18N, I18N_MORE);
+
+function knownLangs() {
+  if (typeof LANG_ORDER !== 'undefined' && Array.isArray(LANG_ORDER)) return LANG_ORDER;
+  return ['th', 'en'];
+}
 
 function currentLang() {
-  const v = localStorage.getItem('lanshare.lang');
-  if (v === 'en' || v === 'th') return v;
-  return (navigator.language || '').toLowerCase().startsWith('en') ? 'en' : 'th';
+  const known = knownLangs();
+  const saved = localStorage.getItem('lanshare.lang');
+  if (saved && known.includes(saved) && I18N[saved]) return saved;
+  const nav = String(navigator.language || '').toLowerCase().replace('_', '-');
+  const primary = nav.split('-')[0];
+  if (known.includes(primary) && I18N[primary]) return primary;
+  return 'th';
 }
 
 function t(key) {
   const lang = currentLang();
-  return (I18N[lang] && I18N[lang][key]) || I18N.th[key] || key;
+  return (I18N[lang] && I18N[lang][key]) || (I18N.th && I18N.th[key]) || key;
 }
 
 function applyI18n() {
-  document.documentElement.lang = currentLang() === 'en' ? 'en' : 'th';
+  const lang = currentLang();
+  document.documentElement.lang = lang;
+  document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
   for (const n of $$('[data-i18n]')) n.textContent = t(n.dataset.i18n);
   for (const n of $$('[data-i18n-placeholder]')) n.placeholder = t(n.dataset.i18nPlaceholder);
   if (typeof labelCableClipKeys === 'function') labelCableClipKeys();
@@ -4081,10 +3903,12 @@ function setupSettings() {
   settingsRow(el('div', { class: 'settings-row' }, el('label', { htmlFor: 'theme-pick' }, t('theme')), theme));
 
   const langPick = el('select', { class: 'select', id: 'lang-pick' });
-  langPick.append(
-    el('option', { value: 'th', selected: currentLang() === 'th' }, 'ไทย'),
-    el('option', { value: 'en', selected: currentLang() === 'en' }, 'English'),
-  );
+  const labels = typeof LANG_LABELS === 'object' && LANG_LABELS ? LANG_LABELS : { th: 'ไทย', en: 'English' };
+  const cur = currentLang();
+  for (const code of knownLangs()) {
+    if (!I18N[code]) continue;
+    langPick.append(el('option', { value: code, selected: cur === code }, labels[code] || code));
+  }
   langPick.addEventListener('change', () => {
     localStorage.setItem('lanshare.lang', langPick.value);
     applyI18n();

@@ -413,7 +413,7 @@ func TestSecurityHeadersAndStaticUI(t *testing.T) {
 	if res.Header.Get("X-Content-Type-Options") != "nosniff" || !strings.Contains(res.Header.Get("Content-Security-Policy"), "script-src 'self'") {
 		t.Errorf("missing security headers: %v", res.Header)
 	}
-	for _, p := range []string{"/app.js", "/style.css"} {
+	for _, p := range []string{"/app.js", "/i18n.js", "/i18n/th.js", "/style.css"} {
 		if res, _ := do(t, newClient(t), "GET", ts.URL+p, nil, nil); res.StatusCode != 200 {
 			t.Errorf("GET %s = %d", p, res.StatusCode)
 		}
