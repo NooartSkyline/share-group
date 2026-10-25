@@ -97,7 +97,7 @@ function formatTime(iso) {
 const KIND_ICON = { image: '🖼️', video: '🎬', audio: '🎵', document: '📄', archive: '📦', app: '📦', other: '📄' };
 const PLATFORM_ICON = { iOS: '📱', Android: '🤖', Windows: '🖥️', macOS: '💻', Linux: '🐧', Web: '🌐' };
 const ROLE_LABEL = { owner: 'Owner', member: 'Member', viewer: 'Viewer', uploader: 'Uploader' };
-const APP_VERSION = '0.2.0';
+const APP_VERSION = '0.2.1';
 const APP_AUTHOR = 'nooartskyline';
 
 const I18N = {};

@@ -2,9 +2,9 @@
 
 เซิร์ฟเวอร์แชร์ไฟล์ในวง LAN รันบนเครื่องโฮสต์ แล้วให้อุปกรณ์อื่นเข้าผ่านเบราว์เซอร์ ไม่ต้องติดตั้งแอปลูกข่าย
 
-เวอร์ชัน `0.2.0` · ผู้พัฒนา `nooartskyline`
+เวอร์ชัน `0.2.1` · ผู้พัฒนา `nooartskyline`
 
-[โหลด 0.2.0](https://github.com/NooartSkyline/share-group/releases/latest) · รุ่นเก่าเก็บใน [`dist/`](dist/) และหน้า [Releases](https://github.com/NooartSkyline/share-group/releases)
+[โหลด 0.2.1](https://github.com/NooartSkyline/share-group/releases/latest) · รุ่นเก่าเก็บใน [`dist/`](dist/) และหน้า [Releases](https://github.com/NooartSkyline/share-group/releases)
 
 ค่าเริ่มต้นเป็น HTTP ธรรมดา ใช้ในวงที่ไว้ใจกันได้ ถ้าจะเปิดให้คนอื่นเข้า ให้ใช้ `-tls` และเปิดอนุมัติอุปกรณ์ในหน้า Owner
 
@@ -18,7 +18,8 @@
 
 | เวอร์ชัน | macOS | Android | Windows (amd64) |
 |---|---|---|---|
-| **0.2.0** (ปัจจุบัน) | [โหลด .dmg](https://github.com/NooartSkyline/share-group/releases/download/v0.2.0/Share-Group-0.2.0-macos.dmg) | [โหลด .apk](https://github.com/NooartSkyline/share-group/releases/download/v0.2.0/Share-Group-0.2.0-android.apk) | [โหลด .zip](https://github.com/NooartSkyline/share-group/releases/download/v0.2.0/Share-Group-0.2.0-windows-amd64.zip) |
+| **0.2.1** (ปัจจุบัน) | [โหลด .dmg](https://github.com/NooartSkyline/share-group/releases/download/v0.2.1/Share-Group-0.2.1-macos.dmg) | [โหลด .apk](https://github.com/NooartSkyline/share-group/releases/download/v0.2.1/Share-Group-0.2.1-android.apk) | [โหลด .zip](https://github.com/NooartSkyline/share-group/releases/download/v0.2.1/Share-Group-0.2.1-windows-amd64.zip) |
+| 0.2.0 | [โหลด .dmg](https://github.com/NooartSkyline/share-group/releases/download/v0.2.0/Share-Group-0.2.0-macos.dmg) | [โหลด .apk](https://github.com/NooartSkyline/share-group/releases/download/v0.2.0/Share-Group-0.2.0-android.apk) | [โหลด .zip](https://github.com/NooartSkyline/share-group/releases/download/v0.2.0/Share-Group-0.2.0-windows-amd64.zip) |
 | 0.1.0 | [โหลด .dmg](https://github.com/NooartSkyline/share-group/releases/download/v0.1.0/Share-Group-0.1.0-macos.dmg) | — | — |
 
 - **macOS:** เปิด `.dmg` แล้วลาก Share Group ไป Applications ไอคอนอยู่บน menu bar ไม่โผล่ที่ Dock ถ้าขึ้นว่าแอปเสียหาย (damaged) อย่าทิ้งไฟล์ — คลิกขวาแล้วเลือกเปิด หรือรัน `xattr -dr com.apple.quarantine "/Applications/Share Group.app"` รายละเอียดอยู่ใน `วิธีติดตั้ง.txt` ใน `.dmg`
