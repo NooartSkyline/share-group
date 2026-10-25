@@ -42,7 +42,7 @@ function el(tag, props, ...children) {
   for (const [k, v] of Object.entries(props || {})) {
     if (k === 'class') node.className = v;
     else if (k.startsWith('on')) node.addEventListener(k.slice(2), v);
-    else if (k.startsWith('aria-') || k === 'role') node.setAttribute(k, v); // attributes, not JS properties
+    else if (k.startsWith('aria-') || k === 'role' || k.startsWith('data-')) node.setAttribute(k, v);
     else node[k] = v;
   }
   for (const c of children) {
@@ -128,9 +128,21 @@ function applyI18n() {
   const lang = currentLang();
   document.documentElement.lang = lang;
   document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
-  for (const n of $$('[data-i18n]')) n.textContent = t(n.dataset.i18n);
+  for (const n of $$('[data-i18n]')) {
+    if (n.id === 'conn-text' || n.id === 'select-all') continue;
+    n.textContent = t(n.dataset.i18n);
+  }
   for (const n of $$('[data-i18n-placeholder]')) n.placeholder = t(n.dataset.i18nPlaceholder);
+  for (const n of $$('[data-i18n-aria]')) n.setAttribute('aria-label', t(n.dataset.i18nAria));
+  for (const n of $$('[data-i18n-title]')) n.title = t(n.dataset.i18nTitle);
+  for (const n of $$('[data-i18n-alt]')) n.alt = t(n.dataset.i18nAlt);
   if (typeof labelCableClipKeys === 'function') labelCableClipKeys();
+}
+
+function roleLabel(r) {
+  const k = 'role_' + r;
+  const s = t(k);
+  return s === k ? (ROLE_LABEL[r] || r) : s;
 }
 
 function applyTheme() {
@@ -290,7 +302,7 @@ async function boot() {
 
 function fatal(e) {
   show('loading');
-  $('loading').replaceChildren(el('p', { class: 'err' }, 'เกิดข้อผิดพลาด: ' + e.message));
+  $('loading').replaceChildren(el('p', { class: 'err' }, t('boot_fail').replace('{msg}', e.message)));
 }
 
 // Shown when the first API call cannot reach the server (for instance when the page itself came
@@ -298,14 +310,14 @@ function fatal(e) {
 // which replaces this message with the normal screen once the server answers.
 function showOffline() {
   show('loading');
-  const retry = el('button', { class: 'btn', type: 'button' }, 'ลองใหม่');
+  const retry = el('button', { class: 'btn', type: 'button', 'data-i18n': 'retry' }, t('retry'));
   retry.addEventListener('click', () => {
     retry.disabled = true;
-    $('loading').replaceChildren(el('p', { class: 'mut' }, 'กำลังโหลด…'));
+    $('loading').replaceChildren(el('p', { class: 'mut', 'data-i18n': 'loading' }, t('loading')));
     boot();
   });
   $('loading').replaceChildren(el('div', { class: 'offline' },
-    el('p', { class: 'err', role: 'alert' }, 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้'), retry));
+    el('p', { class: 'err', role: 'alert', 'data-i18n': 'boot_offline' }, t('boot_offline')), retry));
   retry.focus();
 }
 
@@ -322,7 +334,7 @@ async function showJoin() {
   try {
     info = await api('/api/rooms/' + encodeURIComponent(roomId) + '/info');
   } catch (e) {
-    return fatal(e.status === 404 ? new Error('ไม่พบห้องนี้') : e);
+    return fatal(e.status === 404 ? new Error(t('room_missing')) : e);
   }
   showJoin.guestKey = '';
   $('pin-wrap').hidden = false;
@@ -331,7 +343,7 @@ async function showJoin() {
   $('join-room').textContent = info.name;
   $('pin-len').textContent = info.pinLength;
   $('pin').maxLength = info.pinLength;
-  $('dev-name').value = localStorage.getItem('lanshare.deviceName') || guessPlatform() + ' ของฉัน';
+  $('dev-name').value = localStorage.getItem('lanshare.deviceName') || guessPlatform() + t('name_mine');
   $('join-btn').disabled = false;
   $('join-btn').textContent = t('join_btn');
   show('join');
@@ -356,7 +368,7 @@ async function showGuestJoin(key) {
   $('pin').required = false;
   $('guest-hint').hidden = false;
   $('join-room').textContent = info.name;
-  $('dev-name').value = localStorage.getItem('lanshare.deviceName') || guessPlatform() + ' ของฉัน';
+  $('dev-name').value = localStorage.getItem('lanshare.deviceName') || guessPlatform() + t('name_mine');
   $('join-btn').disabled = false;
   $('join-btn').textContent = t('guest_btn');
   show('join');
@@ -391,12 +403,12 @@ function bindJoinForm() {
     } catch (e) {
       $('pin').value = '';
       if (e.body && e.body.error === 'invalid_pin') {
-        err.textContent = `PIN ไม่ถูกต้อง เหลืออีก ${e.body.remaining} ครั้ง`;
+        err.textContent = t('pin_wrong').replace('{n}', String(e.body.remaining));
       } else if (e.body && e.body.error === 'locked') {
         startLockCountdown(e.body.retryAfterSeconds);
         return;
       } else {
-        err.textContent = 'เข้าห้องไม่สำเร็จ: ' + e.message;
+        err.textContent = t('join_fail').replace('{msg}', e.message);
       }
       err.hidden = false;
       $('join-btn').disabled = false;
@@ -412,7 +424,7 @@ function startLockCountdown(seconds) {
   const tick = () => {
     const m = String(Math.floor(left / 60)).padStart(2, '0');
     const s = String(left % 60).padStart(2, '0');
-    err.textContent = `กรอก PIN ผิดหลายครั้ง ลองใหม่ได้ใน ${m}:${s}`;
+    err.textContent = t('pin_lock').replace('{time}', m + ':' + s);
     err.hidden = false;
     if (left <= 0) {
       clearInterval(lockTimer);
@@ -445,7 +457,7 @@ async function enter(me) {
   }
   show('app');
   $('side-room-name').textContent = me.room.name;
-  $('side-room-sub').textContent = ROLE_LABEL[me.device.role] || '';
+  $('side-room-sub').textContent = roleLabel(me.device.role);
   $('room-name').textContent = '"' + me.room.name + '"';
   resetUnseen(); // a title left over from the unseen count must not become the "original" one
   document.title = me.room.name + ' • Share Group';
@@ -654,7 +666,7 @@ function requestNotifyPermission() {
 // The control exists only where system notifications can work (Secure_Context, Notification API,
 // a role that gets file events). The permission is asked for when the user turns it on, never else.
 function setupNotifySetting() {
-  settingsRow(el('p', { class: 'mut small', id: 'notify-note' }, 'การแจ้งเตือนทำงานเฉพาะขณะเปิดหน้านี้ไว้เท่านั้น'));
+  settingsRow(el('p', { class: 'mut small', id: 'notify-note', 'data-i18n': 'notify_tab_only' }, t('notify_tab_only')));
   if (!systemNotifySupported()) return;
 
   const box = el('input', { type: 'checkbox', id: 'notify-toggle' });
@@ -672,10 +684,10 @@ function setupNotifySetting() {
     if (perm === 'granted') { setSystemNotify(true); return; }
     box.checked = false;
     setSystemNotify(false);
-    msg.textContent = 'เบราว์เซอร์บล็อกการแจ้งเตือน เปลี่ยนสิทธิ์ได้ในการตั้งค่าของเบราว์เซอร์';
+    msg.textContent = t('notify_blocked');
     msg.hidden = false;
   });
-  settingsRow(el('div', {}, el('label', { class: 'conflict-pick' }, box, 'แจ้งเตือนของระบบเมื่อมีไฟล์ใหม่'), msg));
+  settingsRow(el('div', {}, el('label', { class: 'conflict-pick' }, box, el('span', { 'data-i18n': 'notify_sys' }, t('notify_sys'))), msg));
 }
 
 // ---------- navigation ----------
@@ -811,13 +823,13 @@ function renderDeviceRow(d, isOwner) {
   const head = el('div', { class: 'dev-head' },
     el('span', { class: 'dev-ic' }, PLATFORM_ICON[d.platform] || '🌐'),
     el('span', { class: 'dev-name ellipsis', title: d.name }, d.name + (d.me ? t('you') : ''), el('small', {}, d.platform + ' · ' + path)),
-    el('span', { class: 'dot' + (d.online ? '' : ' off'), title: d.online ? 'ออนไลน์' : 'ออฟไลน์' }),
+    el('span', { class: 'dot' + (d.online ? '' : ' off'), title: d.online ? t('online') : t('offline') }),
   );
   if (usb) head.append(el('span', { class: 'pill via-usb' }, t('via_usb')));
   if (d.pending || !isOwner || d.me) {
     head.append(d.pending
       ? el('span', { class: 'pill pending' }, t('pending_pill'))
-      : el('span', { class: 'pill ' + d.role }, ROLE_LABEL[d.role] || d.role));
+      : el('span', { class: 'pill ' + d.role }, roleLabel(d.role)));
   }
   const row = el('li', { class: (d.me ? 'me' : '') + (d.pending ? ' wait' : '') + (usb ? ' cable-dev openable' : '') }, head);
   if (usb) {
@@ -835,7 +847,7 @@ function renderDeviceRow(d, isOwner) {
     if (!d.me) {
       const sel = el('select', { class: 'select', onchange: (e) => setDeviceRole(d.id, e.target.value) });
       for (const r of ['member', 'viewer', 'uploader']) {
-        sel.append(el('option', { value: r, selected: d.role === r }, ROLE_LABEL[r]));
+        sel.append(el('option', { value: r, selected: d.role === r }, roleLabel(r)));
       }
       tools.append(sel);
       tools.append(el('button', { class: 'btn ghost sm dev-kick', type: 'button', onclick: () => kickDevice(d) }, t('kick')));
@@ -2117,11 +2129,11 @@ function renderSelection() {
   $('sel-delete').hidden = role() !== 'owner'; // only the Owner may delete files
   if (n) {
     const total = state.files.filter((f) => state.selected.has(f.id)).reduce((s, f) => s + f.size, 0);
-    $('sel-count').textContent = `เลือก ${n} ไฟล์`;
+    $('sel-count').textContent = t('sel_count').replace('{n}', String(n));
     $('sel-size').textContent = '• ' + formatBytes(total);
   }
   const all = state.files.length > 0 && n === state.files.length;
-  $('select-all').textContent = all ? 'ยกเลิกทั้งหมด' : 'เลือกทั้งหมด';
+  $('select-all').textContent = all ? t('cable_fs_select_none') : t('cable_fs_select_all');
 }
 
 function setupFilesPane() {
@@ -2452,7 +2464,7 @@ function setupUploads() {
   const verifyBox = el('input', { type: 'checkbox' });
   verifyBox.checked = verifyEnabled();
   verifyBox.addEventListener('change', () => setVerifyEnabled(verifyBox.checked));
-  $$('.drop-tools')[0].append(el('label', { class: 'conflict-pick mut small' }, verifyBox, 'ตรวจ SHA-256 ตอนอัปโหลด'));
+  $$('.drop-tools')[0].append(el('label', { class: 'conflict-pick mut small' }, verifyBox, el('span', { 'data-i18n': 'verify_sha' }, t('verify_sha'))));
   setupPending(); // lists the uploads a previous page left unfinished
 
   // Folder picking only makes sense with a mouse; phones cannot choose folders.
@@ -2619,11 +2631,11 @@ async function maybeResize(file) {
 function askConflict(file, dir, existing, canOverwrite) {
   const dlg = $('conflict-dlg');
   $('cf-name').textContent = (dir ? dir + '/' : '') + file.name;
-  $('cf-info').textContent = `ไฟล์เดิม ${formatBytes(existing.size)} จาก ${existing.uploaderName} • ไฟล์ใหม่ ${formatBytes(file.size)}`;
+  $('cf-info').textContent = t('conflict_info').replace('{old}', formatBytes(existing.size)).replace('{who}', existing.uploaderName).replace('{new}', formatBytes(file.size));
   const ow = dlg.querySelector('input[value="overwrite"]');
   ow.disabled = !canOverwrite;
   $('cf-overwrite-opt').classList.toggle('disabled', !canOverwrite);
-  $('cf-overwrite-hint').textContent = canOverwrite ? 'แทนที่ไฟล์เดิม' : 'ทำได้เฉพาะไฟล์ที่คุณส่งเอง หรือเจ้าของห้อง';
+  $('cf-overwrite-hint').textContent = canOverwrite ? t('conflict_overwrite_hint') : t('conflict_overwrite_deny');
   dlg.querySelector('input[value="rename"]').checked = true;
   $('cf-all').checked = false;
   return new Promise((resolve) => {
@@ -3511,8 +3523,8 @@ function setupPending() {
     if (file && id) pickPendingFile(id, file);
   });
   const card = el('div', { id: 'pending-card', class: 'card', hidden: true },
-    el('h2', {}, 'อัปโหลดที่ค้างอยู่'),
-    el('p', { class: 'mut small' }, 'เลือกไฟล์เดิมเพื่อส่งต่อจากจุดที่ค้างไว้'),
+    el('h2', { 'data-i18n': 'pending_uploads' }, t('pending_uploads')),
+    el('p', { class: 'mut small', 'data-i18n': 'pending_uploads_help' }, t('pending_uploads_help')),
     el('ul', { id: 'pending', class: 'list' }),
     pendingInput,
   );
@@ -3531,7 +3543,7 @@ function renderPending() {
   $('pending-card').hidden = entries.length === 0;
   $('pending').replaceChildren(...entries.map((e) => {
     const note = pendingNotes.get(e.id);
-    const meta = formatBytes(e.size) + ' • ส่งค้างอยู่';
+    const meta = formatBytes(e.size) + ' • ' + t('pending_meta');
     return el('li', {},
       el('span', {}, '⏳'),
       el('div', { class: 'grow' },
@@ -3540,8 +3552,8 @@ function renderPending() {
         note ? el('div', { class: 'xfer-meta bad' }, note) : null,
       ),
       el('span', { class: 'xfer-actions' },
-        el('button', { class: 'btn ghost sm', type: 'button', onclick: () => choosePendingFile(e.id) }, 'เลือกไฟล์เดิม'),
-        el('button', { class: 'btn ghost sm', type: 'button', title: 'ยกเลิก', onclick: () => cancelPending(e.id) }, '✕'),
+        el('button', { class: 'btn ghost sm', type: 'button', onclick: () => choosePendingFile(e.id) }, t('pick_same_file')),
+        el('button', { class: 'btn ghost sm', type: 'button', title: t('cancel'), onclick: () => cancelPending(e.id) }, '✕'),
       ),
     );
   }));
@@ -3808,10 +3820,10 @@ function renderClip() {
   if (c && c.text) {
     box.classList.remove('placeholder');
     box.replaceChildren(linkify(c.text));
-    $('clip-meta').textContent = `จาก ${c.deviceName} • ${formatTime(c.at)}`;
+    $('clip-meta').textContent = t('clip_from').replace('{name}', c.deviceName).replace('{when}', formatTime(c.at));
   } else {
     box.classList.add('placeholder');
-    box.replaceChildren('ยังไม่มีข้อความในคลิปบอร์ดร่วม');
+    box.replaceChildren(t('clip_empty'));
     $('clip-meta').textContent = '';
   }
   $('clip-copy').disabled = !(c && c.text);
@@ -3877,15 +3889,15 @@ function setupSettings() {
   setupSettings.done = true;
 
   settingsList = el('ul', { class: 'list settings-list' });
-  settingsEmpty = el('p', { class: 'mut small' }, 'ยังไม่มีตัวเลือกให้ตั้งค่า');
+  settingsEmpty = el('p', { class: 'mut small', 'data-i18n': 'settings_empty' }, t('settings_empty'));
   const pane = el('section', { id: 'pane-settings', class: 'pane', 'aria-labelledby': 'settings-title' },
-    el('div', { class: 'card' }, el('h2', { id: 'settings-title' }, 'ตั้งค่า'), settingsEmpty, settingsList));
+    el('div', { class: 'card' }, el('h2', { id: 'settings-title', 'data-i18n': 'settings' }, t('settings')), settingsEmpty, settingsList));
 
   const navBtn = el('button', { class: 'nav', type: 'button', id: 'nav-settings', onclick: () => setView('settings') },
-    el('span', { 'aria-hidden': 'true' }, '⚙️'), ' ตั้งค่า');
+    el('span', { 'aria-hidden': 'true' }, '⚙️'), el('span', { 'data-i18n': 'settings' }, t('settings')));
   navBtn.dataset.go = 'settings';
   const tabBtn = el('button', { type: 'button', id: 'tab-settings', onclick: () => setView('settings') },
-    el('span', { 'aria-hidden': 'true' }, '⚙️'), 'ตั้งค่า');
+    el('span', { 'aria-hidden': 'true' }, '⚙️'), el('span', { 'data-i18n': 'settings' }, t('settings')));
   tabBtn.dataset.go = 'settings';
 
   $('pane-chat').after(pane);
@@ -3926,7 +3938,7 @@ function setupSettings() {
   // Service Workers, installing the app and system notifications need HTTPS or localhost. On the
   // LAN address (plain HTTP) say so, and offer nothing to install.
   if (!window.isSecureContext) {
-    settingsRow(el('p', { class: 'mut small', id: 'https-note' }, 'การติดตั้งแอปและการแจ้งเตือนของระบบต้องใช้ HTTPS'));
+    settingsRow(el('p', { class: 'mut small', id: 'https-note', 'data-i18n': 'https_note' }, t('https_note')));
   }
   setupNotifySetting();
 }
@@ -3986,6 +3998,11 @@ else window.addEventListener('load', registerServiceWorker, { once: true });
 // ---------- owner panel ----------
 
 const KIND_LABEL = { physical: 'Wi-Fi/Ethernet', vpn: 'VPN', virtual: 'เสมือน', usb: 'สาย USB' };
+function kindLabel(k) {
+  const key = 'kind_' + k;
+  const s = t(key);
+  return s === key ? (KIND_LABEL[k] || k) : s;
+}
 
 async function setupOwner() {
   if (role() !== 'owner') return; // other roles get no owner DOM and send no admin request
@@ -4170,7 +4187,7 @@ function renderPin(pin) {
 async function loadJoinInfo() {
   try {
     const info = await api('/api/admin/join-info');
-    $('join-url').textContent = info.url || 'ไม่พบเครือข่ายที่ใช้งานได้';
+    $('join-url').textContent = info.url || t('no_network');
     renderPin(info.pin);
     $('qr').src = '/api/admin/qr.png?ts=' + Date.now();
     $('require-approval').checked = !!info.requireApproval;
@@ -4193,7 +4210,7 @@ async function loadNetworks() {
     const shown = lan.length ? lan : list;
     $('nic').replaceChildren(...shown.map((n) => {
       const name = n.label || n.name;
-      const label = `${name} • ${n.ip} (${KIND_LABEL[n.kind] || n.kind})${n.recommended ? ' — แนะนำ' : ''}`;
+      const label = `${name} • ${n.ip} (${kindLabel(n.kind)})${n.recommended ? ' — ' + t('recommended') : ''}`;
       return el('option', { value: n.name, selected: n.selected }, label);
     }));
     updateJoinPathTag();
@@ -4309,30 +4326,30 @@ function setupOwnerTools() {
 
   const live = el('p', { class: 'diag-live small', role: 'status', 'aria-live': 'polite' });
   const meta = el('span', { class: 'mut small' });
-  const staleBadge = el('span', { class: 'pill diag-stale', hidden: true }, 'เก่า');
-  const refreshBtn = el('button', { class: 'btn sm', type: 'button', onclick: () => load(true) }, 'ตรวจใหม่');
-  const copyBtn = el('button', { class: 'btn ghost sm', type: 'button', disabled: true, onclick: () => copyReport() }, 'คัดลอกรายงาน');
+  const staleBadge = el('span', { class: 'pill diag-stale', hidden: true, 'data-i18n': 'diag_stale' }, t('diag_stale'));
+  const refreshBtn = el('button', { class: 'btn sm', type: 'button', onclick: () => load(true), 'data-i18n': 'diag_refresh' }, t('diag_refresh'));
+  const copyBtn = el('button', { class: 'btn ghost sm', type: 'button', disabled: true, onclick: () => copyReport() }, t('diag_copy'));
   const list = el('ul', { class: 'diag-list' });
   const nic = el('select', { class: 'select', id: 'diag-nic', disabled: true });
   nic.addEventListener('change', () => pickNet(nic.value));
   const netRow = el('div', { class: 'net-row', hidden: true },
-    el('label', { htmlFor: 'diag-nic', class: 'mut small' }, 'เครือข่ายที่ใช้ (เปลี่ยนแล้วจะตรวจใหม่ทันที):'), nic);
-  const manualLabel = el('label', { htmlFor: 'diag-manual', class: 'mut small' }, 'คัดลอกรายงานอัตโนมัติไม่ได้ เลือกข้อความด้านล่างแล้วคัดลอกเอง');
+    el('label', { htmlFor: 'diag-nic', class: 'mut small', 'data-i18n': 'diag_nic' }, t('diag_nic')), nic);
+  const manualLabel = el('label', { htmlFor: 'diag-manual', class: 'mut small', 'data-i18n': 'diag_manual' }, t('diag_manual'));
   const manual = el('textarea', { id: 'diag-manual', class: 'text-input diag-manual', readOnly: true, rows: 10 });
   const manualBox = el('div', { class: 'diag-manualbox', hidden: true }, manualLabel, manual);
 
   const pane = el('section', { id: 'pane-diag', class: 'pane', 'aria-labelledby': 'diag-title' },
     el('div', { class: 'card diag' },
-      el('div', { class: 'pane-head' }, el('h2', { id: 'diag-title' }, 'ตรวจปัญหาการเชื่อมต่อ'),
+      el('div', { class: 'pane-head' }, el('h2', { id: 'diag-title', 'data-i18n': 'diag_title' }, t('diag_title')),
         el('div', { class: 'diag-tools' }, refreshBtn, copyBtn)),
       el('div', { class: 'diag-metaRow' }, staleBadge, meta),
       live, list, netRow, manualBox));
 
   const navBtn = el('button', { class: 'nav', type: 'button', id: 'nav-diag', onclick: () => setView('diag') },
-    el('span', { 'aria-hidden': 'true' }, '🩺'), ' ตรวจปัญหาการเชื่อมต่อ');
+    el('span', { 'aria-hidden': 'true' }, '🩺'), el('span', { 'data-i18n': 'diag_nav' }, t('diag_nav')));
   navBtn.dataset.go = 'diag';
   const tabBtn = el('button', { type: 'button', id: 'tab-diag', onclick: () => setView('diag') },
-    el('span', { 'aria-hidden': 'true' }, '🩺'), 'ตรวจปัญหา');
+    el('span', { 'aria-hidden': 'true' }, '🩺'), el('span', { 'data-i18n': 'diag_nav_short' }, t('diag_nav_short')));
   tabBtn.dataset.go = 'diag';
 
   $('pane-chat').after(pane);
@@ -4353,14 +4370,14 @@ function setupOwnerTools() {
     list.setAttribute('aria-busy', String(d.loading));
     staleBadge.hidden = !(d.stale && d.results);
     const when = d.results && d.generatedAt ? formatTimeSec(d.generatedAt) : '';
-    meta.textContent = when ? 'ตรวจเมื่อ ' + when + (d.cached ? ' (ผลที่เก็บไว้ไม่เกิน 30 วินาที)' : '') : '';
+    meta.textContent = when ? t('diag_when').replace('{when}', when) + (d.cached ? ' ' + t('diag_cached') : '') : '';
   }
 
   function rowNode(r) {
     const body = el('div', { class: 'diag-body' },
       el('div', { class: 'diag-head' }, el('b', { class: 'diag-title' }, r.title), el('span', { class: 'diag-st' }, r.statusText)));
-    if (r.detail) body.append(el('p', { class: 'diag-detail small' }, el('span', { class: 'mut' }, 'รายละเอียด: '), r.detail));
-    if (r.hint) body.append(el('p', { class: 'diag-hint small' }, el('span', { class: 'mut' }, 'คำแนะนำ: '), r.hint));
+    if (r.detail) body.append(      el('p', { class: 'diag-detail small' }, el('span', { class: 'mut', 'data-i18n': 'diag_detail' }, t('diag_detail')), r.detail));
+    if (r.hint) body.append(el('p', { class: 'diag-hint small' }, el('span', { class: 'mut', 'data-i18n': 'diag_hint' }, t('diag_hint')), r.hint));
     const li = el('li', { class: 'diag-row ' + r.status }, el('span', { class: 'diag-ic', 'aria-hidden': 'true' }, r.icon), body);
     li.dataset.id = r.id;
     return li;
@@ -4374,7 +4391,7 @@ function setupOwnerTools() {
 
   function renderNets() {
     nic.replaceChildren(...d.nets.map((n) => el('option', { value: n.name, selected: !!n.selected },
-      `${n.label || n.name} • ${n.ip} (${KIND_LABEL[n.kind] || n.kind})${n.recommended ? ' — แนะนำ' : ''}`)));
+      `${n.label || n.name} • ${n.ip} (${kindLabel(n.kind)})${n.recommended ? ' — ' + t('recommended') : ''}`)));
     netRow.hidden = d.nets.length === 0;
     sync();
   }
@@ -4471,15 +4488,15 @@ function setupOwnerTools() {
     clearTimeout(d.copyTimer);
     if (ok) {
       manualBox.hidden = true;
-      copyBtn.textContent = 'คัดลอกแล้ว';
-      say('คัดลอกแล้ว');
+      copyBtn.textContent = t('copied');
+      say(t('copied'));
       d.copyTimer = setTimeout(() => {
-        copyBtn.textContent = 'คัดลอกรายงาน';
-        if (live.textContent === 'คัดลอกแล้ว') say('');
+        copyBtn.textContent = t('diag_copy');
+        if (live.textContent === t('copied')) say('');
       }, DIAG_COPIED_MS);
       return;
     }
-    copyBtn.textContent = 'คัดลอกรายงาน';
+    copyBtn.textContent = t('diag_copy');
     manual.value = text;
     manualBox.hidden = false;
     manual.focus();
@@ -4499,13 +4516,13 @@ function setupOwnerTools() {
   };
 
   // ----- status panel: Power_Guard and unfinished uploads -----
-  const powerText = el('b', { class: 'ost-power', 'aria-live': 'polite' }, 'กำลังตรวจสอบ…');
-  const uploadsEmpty = el('p', { class: 'mut small' }, 'ไม่มีอัปโหลดที่ค้างอยู่');
+  const powerText = el('b', { class: 'ost-power', 'aria-live': 'polite' }, t('checking'));
+  const uploadsEmpty = el('p', { class: 'mut small', 'data-i18n': 'uploads_empty' }, t('uploads_empty'));
   const uploadsList = el('ul', { class: 'list ost-uploads' });
   const statusCard = el('section', { id: 'owner-status', class: 'card ostat', 'aria-labelledby': 'ost-title' },
-    el('h2', { id: 'ost-title' }, 'สถานะเครื่อง'),
-    el('p', { class: 'small' }, el('span', { class: 'mut' }, 'การกัน Mac หลับ: '), powerText),
-    el('h3', { class: 'ost-h' }, 'อัปโหลดที่ค้างอยู่'),
+    el('h2', { id: 'ost-title', 'data-i18n': 'host_status' }, t('host_status')),
+    el('p', { class: 'small' }, el('span', { class: 'mut', 'data-i18n': 'keep_awake' }, t('keep_awake')), powerText),
+    el('h3', { class: 'ost-h', 'data-i18n': 'pending_uploads' }, t('pending_uploads')),
     uploadsEmpty, uploadsList);
   $('owner').after(statusCard);
 
@@ -4524,7 +4541,7 @@ function setupOwnerTools() {
       let row = uploadRows.get(u.id);
       if (!row) {
         const text = el('span', { class: 'grow small' });
-        const btn = el('button', { class: 'btn danger sm', type: 'button' }, 'ยกเลิก');
+        const btn = el('button', { class: 'btn danger sm', type: 'button', 'data-i18n': 'cancel' }, t('cancel'));
         const li = el('li', { class: 'ost-row' }, text, btn);
         btn.addEventListener('click', () => cancelUpload(u.id, row));
         row = { li, text, btn };
@@ -4568,8 +4585,8 @@ function setupOwnerTools() {
       ]);
       if ([p, u].some((r) => r.status === 'rejected' && r.reason.category === 'forbidden')) return ownerForbidden();
       if (setupOwnerTools.gone) return;
-      const label = p.status === 'fulfilled' && p.value ? POWER_LABEL[p.value.status] : '';
-      const next = label || 'ไม่ทราบ';
+      const label = p.status === 'fulfilled' && p.value ? (t('power_' + p.value.status) !== 'power_' + p.value.status ? t('power_' + p.value.status) : (POWER_LABEL[p.value.status] || '')) : '';
+      const next = label || t('unknown');
       if (powerText.textContent !== next) powerText.textContent = next; // only on change, so it is announced once
       if (u.status === 'fulfilled' && Array.isArray(u.value)) renderUploads(u.value);
     } finally {
